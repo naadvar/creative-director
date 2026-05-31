@@ -1,0 +1,41 @@
+﻿
+==================================================================
+scheme=views_per_sub_aged_v1  task=regression  features=intrinsic (73)
+==================================================================
+Dataset      : 1649 videos  (1319 train / 330 test)
+Single split : acc 0.558   (random 0.333)
+               spearman 0.670   MAE 0.850
+Time-series CV: acc 0.500 +/- 0.052   (5 folds)  folds=[0.45, 0.48, 0.45, 0.53, 0.59]
+               spearman 0.489 (CV mean)
+
+              precision    recall  f1-score   support
+
+         low       0.72      0.53      0.61       103
+         med       0.38      0.62      0.47        97
+        high       0.73      0.53      0.61       130
+
+    accuracy                           0.56       330
+   macro avg       0.61      0.56      0.57       330
+weighted avg       0.62      0.56      0.57       330
+
+Confusion matrix (rows=true, cols=pred), order [low, med, high]:
+[[55 43  5]
+ [16 60 21]
+ [ 5 56 69]]
+
+Top 15 features by mean |SHAP|:
+  thumb_clip_pca_0         0.1454
+  thumb_clip_pca_2         0.1245
+  thumb_brightness         0.1080
+  hashtag_count            0.1051
+  thumb_contrast           0.0927
+  thumb_clip_pca_1         0.0904
+  audio_voice_ratio        0.0830
+  publish_hour             0.0769
+  title_all_caps_ratio     0.0767
+  thumb_clip_pca_6         0.0647
+  audio_loudness_mean      0.0576
+  thumb_saturation         0.0573
+  thumb_text_char_count    0.0554
+  thumb_clip_pca_4         0.0534
+  transcript_word_count    0.0506

@@ -1,0 +1,16 @@
+# LARGE tier batch: 1M+ followers, 12 creators.
+# Stage 1 ingest: low per-creator cap (15) to de-emphasize mega-account skew.
+# These tend to have LOWER views/follower (saturated audience).
+accounts:
+  - "@cbum"                  # 25.8M - Chris Bumstead, bodybuilding
+  - "@kayla_itsines"         # 15.4M - BBG, women's fitness
+  - "@michelle_lewin"        # 15.0M - bodybuilding / fitness modeling
+  - "@squat_university"      #  4.6M - mobility / rehab
+  - "@jeffnippard"           #  3.9M - science-based bodybuilding
+  - "@stephaniesanzo"        #  3.3M - women's lifting
+  - "@kneesovertoesguy"      #  2.7M - knees-over-toes
+  - "@athleanx"              #  2.4M - biomechanics
+  - "@bretcontreras1"        #  1.8M - sports science / glutes
+  - "@chrisheria"            #  1.7M - calisthenics
+  - "@growingannanas"        #  1.7M - glutes / women's
+  - "@kaisafit"              #  1.1M - mobility

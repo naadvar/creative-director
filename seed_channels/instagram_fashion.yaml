@@ -1,0 +1,78 @@
+# Instagram FASHION / OUTFIT creators - niche tag: ig_fashion.
+#
+# CANDIDATE LIST - anchor accounts only (verify with --profiles-only first;
+# handles/tiers are from memory and several will be wrong squatters, exactly
+# like the food seed - the pre-flight catches them). The small/mid tier is
+# filled by the hashtag discovery pass, which does the real work.
+#
+#   python -m scripts.ingest_instagram_apify --niche ig_fashion \
+#       --seed-file seed_channels/instagram_fashion.yaml --profiles-only
+#   python -m scripts.discover_ig_creators --niche ig_fashion \
+#       --hashtags ootd,outfitinspo,fashionreels,styletips,outfitideas \
+#       --seed-file seed_channels/instagram_fashion.yaml
+#   # NOTE: --max-reels 30 (NOT 100) so the actor finishes inside its 10-min
+#   # run-timeout - mega-accounts with deep feeds time out at higher limits.
+#   python -m scripts.ingest_instagram_apify --niche ig_fashion \
+#       --seed-file seed_channels/instagram_fashion.yaml --max-reels 30 --max-cost-usd 12
+
+accounts:
+  # Verified 2026-05-29 via --profiles-only. Dropped @wisdm8, @brittany.xavier,
+  # @nava.rose, @hellofashionblog (all 0/empty - wrong handles). The verified
+  # anchors skew large; discovery is essential for mid/small tier spread.
+  #
+  # --- LARGE (1M+) ---
+  - "@chiaraferragni"     # 27.4M - Chiara Ferragni
+  - "@camilacoelho"       # 10.3M - Camila Coelho
+  - "@aimeesong"          #  7.0M - Song of Style
+  - "@negin_mirsalehi"    #  6.9M - Negin Mirsalehi
+  - "@leoniehanne"        #  4.7M - Leonie Hanne
+
+  # --- MID (100k-1M) ---
+  - "@emmahill"           #  808K - Emma Hill / ejstyle
+
+  # --- SMALL (<100k) - fill via discover_ig_creators (fashion hashtags) ---
+  - "@_soukayna"  # 85,421
+  - "@cacaobean"  # 78,249
+  - "@fashioncafebypulimoottilsilks"  # 76,433
+  - "@french_crown"  # 73,516
+  - "@_huaquynhnhu_"  # 68,936
+  - "@bylaibakhan"  # 64,700
+  - "@finnlately"  # 57,757
+  - "@forevertasneem"  # 56,432
+  - "@fashion_styles_inspiration__"  # 55,126
+  - "@e_kellys"  # 53,084
+  - "@busrsrc"  # 48,639
+  - "@dressly.plan"  # 48,396
+  - "@blogitwithmarry"  # 45,850
+  - "@gulachi_sisters"  # 42,540
+  - "@gwerudrip_toxic_grammy_awards"  # 41,961
+  - "@basicela_"  # 41,204
+  - "@hairbybano"  # 39,398
+  - "@gottapattihouse"  # 38,318
+  - "@amyw1"  # 37,117
+  - "@_di.neo"  # 36,519
+  - "@adrianakp"  # 35,344
+  - "@anuradhamohinta_"  # 31,348
+  - "@carmenjheredia"  # 26,142
+  - "@glamorosa_shoes"  # 23,522
+  - "@annie_fp"  # 22,813
+  - "@britskouture"  # 22,433
+  - "@br_shop.90"  # 20,116
+  - "@dukkan_22.1"  # 20,020
+  - "@britneyjocelyn"  # 19,632
+  - "@hero_chiu0216"  # 19,617
+  - "@habana_secs"  # 18,694
+  - "@chris_fellow"  # 18,161
+  - "@alexabergfit"  # 18,078
+  - "@ballupbrian"  # 17,674
+  - "@gorskimontreal"  # 17,297
+  - "@akinolavictor"  # 15,707
+  - "@dilekuludaggg"  # 15,619
+  - "@djadijule"  # 15,359
+  - "@edoardo_soderi"  # 14,640
+  - "@berlinstreetsgraffiti"  # 13,781
+  - "@designedbybonnito"  # 13,369
+  - "@asbarehman_"  # 13,210
+  - "@gabyite"  # 12,140
+  - "@helen_money"  # 12,056
+  - "@boteamano"  # 12,041

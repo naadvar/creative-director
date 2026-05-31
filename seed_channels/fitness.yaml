@@ -1,0 +1,38 @@
+# Seed channels for the fitness niche.
+# Original 6 (verified 2026-05-15) + 26 discovered via scripts/discover_channels.py
+# (2026-05-17), curated for size diversity and to exclude clip-farm channels.
+channels:
+  # --- large (500K+ subs) ---
+  - "@athleanx"
+  - "@JeffNippard"
+  - "@GrowingAnnanas"
+  - "@SquatUniversity"
+  - "@ChrisHeria"
+  - "@VShred"
+  - "@hybridcalisthenics"
+  - "@madfit"
+  - "@fitnessblender"
+  - "@calisthenicsfamily"
+  - "@lesliesansoneswalkathome"
+  - "@anita_herbert"
+  - "@juiceandtoya"
+  - "@bodyweightwarrior"
+  - "@marklauren2"
+  - "@kobokofitness"
+  - "@midasmvmt"
+  - "@ericrobertsfitness"
+  - "@305fitness"
+  - "@growyoungfitness"
+  - "@mrandmrsmuscle"
+  # --- mid / micro (more varied baselines) ---
+  - "@audreykoomar"
+  - "@fitwithcoco"
+  - "@liftwithcee"
+  - "@leomoves"
+  - "@robertasgym"
+  - "@danielptfitness"
+  - "@darrenliufitness"
+  - "@workoutwithroxanne"
+  - "@ctcalisthenics"
+  - "@funwithcalisthenics"
+  - "@seniorshapefitness"

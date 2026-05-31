@@ -1,0 +1,1682 @@
+﻿.\.venv\Scripts\python.exe : 2026-05-22 09:34:19.261 | INFO     | __main__:main:59 - Building train df: niche=fitness, 
+label=views_per_sub_aged_v1
+At line:1 char:79
++ ... NG="utf-8"; .\.venv\Scripts\python.exe -m scripts.transfer_test_ig 2> ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (2026-05-22 09:3...per_sub_aged_v1:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+2026-05-22 09:34:24.547 | INFO     | __main__:main:61 -   YT rows: 1445
+2026-05-22 09:34:24.547 | INFO     | __main__:main:63 - Building test df:  niche=ig_fitness, 
+label=views_per_sub_aged_v1
+2026-05-22 09:34:30.716 | INFO     | __main__:main:65 -   IG rows: 1649
+2026-05-22 09:34:30.796 | INFO     | __main__:main:79 -   Features: 34 (intrinsic, no PCA, no label-derived)
+2026-05-22 09:34:34.029 | INFO     | __main__:main:96 - YT in-sample Spearman: 0.926 (sanity, not a generalisation 
+number)
+
+======================================================================
+CROSS-PLATFORM TRANSFER TEST
+======================================================================
+Train:    fitness, n=1445
+Test:     ig_fitness, n=1649
+Label:    views_per_sub_aged_v1 (regression target, continuous views/sub)
+Features: 34 transfer-safe
+
+Spearman on IG: +0.234   (parametric p=0.0000)
+Empirical null (n=1000 perms): mean=+0.001  std=0.024  p(|null|>=|obs|)=0.000
+
+IG videos, sorted by ACTUAL views/sub rank:
+  video_id               channel                     score     pred  rank_a  rank_p
+  ig_DTiY-MyDX6q         Em Thorpe                   4.261   -3.329    1649    1185
+  ig_DSUb0OaDcVc         Debby - Personal Traine     2.466   -2.243    1648    1607
+  ig_DWzG9knkeF6         Mel Erman                   2.446   -3.954    1647     628
+  ig_DU87HSPEkld         Bria Yoon                   2.404   -3.973    1646     609
+  ig_DXZ6QHcjFEr         Josh Heenan                 2.324   -3.948    1645     633
+  ig_DS1qf0sDeJM         Debby - Personal Traine     2.228   -2.604    1644    1537
+  ig_DVGNgYIDWTS         Debby - Personal Traine     2.203   -4.031    1643     568
+  ig_DRxE60bjoUH         Josh Heenan                 2.158   -3.249    1642    1246
+  ig_DUms03VkzRs         Bria Yoon                   2.110   -1.626    1641    1642
+  ig_DWGnJLAEYEh         Will Joseph | Mobility      1.958   -5.220    1640      92
+  ig_DXbJHz-jYqn         Debby - Personal Traine     1.864   -2.523    1639    1555
+  ig_DWE0b5nMY03         Daniel Gulsher              1.773   -3.336    1638    1177
+  ig_DTsJVISDkd1         Alessia Kofftun             1.742   -7.235    1637       1
+  ig_DU2njP2jWLp         Debby - Personal Traine     1.736   -4.762    1636     172
+  ig_DU13ZTNk3bx         Bria Yoon                   1.720   -3.586    1635     951
+  ig_DVQOGRMDVfl         Debby - Personal Traine     1.588   -2.921    1634    1436
+  ig_DRmQkhXDqK2         Alessia Kofftun             1.588   -3.229    1633    1262
+  ig_DXIJV22AS1W         Audrey Koomar               1.513   -3.982    1632     601
+  ig_DVCMsq_DsHZ         Alessia Kofftun             1.473   -4.219    1631     414
+  ig_DSQ0mBvjnXp         Alessia Kofftun             1.415   -3.404    1630    1116
+  ig_DWQgFXcjepd         Debby - Personal Traine     1.414   -4.111    1629     504
+  ig_DWPngx4AUJJ         Bria Yoon                   1.407   -2.430    1628    1575
+  ig_DRac7MJDouv         Alessia Kofftun             1.400   -3.369    1627    1154
+  ig_DW3DTafDRKN         Debby - Personal Traine     1.369   -2.804    1626    1481
+  ig_DTHBsV-jtej         Alessia Kofftun             1.355   -4.393    1625     304
+  ig_DWnsk_Ijez0         Debby - Personal Traine     1.347   -3.597    1624     940
+  ig_DRh2m2birJU         Carol Enrico                1.310   -3.602    1623     934
+  ig_DWg61sogsrW         Anna Engelschall            1.194   -2.669    1622    1518
+  ig_DVah95FDcmF         Debby - Personal Traine     1.173   -2.996    1621    1397
+  ig_DTtx1KiADMT         Danielle Brandon            1.146   -2.368    1620    1586
+  ig_DUbrLGAj48w         CT Calisthenics ®️          1.065   -2.215    1619    1612
+  ig_DT5wr6yiCvN         Anna Engelschall            1.045   -2.751    1618    1501
+  ig_DWTaT0kjvhy         Will Joseph | Mobility      0.963   -5.815    1617      45
+  ig_DSkl1rTjOj1         Jeff Nippard                0.928   -1.824    1616    1632
+  ig_DV4IbxduoU_         Alessia Kofftun             0.888   -2.370    1615    1584
+  ig_DRcgiTNDj8K         Christian                  0.877   -3.477    1614    1064
+  ig_DVRRZehjIa7         Jeff Nippard                0.842   -3.434    1613    1097
+  ig_DS4Q0AODVWc         Debby - Personal Traine     0.791   -3.595    1612     942
+  ig_DSJ5z5WDdvq         Debby - Personal Traine     0.789   -2.147    1611    1618
+  ig_DWuATq2k6EZ         Bria Yoon                   0.738   -3.078    1610    1355
+  ig_DVUljuFgWWa         Bria Yoon                   0.733   -2.516    1609    1557
+  ig_DWTHPyzjc5Q         Debby - Personal Traine     0.689   -2.949    1608    1425
+  ig_DTTNHJjCY1s         Jeff Nippard                0.686   -3.385    1607    1138
+  ig_DXKIn0AimvB         Chris Davies | Athletic     0.683   -3.646    1606     899
+  ig_DWUtEmxEsvB         Bria Yoon                   0.681   -2.857    1605    1459
+  ig_DUiqfQLDL0P         Jeff Nippard                0.680   -3.645    1604     900
+  ig_DXVW_3IOCHK         Alessia Kofftun             0.593   -4.432    1603     289
+  ig_DUBlm2OiUGl         Jeff Nippard                0.550   -2.395    1602    1582
+  ig_DVXWQ3oDqyQ         Alessia Kofftun             0.546   -7.006    1601       3
+  ig_DWBFC_KjRl_         Christina Vantsi            0.512   -3.865    1600     701
+  ig_DTpWC53jfIi         Debby - Personal Traine     0.510   -2.666    1599    1521
+  ig_DXUK9c8DRbx         Christina Vantsi            0.413   -4.560    1598     241
+  ig_DVRfNXZEnFk         Bria Yoon                   0.412   -3.196    1597    1293
+  ig_DVuSQbDjjCp         Alessia Kofftun             0.401   -4.096    1596     518
+  ig_DWBBFh0Day_         Debby - Personal Traine     0.350   -3.498    1595    1038
+  ig_DS0F2ZDDeak         Em Thorpe                   0.349   -2.418    1594    1579
+  ig_DUSoybJjUeo         Debby - Personal Traine     0.323   -4.215    1593     419
+  ig_DSAa_vwjkLn         Jeff Nippard                0.304   -3.226    1592    1270
+  ig_DVOqoOPDdvY         Christina Vantsi            0.289   -4.193    1591     435
+  ig_DVY86awja3y         Christina Vantsi            0.264   -2.644    1590    1526
+  ig_DWCdGCQgRth         Bria Yoon                   0.254   -3.800    1589     752
+  ig_DU0_5ytiId_         Anna Engelschall            0.251   -2.547    1588    1548
+  ig_DTe8ZvnDbGP         Debby - Personal Traine     0.245   -2.818    1587    1472
+  ig_DVQ61rXjT-M         Christina Vantsi            0.198   -2.935    1586    1430
+  ig_DSdb6c0k3aU         Zac Perna                   0.180   -3.423    1585    1103
+  ig_DXZNcA-iA0x         Cici Flows | Yoga Teach     0.163   -4.153    1584     466
+  ig_DVt_9PAEoqX         Bria Yoon                   0.162   -2.002    1583    1625
+  ig_DWAk7qTE3Kv         Bria Yoon                   0.151   -2.538    1582    1549
+  ig_DVwgtEMEheW         Bria Yoon                   0.141   -4.100    1581     516
+  ig_DW6UxEtDXfI         Christina Vantsi            0.099   -4.997    1580     124
+  ig_DWIy6pRjZDL         Debby - Personal Traine     0.093   -3.060    1579    1363
+  ig_DVUkaCdDglv         Alessia Kofftun             0.074   -3.489    1578    1053
+  ig_DSD_IfqkRXl         Will Joseph | Mobility      0.064   -3.839    1577     722
+  ig_DWVyInwjfNP         Debby - Personal Traine     0.056   -4.290    1576     370
+  ig_DVEeccwCW_v         Jeff Nippard                0.054   -3.654    1575     889
+  ig_DXCRnmrDqHh         Eric Rivera 👑               0.050   -3.866    1574     700
+  ig_DVg5HqbDTBE         Christina Vantsi            0.041   -3.438    1573    1094
+  ig_DUsbTUPjRCe         Debby - Personal Traine     0.039   -3.675    1572     872
+  ig_DRaP9QwCbGk         Jeff Nippard                0.021   -3.184    1571    1303
+  ig_DXLNbfZE3Qy         Bria Yoon                   0.018   -3.561    1570     977
+  ig_DVbplXTiJZU         Anna Engelschall            0.014   -2.599    1569    1539
+  ig_DW-O8eYkfff         Mel Erman                  -0.000   -3.723    1568     826
+  ig_DVcy4xTE5fd         Bria Yoon                  -0.020   -2.782    1567    1488
+  ig_DTGXB2Wjdk5         Em Thorpe                  -0.021   -3.683    1566     866
+  ig_DW4dJI1gcLT         Bria Yoon                  -0.064   -3.587    1565     950
+  ig_DWFSZ_8AaQu         Bria Yoon                  -0.067   -4.051    1564     547
+  ig_DWAvH9bE2ur         Bria Yoon                  -0.068   -3.194    1563    1296
+  ig_DVjoU03knWN         Bria Yoon                  -0.073   -3.460    1562    1076
+  ig_DVMPJj5EnXo         Chris Bumstead             -0.082   -4.477    1561     266
+  ig_DVdmJxcDQaz         Debby - Personal Traine    -0.083   -3.240    1560    1255
+  ig_DWjmkYbsc00         Daniel Gulsher             -0.084   -4.891    1559     141
+  ig_DUmahe3EzS9         Bria Yoon                  -0.098   -3.023    1558    1379
+  ig_DW2tc_vk8lj         Bria Yoon                  -0.107   -2.462    1557    1566
+  ig_DXYN_ZHE5c2         Bria Yoon                  -0.109   -2.804    1556    1482
+  ig_DTFVuhkjaeF         Debby - Personal Traine    -0.113   -4.417    1555     292
+  ig_DU-FxlUDYkC         Debby - Personal Traine    -0.115   -2.966    1554    1416
+  ig_DUkUGSXDdSq         Debby - Personal Traine    -0.119   -4.635    1553     211
+  ig_DTiuuFyDhk5         Alessia Kofftun            -0.120   -3.510    1552    1025
+  ig_DTqZqB4iVyU         Jeff Nippard               -0.134   -2.813    1551    1475
+  ig_DV35TVNk0oc         Bria Yoon                  -0.139   -1.863    1550    1629
+  ig_DRzjoQRjgzp         Jeff Nippard               -0.144   -2.528    1549    1553
+  ig_DW6FKrNjdEH         Debby - Personal Traine    -0.163   -3.599    1548     937
+  ig_DWXMRCxjyQj         CT Calisthenics ®️         -0.170   -4.325    1547     347
+  ig_DV1JreCAz2o         Danielle Brandon           -0.180   -3.221    1546    1275
+  ig_DUh5DyFjcZy         Debby - Personal Traine    -0.182   -2.564    1545    1545
+  ig_DU0sUGxjBhH         Jeff Nippard               -0.184   -3.471    1544    1070
+  ig_DW_eL7sjaW-         Debby - Personal Traine    -0.199   -4.283    1543     374
+  ig_DWaWY7wEzQp         Bria Yoon                  -0.201   -2.804    1542    1480
+  ig_DTnxyiVjx2S         Lauren Fisher Andersen     -0.207   -3.038    1541    1374
+  ig_DUCXXUMDlsB         Alessia Kofftun            -0.209   -3.337    1540    1176
+  ig_DW5F3TBgHEK         Squat University           -0.210   -3.439    1539    1092
+  ig_DSgAc-SDs-M         Alessia Kofftun            -0.213   -4.531    1538     254
+  ig_DTmWfXwDDBj         ATHLEAN-X™ | Jeff Caval    -0.224   -5.084    1537     111
+  ig_DTN_5TZiN4e         Anna Engelschall           -0.244   -3.680    1536     868
+  ig_DVIhFHKjTl8         Debby - Personal Traine    -0.247   -4.894    1535     140
+  ig_DVTaWKFDZsL         Debby - Personal Traine    -0.249   -4.590    1534     227
+  ig_DXQ1bqejRxo         Debby - Personal Traine    -0.251   -4.030    1533     570
+  ig_DW65O4oDath         Christina Vantsi           -0.276   -3.123    1532    1332
+  ig_DU6Wd2HkqoQ         Cici Flows | Yoga Teach    -0.284   -3.369    1531    1155
+  ig_DU_gFBLkqg9         Bret Contreras “The Glu    -0.290   -3.312    1530    1203
+  ig_DWIT_3uE6ND         Bria Yoon                  -0.291   -1.720    1529    1636
+  ig_DUqqSOsjrhJ         Alessia Kofftun            -0.294   -4.240    1528     397
+  ig_DWxJVM1AeFD         Bria Yoon                  -0.296   -2.427    1527    1576
+  ig_DVy-cCGgf5z         Bria Yoon                  -0.316   -2.067    1526    1624
+  ig_DVU04GwESvB         Becca (Voigt) Miller       -0.328   -3.711    1525     843
+  ig_DWKufsGk7hZ         Bria Yoon                  -0.330   -3.864    1524     703
+  ig_DWeuLSJAjqw         Squat University           -0.331   -2.881    1523    1451
+  ig_DVedLJ1El04         Bria Yoon                  -0.331   -1.553    1522    1644
+  ig_DXFzu6PknmT         Bria Yoon                  -0.333   -3.683    1521     864
+  ig_DSafeZoDd7p         Debby - Personal Traine    -0.339   -1.178    1520    1649
+  ig_DWF5FKmk2Id         Bria Yoon                  -0.342   -3.250    1519    1242
+  ig_DWa3GtgjTEx         Debby - Personal Traine    -0.356   -3.359    1518    1163
+  ig_DVeNlltADzE         Danielle Brandon           -0.373   -2.967    1517    1415
+  ig_DWWmyuBDcVC         Christina Vantsi           -0.378   -4.138    1516     473
+  ig_DW-qyp-k2b4         Bria Yoon                  -0.380   -2.125    1515    1622
+  ig_DVRC8vKCWLC         Lauren Fisher Andersen     -0.407   -3.778    1514     771
+  ig_DXJLWhXjTzT         Debby - Personal Traine    -0.420   -3.755    1513     797
+  ig_DW9xHQIESuE         Mel Erman                  -0.421   -3.560    1512     979
+  ig_DTVth7mgJE5         Chris Bumstead             -0.425   -2.515    1511    1558
+  ig_DWHhR-MAUUa         Bria Yoon                  -0.446   -2.836    1510    1466
+  ig_DU7CwIpABTV         Danielle Brandon           -0.456   -4.252    1509     387
+  ig_DTwQhf9gHB_         Danielle Brandon           -0.459   -3.757    1508     795
+  ig_DVvFT29DSPe         Debby - Personal Traine    -0.465   -2.558    1507    1546
+  ig_DWlf9EzjZYG         Debby - Personal Traine    -0.470   -3.647    1506     898
+  ig_DTyMox_iUs2         Jeff Nippard               -0.477   -4.615    1505     216
+  ig_DTwMblAj2Nb         Cici Flows | Yoga Teach    -0.487   -2.288    1504    1600
+  ig_DUIjLcWDQ6a         Debby - Personal Traine    -0.492   -4.303    1503     362
+  ig_DV1s4KokvBP         Bria Yoon                  -0.501   -4.031    1502     567
+  ig_DWZ0FrEOnzv         Alessia Kofftun            -0.502   -4.486    1501     261
+  ig_DRyQ5lIjv7n         Alessia Kofftun            -0.514   -2.290    1500    1599
+  ig_DVLF-f-jaw8         Debby - Personal Traine    -0.520   -3.084    1499    1350
+  ig_DVefOgVks9j         Cici Flows | Yoga Teach    -0.530   -3.232    1498    1259
+  ig_DWDk0qFDRDQ         Debby - Personal Traine    -0.537   -3.432    1497    1099
+  ig_DS7CbKzjetI         Debby - Personal Traine    -0.548   -2.869    1496    1456
+  ig_DUJlEhqD6Na         CT Calisthenics ®️         -0.561   -2.733    1495    1506
+  ig_DXW3qJPjSm3         Christina Vantsi           -0.571   -4.270    1494     382
+  ig_DXN0NwOEyje         Bria Yoon                  -0.574   -3.118    1493    1333
+  ig_DU5FOKzjWj-         Debby - Personal Traine    -0.583   -3.624    1492     916
+  ig_DWnAKiXgPwK         Squat University           -0.586   -3.316    1491    1197
+  ig_DWpnSmmkaiS         Squat University           -0.589   -3.543    1490     987
+  ig_DWPGjMUCCI-         Clara | Yoga Teacher &     -0.591   -4.503    1489     256
+  ig_DV0qxuRjWlm         Debby - Personal Traine    -0.596   -2.957    1488    1419
+  ig_DTXYZRGjeit         Debby - Personal Traine    -0.603   -2.768    1487    1495
+  ig_DXFw8eFO0_Z         Alessia Kofftun            -0.611   -3.672    1486     874
+  ig_DVhrt5EE_t8         Bria Yoon                  -0.616   -1.701    1485    1638
+  ig_DTuoFc0DbeT         Debby - Personal Traine    -0.617   -3.494    1484    1044
+  ig_DUQ-hYLCTmB         Jeff Nippard               -0.618   -4.194    1483     433
+  ig_DTFssl-jj-1         Alessia Kofftun            -0.618   -3.520    1482    1014
+  ig_DSObFHDjpsq         Alessia Kofftun            -0.621   -2.626    1481    1531
+  ig_DU1C2Z6gPpV         Danielle Brandon           -0.640   -2.801    1480    1484
+  ig_DTXWR-wkum5         Zac Perna                  -0.641   -4.276    1479     380
+  ig_DWzlG5Rjmqf         Cici Flows | Yoga Teach    -0.643   -3.407    1478    1110
+  ig_DXMNf07jQTo         Debby - Personal Traine    -0.648   -3.665    1477     879
+  ig_DWHbogeOgnx         Alessia Kofftun            -0.649   -4.029    1476     571
+  ig_DRctXwijOQv         Clara | Yoga Teacher &     -0.653   -3.011    1475    1390
+  ig_DXY8icsjT30         Debby - Personal Traine    -0.675   -4.201    1474     426
+  ig_DW7n8P2ALtV         Squat University           -0.677   -3.274    1473    1226
+  ig_DWfhscqk3dq         Bria Yoon                  -0.679   -4.128    1472     487
+  ig_DVnyVYLgqUT         Anna Engelschall           -0.690   -3.379    1471    1144
+  ig_DXC-q-6kUYU         Mel Erman                  -0.692   -3.656    1470     887
+  ig_DVwOraZAlDG         Anna Engelschall           -0.696   -2.698    1469    1512
+  ig_DVGTRqZiDXG         Clara | Yoga Teacher &     -0.709   -6.467    1468      17
+  ig_DUjk_KRElKK         Cici Flows | Yoga Teach    -0.712   -3.508    1467    1029
+  ig_DVf3z1WjeCi         Debby - Personal Traine    -0.720   -3.512    1466    1023
+  ig_DXVZUjsAHqB         Squat University           -0.720   -3.148    1465    1320
+  ig_DTl-j-tDgXD         Josh Heenan                -0.727   -3.404    1464    1115
+  ig_DWMmO3biAI1         Anna Engelschall           -0.729   -2.817    1463    1473
+  ig_DW9-dEYkScs         Mel Erman                  -0.730   -2.926    1462    1434
+  ig_DXQFAX0OeTr         Alessia Kofftun            -0.732   -4.535    1461     251
+  ig_DWRutPsAm7A         Anna Engelschall           -0.734   -3.382    1460    1141
+  ig_DU1dAp6Di8K         Alessia Kofftun            -0.737   -3.248    1459    1247
+  ig_DWT8p1JjtL9         Bret Contreras “The Glu    -0.762   -4.334    1458     341
+  ig_DRcfa6PjfCh         Calisthenics Amsterdam     -0.762   -2.148    1457    1617
+  ig_DW0kv3VDS31         Debby - Personal Traine    -0.769   -3.331    1456    1181
+  ig_DWEjYKWDeHN         Christina Vantsi           -0.773   -4.629    1455     212
+  ig_DTCCJwmCPbL         Cici Flows | Yoga Teach    -0.776   -3.660    1454     883
+  ig_DTZzbZejW6h         Debby - Personal Traine    -0.778   -4.080    1453     528
+  ig_DXV-68ZjYyM         Debby - Personal Traine    -0.779   -4.043    1452     554
+  ig_DU_QQnxDq5Y         Alessia Kofftun            -0.783   -4.131    1451     481
+  ig_DTCxPSMDcih         Debby - Personal Traine    -0.784   -2.238    1450    1609
+  ig_DWxBHFAEVji         Mel Erman                  -0.787   -3.853    1449     712
+  ig_DUFgeEJjZe7         Debby - Personal Traine    -0.798   -2.434    1448    1574
+  ig_DUYdN9MjUJm         Debby - Personal Traine    -0.800   -2.328    1447    1596
+  ig_DSmeg73jTTq         Debby - Personal Traine    -0.805   -3.942    1446     639
+  ig_DXKObCRDd2S         Em Thorpe                  -0.808   -4.690    1445     188
+  ig_DWtvmEckQeZ         Mel Erman                  -0.808   -3.968    1444     612
+  ig_DVit8BdDVIF         Debby - Personal Traine    -0.810   -4.669    1443     197
+  ig_DV9pxg7gBuQ         Danielle Brandon           -0.812   -2.368    1442    1585
+  ig_DWAkG6Fkamm         Hampton                    -0.816   -4.012    1441     584
+  ig_DUKsKKtDW4A         Debby - Personal Traine    -0.817   -3.650    1440     894
+  ig_DWkcszPE4na         Bria Yoon                  -0.818   -2.854    1439    1460
+  ig_DXFI6QXkeSy         Mel Erman                  -0.832   -3.835    1438     727
+  ig_DUQ_4uRiA-E         Anna Engelschall           -0.834   -2.357    1437    1590
+  ig_DWJVgu2gEHd         Calisthenics Amsterdam     -0.835   -2.717    1436    1508
+  ig_DS52Ff3Er43         Cici Flows | Yoga Teach    -0.841   -2.748    1435    1502
+  ig_DTP8d3pDQI4         Debby - Personal Traine    -0.843   -3.138    1434    1322
+  ig_DT2Dcj7DYf5         Debby - Personal Traine    -0.848   -1.755    1433    1634
+  ig_DUA4EIHjWpe         Debby - Personal Traine    -0.850   -3.204    1432    1290
+  ig_DWaPlOwALnE         Squat University           -0.853   -3.130    1431    1327
+  ig_DU8mPTngrt7         Meghan Callaway - Pull-    -0.868   -4.247    1430     389
+  ig_DUk-yCiDjSC         Alessia Kofftun            -0.870   -4.130    1429     482
+  ig_DWZuhGZAtyd         Squat University           -0.872   -3.690    1428     859
+  ig_DXQQgjBAHOa         Squat University           -0.877   -3.369    1427    1156
+  ig_DWev1vsCJv_         Cici Flows | Yoga Teach    -0.883   -3.716    1426     837
+  ig_DVkO9PZiG0z         Cici Flows | Yoga Teach    -0.884   -3.346    1425    1170
+  ig_DRcEflFjorV         Christian Villa |Costa     -0.885   -2.827    1424    1469
+  ig_DRnS7t_DkA3         Cici Flows | Yoga Teach    -0.888   -2.278    1423    1602
+  ig_DTPHdPgjl9p         Hampton                    -0.890   -4.053    1422     546
+  ig_DVrC5BUAhYn         Anna Engelschall           -0.895   -2.922    1421    1435
+  ig_DWzArO5gnXH         Anna Engelschall           -0.897   -2.871    1420    1455
+  ig_DUVHhM4jXPv         Debby - Personal Traine    -0.904   -3.126    1419    1329
+  ig_DTxOTbVDZdB         Debby - Personal Traine    -0.904   -2.233    1418    1610
+  ig_DThdQOwjQWS         Debby - Personal Traine    -0.909   -2.858    1417    1458
+  ig_DShUMN5DYNo         Debby - Personal Traine    -0.911   -2.137    1416    1620
+  ig_DVmu8M6Dnd5         Alessia Kofftun            -0.914   -4.013    1415     583
+  ig_DU3k1-nCBUw         Anna Engelschall           -0.917   -3.515    1414    1020
+  ig_DXXH4LYkZfu         Mel Erman                  -0.922   -3.772    1413     778
+  ig_DXA0vKdgLfz         Squat University           -0.927   -3.246    1412    1250
+  ig_DWh5f5ngM6u         Squat University           -0.929   -3.876    1411     693
+  ig_DSID01BDhbf         Cici Flows | Yoga Teach    -0.934   -3.441    1410    1089
+  ig_DTbUJlDif5J         Jeff Nippard               -0.935   -3.963    1409     618
+  ig_DS3n4p4D-WZ         Cici Flows | Yoga Teach    -0.938   -2.337    1408    1593
+  ig_DSU2GMVDjbE         Athletic Vision Fitness    -0.940   -4.843    1407     158
+  ig_DWv2fbTsq0D         Daniel Gulsher             -0.943   -3.987    1406     598
+  ig_DVr7r28iIPe         Cici Flows | Yoga Teach    -0.945   -3.244    1405    1253
+  ig_DWmJdJHAKUN         Chris Bumstead             -0.945   -3.384    1404    1139
+  ig_DV46LKYAnma         Danielle Brandon           -0.950   -3.530    1403    1000
+  ig_DWN76W2DWD6         Debby - Personal Traine    -0.950   -3.484    1402    1055
+  ig_DWuxHW8gEDU         Squat University           -0.950   -2.735    1401    1504
+  ig_DXZfhYCADgw         Squat University           -0.956   -3.705    1400     850
+  ig_DULx3Xqjvq5         Alessia Kofftun            -0.958   -3.419    1399    1105
+  ig_DUHIBAeEtCm         Cici Flows | Yoga Teach    -0.961   -2.146    1398    1619
+  ig_DWKA_gfDi_M         Bret Contreras “The Glu    -0.963   -3.564    1397     970
+  ig_DWtHPt8iLk3         Clara | Yoga Teacher &     -0.964   -4.578    1396     234
+  ig_DWtb2bZCNG9         Clara | Yoga Teacher &     -0.966   -4.484    1395     263
+  ig_DW7FweUEWZ9         Mel Erman                  -0.973   -3.158    1394    1314
+  ig_DSheEoQiH1W         Clara | Yoga Teacher &     -0.979   -4.228    1393     409
+  ig_DVEH6JMEheV         Cici Flows | Yoga Teach    -0.982   -4.214    1392     420
+  ig_DRsaF2HD7Vh         Danielle Brandon           -0.983   -3.361    1391    1162
+  ig_DUrE12Akoyt         Cici Flows | Yoga Teach    -0.983   -4.321    1390     350
+  ig_DW1-xZsERhl         Mel Erman                  -0.985   -3.709    1389     844
+  ig_DSaqe8ZkU6o         Alessia Kofftun            -0.986   -3.304    1388    1210
+  ig_DVsdfW1DW6B         Debby - Personal Traine    -0.988   -3.002    1387    1396
+  ig_DWUQ6d_gg6F         Anna Engelschall           -0.991   -3.388    1386    1137
+  ig_DXZfOYzjdr6         Mel Erman                  -0.998   -4.151    1385     467
+  ig_DWOzGLVgG2F         Squat University           -0.999   -3.193    1384    1298
+  ig_DW4ibCOgm7a         Squat University           -0.999   -4.101    1383     515
+  ig_DWr7EKCumuN         Alessia Kofftun            -1.007   -4.506    1382     255
+  ig_DU8h--BDRHR         Eric Rivera 👑              -1.015   -3.631    1381     912
+  ig_DUjKxG7ka4l         Alessia Kofftun            -1.025   -6.821    1380       6
+  ig_DU-woDoiS1v         Cici Flows | Yoga Teach    -1.025   -3.472    1379    1069
+  ig_DSzPmecjYsW         Debby - Personal Traine    -1.025   -4.032    1378     565
+  ig_DVwNB95DiMY         Lauren Fisher Andersen     -1.028   -3.437    1377    1095
+  ig_DWnQijDgM68         Squat University           -1.028   -3.497    1376    1040
+  ig_DUWHzOKCMDI         Anna Engelschall           -1.029   -3.192    1375    1300
+  ig_DXEBIHGDQcK         Debby - Personal Traine    -1.030   -2.952    1374    1423
+  ig_DW1Q3XtgAlY         Squat University           -1.030   -3.580    1373     957
+  ig_DWwMnQ3keO7         Mel Erman                  -1.033   -4.287    1372     372
+  ig_DW6ix0tDtgs         Cici Flows | Yoga Teach    -1.033   -3.152    1371    1317
+  ig_DTNzLIGEiXu         Calisthenics Amsterdam     -1.036   -4.176    1370     452
+  ig_DTO0RcgiMaw         Cici Flows | Yoga Teach    -1.040   -3.196    1369    1294
+  ig_DWkGjMdjun_         Cici Flows | Yoga Teach    -1.042   -2.684    1368    1514
+  ig_DTC0RJiEvew         KAYLA ITSINES              -1.043   -2.811    1367    1477
+  ig_DXW8_AIkfXQ         Mel Erman                  -1.046   -4.577    1366     235
+  ig_DWhSi5YCMlo         Cici Flows | Yoga Teach    -1.051   -2.292    1365    1598
+  ig_DWkX2jmgPmX         Squat University           -1.051   -4.154    1364     464
+  ig_DVy1F0eAtCj         Anna Engelschall           -1.059   -3.098    1363    1346
+  ig_DUyucvOjyQr         Bret Contreras “The Glu    -1.059   -3.586    1362     953
+  ig_DTKaYRFDfHb         Debby - Personal Traine    -1.067   -2.534    1361    1550
+  ig_DT1jRD8gLfM         Danielle Brandon           -1.068   -4.220    1360     412
+  ig_DTDJrd4jgPZ         Alessia Kofftun            -1.068   -4.647    1359     206
+  ig_DTqU4xaCBNa         Anna Engelschall           -1.071   -3.022    1358    1381
+  ig_DV_tyxygoEM         Anna Engelschall           -1.074   -3.280    1357    1224
+  ig_DXFhUDHD8SW         Squat University           -1.074   -3.489    1356    1051
+  ig_DWWteQkgFw6         Squat University           -1.076   -4.111    1355     505
+  ig_DV5f0iyDXhn         Debby - Personal Traine    -1.086   -3.112    1354    1339
+  ig_DRkYmRMju5O         Christian                 -1.093   -4.297    1353     365
+  ig_DWbXMkDD0w3         Calisthenics Amsterdam     -1.100   -2.497    1352    1564
+  ig_DR7mMSnCCS_         Anna Engelschall           -1.102   -3.113    1351    1338
+  ig_DWwx3i3Ar7D         Squat University           -1.106   -3.941    1350     642
+  ig_DXAMBJ4kfj5         Mel Erman                  -1.107   -4.023    1349     578
+  ig_DTnoE9QDRCm         Em Thorpe                  -1.107   -3.614    1348     925
+  ig_DUdLhvpkm-D         Calisthenics Amsterdam     -1.109   -2.785    1347    1487
+  ig_DWza9MAEU2e         Mel Erman                  -1.109   -4.074    1346     534
+  ig_DSvjqKwDpFt         Alessia Kofftun            -1.109   -4.240    1345     398
+  ig_DWzDWvRjlRE         Cici Flows | Yoga Teach    -1.113   -2.390    1344    1583
+  ig_DVnfi9yjXSa         Debby - Personal Traine    -1.114   -3.819    1343     740
+  ig_DXUPeJ7ADct         Squat University           -1.115   -3.976    1342     605
+  ig_DWYRBftjVC9         Debby - Personal Traine    -1.120   -3.222    1341    1272
+  ig_DVt5HfMDSu1         Christina Vantsi           -1.129   -2.755    1340    1500
+  ig_DTNh9TgiLvQ         Clara | Yoga Teacher &     -1.130   -3.747    1339     808
+  ig_DV3N8vOgpBt         Anna Engelschall           -1.133   -3.073    1338    1358
+  ig_DSAjo62CW7Y         Calisthenics Amsterdam     -1.136   -2.531    1337    1552
+  ig_DXax26sk_n5         Bria Yoon                  -1.145   -3.705    1336     849
+  ig_DW1UgrIDbBt         Christina Vantsi           -1.147   -3.591    1335     945
+  ig_DW7pGTrEZbh         Mel Erman                  -1.151   -4.730    1334     181
+  ig_DXLK1J6kSzb         Mel Erman                  -1.154   -3.304    1333    1212
+  ig_DXAK39JAoRp         Squat University           -1.154   -4.190    1332     440
+  ig_DWURlGRiDLt         Cici Flows | Yoga Teach    -1.160   -4.277    1331     379
+  ig_DU4j2Bdko0l         KAYLA ITSINES              -1.161   -3.967    1330     614
+  ig_DUuaxxIjrwv         Hampton                    -1.165   -3.865    1329     702
+  ig_DVO0goaj1pr         Bret Contreras “The Glu    -1.166   -4.123    1328     492
+  ig_DWEyCyEAjeo         Anna Engelschall           -1.167   -3.489    1327    1052
+  ig_DU1yRALDx_E         Cici Flows | Yoga Teach    -1.171   -3.374    1326    1148
+  ig_DXJEZ1iiiVe         Carol Enrico               -1.174   -3.870    1325     696
+  ig_DXXhGtPAvYC         Squat University           -1.175   -4.134    1324     478
+  ig_DVL4uzLjmlK         Alessia Kofftun            -1.179   -4.138    1323     474
+  ig_DXKI7QQDlTC         Josh Heenan                -1.183   -3.526    1322    1005
+  ig_DVl4pNrDsfk         Lauren Fisher Andersen     -1.186   -3.218    1321    1279
+  ig_DR-NfDRCO3i         Anna Engelschall           -1.195   -2.949    1320    1424
+  ig_DXCxOG2EZ4m         Mel Erman                  -1.200   -4.099    1319     517
+  ig_DUNt37qjSW2         Debby - Personal Traine    -1.205   -2.243    1318    1608
+  ig_DUCalddANNP         Danielle Brandon           -1.209   -4.536    1317     250
+  ig_DXIJD1pggPa         Squat University           -1.214   -3.786    1316     766
+  ig_DW_TSKbAhkl         Anna Engelschall           -1.218   -3.931    1315     650
+  ig_DVgxpfDDKrf         Anna Engelschall           -1.222   -3.439    1314    1093
+  ig_DXUj81hEb30         Josh Heenan                -1.224   -3.523    1313    1011
+  ig_DWidXRXjSuA         Debby - Personal Traine    -1.229   -4.059    1312     543
+  ig_DXHeePqES0N         Cici Flows | Yoga Teach    -1.231   -3.024    1311    1378
+  ig_DWEhpeZjbM9         Em Thorpe                  -1.231   -2.515    1310    1559
+  ig_DVCHwqkkjLu         Bria Yoon                  -1.239   -3.331    1309    1182
+  ig_DXSS4KYghlu         Squat University           -1.241   -4.193    1308     434
+  ig_DSpvZx5gtCY         Calisthenics Amsterdam     -1.244   -2.358    1307    1589
+  ig_DVjIdCHDYzI         Eric Roberts               -1.245   -4.061    1306     539
+  ig_DW4DhJWgDa9         Squat University           -1.251   -3.394    1305    1130
+  ig_DXX94srgNce         Squat University           -1.251   -3.268    1304    1231
+  ig_DUrhlegkypk         Bria Yoon                  -1.256   -2.503    1303    1563
+  ig_DWulx3LO0Eq         Alessia Kofftun            -1.259   -3.318    1302    1195
+  ig_DSXWEtwDWTQ         Debby - Personal Traine    -1.269   -3.066    1301    1362
+  ig_DUnfGNrDbsd         Debby - Personal Traine    -1.270   -3.525    1300    1007
+  ig_DV3JnkRD9xZ         STEPHANIE SANZO            -1.272   -4.058    1299     544
+  ig_DV_Yt4PDYhq         Debby - Personal Traine    -1.273   -3.984    1298     600
+  ig_DWPh3ycj31I         Eric Roberts               -1.277   -3.947    1297     635
+  ig_DWCRTUUjJhq         Daniel Gulsher             -1.283   -3.566    1296     967
+  ig_DXFLPY3DnIK         Cici Flows | Yoga Teach    -1.289   -3.632    1295     911
+  ig_DUWXG_IAQyt         Alessia Kofftun            -1.289   -3.074    1294    1357
+  ig_DTRr7w1jIbq         ATHLEAN-X™ | Jeff Caval    -1.289   -4.797    1293     164
+  ig_DV2F0A0D3ss         Cici Flows | Yoga Teach    -1.293   -3.509    1292    1026
+  ig_DWpKXI_EbSj         Squat University           -1.294   -3.674    1291     873
+  ig_DXLE4CMAH1S         Squat University           -1.295   -3.407    1290    1111
+  ig_DUlw-XGktbv         Cici Flows | Yoga Teach    -1.307   -2.759    1289    1499
+  ig_DWJWg1YsehK         Daniel Gulsher             -1.308   -2.953    1288    1421
+  ig_DV_8aiXj-ac         Bret Contreras “The Glu    -1.312   -3.540    1287     988
+  ig_DTdLJmciMj_         Clara | Yoga Teacher &     -1.316   -4.556    1286     242
+  ig_DVq1jZZjf82         Christian Villa |Costa     -1.316   -4.477    1285     267
+  ig_DUljIDViGtc         Anna Engelschall           -1.317   -3.225    1284    1271
+  ig_DT7gnI9jbSZ         Debby - Personal Traine    -1.318   -3.837    1283     725
+  ig_DVs3NPpj0lK         STEPHANIE SANZO            -1.319   -2.331    1282    1595
+  ig_DXVLNfVDj9o         Mel Erman                  -1.320   -4.029    1281     572
+  ig_DXCZ0EgMaB1         Daniel Gulsher             -1.324   -3.109    1280    1341
+  ig_DSLhxGXDkdn         Cici Flows | Yoga Teach    -1.324   -3.311    1279    1205
+  ig_DWGQbMgirCm         Carol Enrico               -1.326   -3.744    1278     812
+  ig_DUpy_xpjRDV         Debby - Personal Traine    -1.327   -3.581    1277     956
+  ig_DW4pMQ_iHZn         Cici Flows | Yoga Teach    -1.329   -4.479    1276     265
+  ig_DVGMOqVCBni         Clara | Yoga Teacher &     -1.332   -3.975    1275     607
+  ig_DWChxD8iPCi         Clara | Yoga Teacher &     -1.343   -4.682    1274     193
+  ig_DUZibRcAGwq         Danielle Brandon           -1.346   -3.619    1273     920
+  ig_DXClsPsEaj7         Eric Roberts               -1.350   -4.385    1272     310
+  ig_DUqYRlCDdu5         Eric Rivera 👑              -1.351   -3.786    1271     767
+  ig_DW1tAg9EW7X         Mel Erman                  -1.353   -2.948    1270    1426
+  ig_DXS1MlUAOfM         Squat University           -1.353   -2.987    1269    1403
+  ig_DWkiN3PgEfM         Danielle Brandon           -1.354   -3.316    1268    1196
+  ig_DXM3ZyFkRqt         Mel Erman                  -1.355   -3.450    1267    1082
+  ig_DWj-Rm3j4Ck         Bret Contreras “The Glu    -1.359   -3.887    1266     683
+  ig_DUwAICVkgWg         Bria Yoon                  -1.361   -1.234    1265    1648
+  ig_DSF81xlDrHD         Josh Heenan                -1.366   -2.766    1264    1497
+  ig_DSLzb6XkZa5         Will Joseph | Mobility     -1.375   -3.941    1263     641
+  ig_DRw4k6WjHMR         Clara | Yoga Teacher &     -1.376   -3.084    1262    1351
+  ig_DR3IS9gjnqv         Josh Heenan                -1.377   -3.396    1261    1126
+  ig_DWM9cKWjxVq         Eric Roberts               -1.382   -2.920    1260    1437
+  ig_DTGSq1NiIDv         Anna Engelschall           -1.385   -3.357    1259    1164
+  ig_DXaJrNRjfBT         Mel Erman                  -1.386   -3.893    1258     679
+  ig_DWsMc6ogJPl         Squat University           -1.388   -3.524    1257    1010
+  ig_DW2hnd9jvxm         Cici Flows | Yoga Teach    -1.395   -4.850    1256     154
+  ig_DRo6cvNjFnk         Clara | Yoga Teacher &     -1.401   -3.347    1255    1169
+  ig_DU0zJGgDlJq         Calisthenics Amsterdam     -1.402   -4.316    1254     353
+  ig_DV628zrjwNQ         Eric Rivera 👑              -1.404   -3.917    1253     660
+  ig_DXNqlonADgf         Squat University           -1.407   -3.761    1252     787
+  ig_DSIAs8dCFnF         Clara | Yoga Teacher &     -1.419   -4.242    1251     393
+  ig_DS5fMIukf1V         Lauren Fisher Andersen     -1.430   -5.679    1250      54
+  ig_DRvmqd1AJmk         Danielle Brandon           -1.441   -3.773    1249     777
+  ig_DWy23PHDn0d         Calisthenics Amsterdam     -1.445   -2.525    1248    1554
+  ig_DTjxLPFDl0O         Hampton                    -1.446   -3.323    1247    1190
+  ig_DXKjmNMD8KS         Squat University           -1.446   -3.820    1246     739
+  ig_DWPLznFEZCe         Will Joseph | Mobility     -1.447   -5.082    1245     112
+  ig_DXDW4vogE1E         Squat University           -1.448   -3.439    1244    1090
+  ig_DXM_LOcERqc         Mel Erman                  -1.451   -4.118    1243     498
+  ig_DTM14-QjZ-X         Debby - Personal Traine    -1.453   -2.326    1242    1597
+  ig_DWyvJdBgNzk         Squat University           -1.459   -4.579    1241     233
+  ig_DVp1cHtCt2l         Carol Enrico               -1.464   -3.401    1240    1120
+  ig_DWxWiNYgFC1         Squat University           -1.469   -3.568    1239     966
+  ig_DVVZEVCjTAk         Debby - Personal Traine    -1.469   -3.013    1238    1387
+  ig_DRgyzelkpCk         KAYLA ITSINES              -1.472   -4.443    1237     283
+  ig_DVwBQ3_E9-Q         Calisthenics Amsterdam     -1.473   -2.634    1236    1530
+  ig_DXHwkQtEUEW         Mel Erman                  -1.474   -2.882    1235    1450
+  ig_DT8txU_jr5d         Alessia Kofftun            -1.479   -4.220    1234     411
+  ig_DWmLVYajgJX         Bret Contreras “The Glu    -1.479   -3.934    1233     649
+  ig_DXA4SOmEcg5         Mel Erman                  -1.483   -3.524    1232    1008
+  ig_DU8vBm2CBMG         Anna Engelschall           -1.491   -3.431    1231    1100
+  ig_DW7K2m1Aq4V         Squat University           -1.498   -4.447    1230     280
+  ig_DT7nGqxEqc4         Zac Perna                  -1.504   -3.405    1229    1113
+  ig_DVM1j08jiP3         Josh Heenan                -1.516   -2.836    1228    1467
+  ig_DV4ElK8jS2P         Christina Vantsi           -1.519   -2.461    1227    1568
+  ig_DWrqbWGAsmJ         Squat University           -1.520   -3.699    1226     855
+  ig_DSxrwsfiGLz         Anna Engelschall           -1.525   -3.041    1225    1373
+  ig_DSmlYx6CPeY         Clara | Yoga Teacher &     -1.526   -4.371    1224     320
+  ig_DS18_H-klzF         Zac Perna                  -1.527   -2.618    1223    1533
+  ig_DXHiTtzEaab         Mel Erman                  -1.528   -3.382    1221    1142
+  ig_DXQLwMrkSTw         Mel Erman                  -1.528   -3.495    1221    1042
+  ig_DU3z6tAEhrp         Bria Yoon                  -1.537   -3.429    1220    1101
+  ig_DWheQ-UAojF         Squat University           -1.539   -3.336    1219    1178
+  ig_DS5DrHeiLl1         Clara | Yoga Teacher &     -1.546   -2.774    1218    1492
+  ig_DUOYOraiLx_         Anna Engelschall           -1.547   -3.264    1217    1233
+  ig_DU5-Wo_AjkJ         Meghan Callaway - Pull-    -1.548   -4.435    1216     286
+  ig_DU-IuDIikkg         Carol Enrico               -1.549   -3.490    1215    1049
+  ig_DWXjYYvADV5         Squat University           -1.555   -3.534    1214     996
+  ig_DXRyUvCEb5E         Mel Erman                  -1.562   -2.894    1213    1444
+  ig_DW1osvLsuUe         Daniel Gulsher             -1.570   -3.086    1212    1348
+  ig_DVdXiF_D1SI         STEPHANIE SANZO            -1.576   -3.694    1211     858
+  ig_DXKHV6wjjxS         Calisthenics Amsterdam     -1.578   -2.355    1210    1591
+  ig_DTeSUVZCG3F         Zac Perna                  -1.585   -3.951    1209     630
+  ig_DXURxFMjmox         Mel Erman                  -1.585   -3.656    1208     886
+  ig_DTzxC5jCH9P         Clara | Yoga Teacher &     -1.593   -4.241    1207     395
+  ig_DWbmR1SgBML         Squat University           -1.602   -3.695    1206     857
+  ig_DXaKuAfAK_l         Squat University           -1.602   -3.740    1205     815
+  ig_DVrhdqZkhY-         Bret Contreras “The Glu    -1.605   -4.340    1204     338
+  ig_DRtPbiIjJsT         ATHLEAN-X™ | Jeff Caval    -1.605   -2.366    1203    1588
+  ig_DWuPUv7gsm4         Squat University           -1.614   -3.898    1202     674
+  ig_DWYjZWqjhv9         Will Joseph | Mobility     -1.616   -5.752    1201      49
+  ig_DTkU1khDXFt         Debby - Personal Traine    -1.620   -3.611    1200     926
+  ig_DXTImKGjMBo         Mel Erman                  -1.627   -4.455    1199     276
+  ig_DVHHwxQEoiu         Chris Bumstead             -1.640   -3.164    1198    1311
+  ig_DUbEXZ0imPM         Carol Enrico               -1.643   -4.689    1197     190
+  ig_DUZL7xVkgHc         Cici Flows | Yoga Teach    -1.646   -3.269    1196    1230
+  ig_DSIg2RXkvD6         Chris Bumstead             -1.647   -2.869    1195    1457
+  ig_DVrSDlejgpW         Alessia Kofftun            -1.649   -4.090    1194     521
+  ig_DXPDPUrjbFE         Eric Roberts               -1.650   -4.882    1193     143
+  ig_DSVFdjiDva-         Josh Heenan                -1.654   -4.386    1192     309
+  ig_DXIWlRpDpi6         Cici Flows | Yoga Teach    -1.658   -3.902    1191     671
+  ig_DWr7DgBj_hf         Eric Roberts               -1.658   -3.016    1190    1383
+  ig_DVy5l9ggase         Jani Dittman | Fitness     -1.660   -3.273    1189    1227
+  ig_DWqMAW6jeuk         Debby - Personal Traine    -1.667   -3.006    1188    1393
+  ig_DWlbg-ojGry         Will Joseph | Mobility     -1.668   -5.807    1187      46
+  ig_DU3LDz3CByZ         Clara | Yoga Teacher &     -1.668   -3.194    1186    1297
+  ig_DSdom9ajqni         Josh Heenan                -1.672   -4.368    1185     322
+  ig_DTG21PjkvsJ         Fit with Coco              -1.673   -3.826    1184     736
+  ig_DV_8STEusqM         Alessia Kofftun            -1.680   -3.369    1183    1157
+  ig_DVkPyvAjoeY         Josh Heenan                -1.681   -4.109    1182     509
+  ig_DVi9S2kjfw9         Eric Rivera 👑              -1.684   -6.674    1181      11
+  ig_DRzheuQjAN8         Clara | Yoga Teacher &     -1.687   -3.602    1180     933
+  ig_DSS7QZVjoSq         Josh Heenan                -1.691   -3.635    1179     908
+  ig_DWT2uS8lM3r         Athletic Vision Fitness    -1.697   -3.708    1178     845
+  ig_DUoVyWako2U         Bria Yoon                  -1.698   -1.847    1177    1631
+  ig_DUnu86ajUQg         Christina Vantsi           -1.700   -3.219    1176    1278
+  ig_DUYrLNUiPSZ         Anna Engelschall           -1.702   -3.037    1175    1375
+  ig_DWrhhQIDhPs         Bret Contreras “The Glu    -1.702   -4.228    1174     408
+  ig_DXZw0IjFI64         Mel Erman                  -1.705   -2.714    1173    1509
+  ig_DU_jp3Mkodd         Bria Yoon                  -1.706   -1.873    1172    1627
+  ig_DXZkvjTAlZy         Anna Engelschall           -1.713   -3.755    1171     799
+  ig_DU6VKTykvrX         Bria Yoon                  -1.715   -1.615    1170    1643
+  ig_DWUPhMWsXhF         Daniel Gulsher             -1.720   -3.066    1169    1361
+  ig_DR3-69NEU7D         KAYLA ITSINES              -1.723   -3.217    1168    1283
+  ig_DXUxY0YgiZM         Squat University           -1.724   -3.879    1167     690
+  ig_DTi7tV5DrG4         Josh Heenan                -1.724   -3.636    1166     907
+  ig_DSrF6lIDM-j         Hampton                    -1.726   -2.693    1165    1513
+  ig_DXKQngeCQWQ         Mel Erman                  -1.727   -2.884    1164    1449
+  ig_DSzh-cQEgrg         KAYLA ITSINES              -1.731   -3.171    1163    1308
+  ig_DU0k-USjQvd         CT Calisthenics ®️         -1.732   -3.840    1162     720
+  ig_DWwTMNygHV0         Squat University           -1.734   -3.697    1161     856
+  ig_DWmdYfwAnjn         Squat University           -1.739   -4.129    1160     485
+  ig_DVHw3hVD4kc         Bret Contreras “The Glu    -1.739   -3.563    1159     972
+  ig_DXQDSKkExXr         Cici Flows | Yoga Teach    -1.741   -3.787    1158     761
+  ig_DTdCIfkiJVQ         Clara | Yoga Teacher &     -1.742   -4.776    1157     167
+  ig_DVi2D09jXTS         Christina Vantsi           -1.742   -2.937    1156    1429
+  ig_DV1nkGkEi10         Chris Bumstead             -1.743   -3.283    1155    1222
+  ig_DTvfVrnDytt         Meghan Callaway - Pull-    -1.745   -5.285    1154      87
+  ig_DWW-OC2j7iS         Bret Contreras “The Glu    -1.746   -4.060    1153     541
+  ig_DUW_c1Gka4U         Lauren Fisher Andersen     -1.746   -3.943    1152     637
+  ig_DVZB3CNjAFP         Clara | Yoga Teacher &     -1.747   -4.330    1151     343
+  ig_DXW_qI9DZHU         Eric Roberts               -1.747   -3.677    1150     871
+  ig_DWeVDW_AKZ7         Squat University           -1.751   -3.894    1149     678
+  ig_DTRs5KmDOye         Hampton                    -1.755   -4.866    1148     148
+  ig_DTnyX-tDZMV         Dulla Khalfan              -1.756   -3.984    1147     599
+  ig_DXE9DD_AORg         Squat University           -1.757   -2.947    1146    1427
+  ig_DR4_UNNEWua         Will Joseph | Mobility     -1.759   -4.784    1145     166
+  ig_DXCTlLngPH8         Squat University           -1.760   -2.873    1144    1453
+  ig_DSnQy9eiAHB         Anna Engelschall           -1.760   -2.939    1143    1428
+  ig_DW9L1uaAGNI         Squat University           -1.761   -4.034    1142     562
+  ig_DWPioPdAo67         Squat University           -1.761   -3.746    1141     810
+  ig_DXNLpeJjXxD         Em Thorpe                  -1.764   -4.397    1140     300
+  ig_DXT8hIYj0kM         STEPHANIE SANZO            -1.766   -2.962    1139    1417
+  ig_DUZvzP9jPgc         ATHLEAN-X™ | Jeff Caval    -1.768   -4.572    1138     236
+  ig_DUq3PQsEubM         Bria Yoon                  -1.770   -4.548    1137     245
+  ig_DWgTzOxEc7Q         Will Joseph | Mobility     -1.771   -5.190    1136      96
+  ig_DTzM4nkDR_A         ATHLEAN-X™ | Jeff Caval    -1.771   -3.764    1135     785
+  ig_DXIh3mxgKPg         Squat University           -1.774   -3.500    1134    1036
+  ig_DTDXLiIDhvV         Michelle Lewin             -1.775   -4.293    1133     367
+  ig_DWj1rx0gsRO         Squat University           -1.776   -3.758    1132     793
+  ig_DSYpkQ1DLX8         Will Joseph | Mobility     -1.778   -3.295    1131    1215
+  ig_DRn_Bv1EY5J         Fit with Coco              -1.782   -3.278    1130    1225
+  ig_DXKBEEHjQfb         Eric Roberts               -1.785   -3.607    1129     929
+  ig_DWMea2SAAuh         Chris Bumstead             -1.788   -3.329    1128    1184
+  ig_DUNaKf8gD7J         Zac Perna                  -1.788   -3.869    1127     697
+  ig_DWH3WQICVKP         Hampton                    -1.790   -3.500    1126    1035
+  ig_DXXuza5E_6b         Cici Flows | Yoga Teach    -1.798   -3.560    1125     980
+  ig_DWtR1a8Cq3U         Carol Enrico               -1.807   -3.965    1124     617
+  ig_DWSb-L8AJUm         Squat University           -1.808   -3.474    1123    1068
+  ig_DRydtfMjZxU         ATHLEAN-X™ | Jeff Caval    -1.810   -4.083    1122     525
+  ig_DXKr3QgEozG         Bret Contreras “The Glu    -1.811   -4.484    1121     262
+  ig_DTShGkjkcK7         Will Joseph | Mobility     -1.812   -4.234    1120     403
+  ig_DW4L6w-jCtE         Daniel Gulsher             -1.812   -2.682    1119    1517
+  ig_DTLuZq3EtDe         Chris Bumstead             -1.820   -3.513    1118    1022
+  ig_DT5BrHvCGtF         Anna Engelschall           -1.823   -4.308    1117     359
+  ig_DUWsEfrjpbz         Josh Heenan                -1.824   -3.708    1116     846
+  ig_DVMQDqPgUMp         Bret Contreras “The Glu    -1.826   -3.721    1115     830
+  ig_DVbA4wvkSO2         Will Joseph | Mobility     -1.829   -4.864    1114     149
+  ig_DVRaqPOEjNE         Chris Bumstead             -1.830   -4.246    1113     390
+  ig_DV_UKyZjZmb         Christina Vantsi           -1.831   -3.867    1112     699
+  ig_DUjHJetEu-X         Meghan Callaway - Pull-    -1.831   -3.482    1111    1058
+  ig_DWRV5uXDS4B         Christina Vantsi           -1.836   -2.977    1110    1410
+  ig_DWQ3W-QjOAt         KAYLA ITSINES              -1.838   -3.075    1109    1356
+  ig_DS-57gGD2xI         Eric Rivera 👑              -1.840   -6.164    1108      31
+  ig_DXChbByAvvE         Anna Engelschall           -1.841   -2.618    1107    1534
+  ig_DTLDMNbjUUh         CT Calisthenics ®️         -1.842   -3.209    1106    1289
+  ig_DVTNtkTjRnX         Christina Vantsi           -1.843   -3.493    1105    1046
+  ig_DS0PxUTiEWn         Anna Engelschall           -1.845   -2.840    1104    1464
+  ig_DXb2DRTDlbs         Christian Villa |Costa     -1.845   -5.665    1103      55
+  ig_DWjjpXos2aq         Chris Davies | Athletic    -1.850   -5.172    1102      97
+  ig_DXHmfPNAEOj         Squat University           -1.851   -3.515    1101    1021
+  ig_DXSz9-kjJg-         Mel Erman                  -1.851   -2.850    1100    1462
+  ig_DU8yiESEuJn         Jani Dittman | Fitness     -1.852   -3.162    1099    1313
+  ig_DSDb_uiDzp_         Eric Rivera 👑              -1.859   -5.423    1098      74
+  ig_DVEOJM_DbXh         Christina Vantsi           -1.860   -3.574    1097     962
+  ig_DVgvlWDjPgS         Carol Enrico               -1.864   -3.589    1096     947
+  ig_DXWd0eDMFUk         Daniel Gulsher             -1.866   -3.192    1095    1299
+  ig_DXSLMtnJbjN         Eric Roberts               -1.867   -3.712    1094     842
+  ig_DTI6ZE9gead         Cici Flows | Yoga Teach    -1.868   -4.364    1093     326
+  ig_DUHwqqGksuG         KAYLA ITSINES              -1.868   -3.409    1092    1108
+  ig_DVWNTetjdZ4         CT Calisthenics ®️         -1.870   -4.078    1091     529
+  ig_DU8Ww1SCVV7         Lauren Fisher Andersen     -1.875   -3.593    1090     943
+  ig_DWry8RTEtNa         Chris Bumstead             -1.878   -4.059    1089     542
+  ig_DWjtpkdij04         Carol Enrico               -1.882   -3.919    1088     658
+  ig_DWVBU8rgAsa         Squat University           -1.884   -4.391    1087     306
+  ig_DSgHUfNEp3i         Fit with Coco              -1.887   -2.564    1086    1544
+  ig_DXIGCC2inwx         Chris Davies | Athletic    -1.888   -3.340    1085    1174
+  ig_DWz6qqzACRF         Squat University           -1.891   -3.344    1084    1172
+  ig_DW9chFPuurN         Meghan Callaway - Pull-    -1.891   -4.322    1083     349
+  ig_DSFPzfYEcUk         Will Joseph | Mobility     -1.892   -4.984    1082     126
+  ig_DW6aDw0ALyi         Squat University           -1.893   -3.481    1081    1060
+  ig_DXXaXWWDQAd         Christina Vantsi           -1.893   -3.041    1080    1372
+  ig_DVDlR5FEglJ         Zac Perna                  -1.893   -4.171    1079     454
+  ig_DUAFCqCDS7m         ATHLEAN-X™ | Jeff Caval    -1.895   -4.876    1078     146
+  ig_DXRrM5tDiem         Josh Heenan                -1.895   -3.363    1077    1161
+  ig_DV-G5jZjfz_         ATHLEAN-X™ | Jeff Caval    -1.897   -4.186    1076     442
+  ig_DUoUflNEvxU         Cici Flows | Yoga Teach    -1.900   -4.032    1075     564
+  ig_DVMU3n-DThj         Christina Vantsi           -1.902   -2.981    1074    1405
+  ig_DST8uGVjflY         ATHLEAN-X™ | Jeff Caval    -1.921   -3.148    1073    1319
+  ig_DWXO9ClkkpS         Lauren Fisher Andersen     -1.926   -3.853    1072     710
+  ig_DW5v7USilrs         Chris Davies | Athletic    -1.929   -3.648    1071     896
+  ig_DTYWrK6khUE         Meghan Callaway - Pull-    -1.930   -3.841    1070     718
+  ig_DVuAxVrDwuh         Eric Rivera 👑              -1.937   -5.138    1069     102
+  ig_DWl3O2ggFKq         Squat University           -1.937   -2.990    1068    1400
+  ig_DUBNx9EggHA         Kaisa Keranen              -1.941   -3.374    1067    1149
+  ig_DTUvwrTkuZ0         Zac Perna                  -1.942   -3.666    1066     878
+  ig_DSjUthJDb6G         ATHLEAN-X™ | Jeff Caval    -1.943   -4.096    1065     519
+  ig_DW-PCdPAB9x         Squat University           -1.952   -3.561    1064     978
+  ig_DUyc0d7AUbT         Bria Yoon                  -1.957   -2.137    1063    1621
+  ig_DXBZamLAOeP         Zac Perna                  -1.959   -2.840    1062    1463
+  ig_DTx4BeyDS2L         CT Calisthenics ®️         -1.962   -3.579    1061     958
+  ig_DXYsrR5DTfN         Christina Vantsi           -1.963   -3.805    1060     749
+  ig_DTWJ1JSEnxI         Lauren Fisher Andersen     -1.964   -3.477    1059    1066
+  ig_DTaOaxHEW4i         Will Joseph | Mobility     -1.967   -4.322    1058     348
+  ig_DTKpQknDwoT         STEPHANIE SANZO            -1.969   -3.889    1057     682
+  ig_DWcuRK3ADMA         Squat University           -1.971   -3.682    1056     867
+  ig_DT0grNgDimr         Josh Heenan                -1.974   -4.450    1055     278
+  ig_DUva97miYeO         Lauren Fisher Andersen     -1.981   -2.705    1054    1511
+  ig_DW7f7iQjdW1         Eric Roberts               -1.982   -4.460    1053     275
+  ig_DVPHyMykuJ3         Bria Yoon                  -1.984   -3.787    1052     763
+  ig_DSkzqTMiNq7         Anna Engelschall           -1.986   -3.475    1051    1067
+  ig_DSRF4qBjXSb         Christian Villa |Costa     -1.988   -3.838    1050     724
+  ig_DVct7IjDcGr         ATHLEAN-X™ | Jeff Caval    -1.990   -3.222    1049    1273
+  ig_DWvMRfmjC3c         KAYLA ITSINES              -1.991   -1.677    1048    1641
+  ig_DU_uh0IEjAz         Meghan Callaway - Pull-    -1.993   -4.368    1047     324
+  ig_DS-_zl1EvU3         Fit with Coco              -1.998   -4.130    1046     483
+  ig_DWFTDSzj5Xc         Eric Roberts               -2.005   -3.252    1045    1241
+  ig_DTEz6MYgB5B         ATHLEAN-X™ | Jeff Caval    -2.006   -4.590    1044     226
+  ig_DVNy_2HDqcu         Zac Perna                  -2.007   -3.737    1043     817
+  ig_DWREV5Ase5i         Daniel Gulsher             -2.010   -3.465    1042    1074
+  ig_DW7ZvLDk5UN         KAYLA ITSINES              -2.011   -3.821    1041     738
+  ig_DULskgaCHD4         Anna Engelschall           -2.015   -2.565    1040    1543
+  ig_DVtouodj492         Bret Contreras “The Glu    -2.016   -4.586    1039     228
+  ig_DW2jQqGjOl3         KAYLA ITSINES              -2.019   -3.458    1038    1077
+  ig_DSvpVP7EmWM         Fit with Coco              -2.020   -3.217    1037    1282
+  ig_DVNgE9vDpBu         Hampton                    -2.020   -3.480    1036    1062
+  ig_DU1JRAkDRzj         Christina Vantsi           -2.024   -3.641    1035     902
+  ig_DSTVvyvCGaD         Zac Perna                  -2.025   -3.650    1034     895
+  ig_DXZocfqDPRj         Daniel Gulsher             -2.025   -2.683    1033    1515
+  ig_DSr_j9ZjoMG         Josh Heenan                -2.026   -4.751    1032     173
+  ig_DWHSFf7jWcx         Christina Vantsi           -2.026   -3.942    1031     640
+  ig_DR26Og3ExDB         KAYLA ITSINES              -2.028   -3.021    1030    1382
+  ig_DUc5sptksLe         KAYLA ITSINES              -2.028   -3.081    1029    1353
+  ig_DWZHJgwgPRQ         Squat University           -2.030   -3.526    1028    1006
+  ig_DV_WI4nDUhg         CT Calisthenics ®️         -2.031   -3.457    1027    1079
+  ig_DTQnnkJjYUo         Dulla Khalfan              -2.031   -4.600    1026     224
+  ig_DVeNm78jroW         Eric Rivera 👑              -2.031   -4.763    1025     171
+  ig_DTLdD22j6Gp         Eric Rivera 👑              -2.032   -4.549    1024     244
+  ig_DTfa7GXkUck         Will Joseph | Mobility     -2.032   -3.313    1023    1201
+  ig_DVRewX9jeCR         Christina Vantsi           -2.033   -4.378    1022     315
+  ig_DRfxSLzDYSw         CT Calisthenics ®️         -2.037   -3.806    1021     747
+  ig_DUbI6emDTnr         Dulla Khalfan              -2.039   -4.569    1020     237
+  ig_DUG68f5kvA-         Meghan Callaway - Pull-    -2.041   -4.703    1019     183
+  ig_DXPO8X5gA0N         Squat University           -2.046   -3.439    1018    1091
+  ig_DVOYWeYiWSg         Lauren Fisher Andersen     -2.047   -3.228    1017    1265
+  ig_DUo3_b_EaTQ         Lauren Fisher Andersen     -2.048   -3.704    1016     851
+  ig_DRcEcxIDu06         Christian Villa |Costa     -2.054   -3.311    1015    1204
+  ig_DRem4zOkfa0         Will Joseph | Mobility     -2.055   -3.464    1014    1075
+  ig_DWfQ-iHgJYZ         Squat University           -2.055   -3.943    1013     638
+  ig_DXLYqHrjd2A         ATHLEAN-X™ | Jeff Caval    -2.063   -4.313    1012     357
+  ig_DV3RBnbiEFY         Clara | Yoga Teacher &     -2.064   -3.406    1011    1112
+  ig_DUd6XZHDWVR         Christina Vantsi           -2.070   -3.404    1010    1114
+  ig_DWp0r4_PTNi         Fit with Coco              -2.070   -3.934    1009     648
+  ig_DRp751-j3jN         Eric Rivera 👑              -2.071   -4.878    1008     145
+  ig_DWEUIi6DasE         Christina Vantsi           -2.072   -3.049    1007    1369
+  ig_DR2cP8-DG3u         Anna Engelschall           -2.072   -3.626    1006     914
+  ig_DWP4B8igKbQ         Squat University           -2.073   -3.561    1005     976
+  ig_DXUYHKdADkM         Chris Bumstead             -2.074   -3.025    1004    1377
+  ig_DSw3-iyj2MW         STEPHANIE SANZO            -2.078   -3.538    1003     990
+  ig_DXNKXCajKr0         Josh Heenan                -2.078   -4.646    1002     208
+  ig_DXMpC1tAHQQ         Squat University           -2.079   -3.219    1001    1276
+  ig_DSu_BviAKOL         Chris Bumstead             -2.080   -3.795    1000     755
+  ig_DVBkijbDdq8         Christina Vantsi           -2.080   -4.112     999     503
+  ig_DW28y9PMPIq         Daniel Gulsher             -2.082   -2.920     998    1438
+  ig_DXF8F-yABIP         Squat University           -2.086   -3.219     997    1277
+  ig_DW6kp4nkbQ0         Athletic Vision Fitness    -2.089   -3.446     996    1086
+  ig_DV8TWm4D3zt         STEPHANIE SANZO            -2.092   -3.470     995    1071
+  ig_DWyRCOcCl8x         Chris Davies | Athletic    -2.095   -3.230     994    1260
+  ig_DUebf4XDoIN         Josh Heenan                -2.097   -4.774     993     168
+  ig_DRvlq0CEszY         KAYLA ITSINES              -2.101   -4.008     992     589
+  ig_DUJ4LEQknI5         Lauren Fisher Andersen     -2.102   -3.305     991    1209
+  ig_DW6-LzNPLaR         Meghan Callaway - Pull-    -2.103   -4.682     990     192
+  ig_DXC-bGFywj_         Fit with Coco              -2.105   -4.594     989     225
+  ig_DSXPbJODxFM         STEPHANIE SANZO            -2.107   -3.132     988    1326
+  ig_DTc3kuhEQNA         Will Joseph | Mobility     -2.110   -3.774     987     775
+  ig_DWn-WkbCDh0         Clara | Yoga Teacher &     -2.111   -6.780     986       7
+  ig_DRdEhN8D7w_         CT Calisthenics ®️         -2.112   -3.956     985     625
+  ig_DU4-IK8DrKL         Hampton                    -2.115   -3.504     984    1032
+  ig_DW2UnZCjePh         Eric Roberts               -2.116   -4.745     983     179
+  ig_DXaiLR-AJs4         Squat University           -2.118   -3.730     982     821
+  ig_DTs0jOMDn-Z         Eric Rivera 👑              -2.118   -4.601     981     223
+  ig_DUPAPwlDm0M         Josh Heenan                -2.119   -3.320     980    1192
+  ig_DWZXCteiaF1         Meghan Callaway - Pull-    -2.119   -4.675     979     196
+  ig_DWhbT_vkoMV         Becca (Voigt) Miller       -2.122   -3.726     978     825
+  ig_DVJP3qnDccG         Christina Vantsi           -2.127   -2.953     977    1422
+  ig_DWJpcHmxkJw         Eric Roberts               -2.129   -3.398     976    1121
+  ig_DVdxo-KAhPP         Meghan Callaway - Pull-    -2.130   -3.926     975     654
+  ig_DXFaFx5jwX-         CT Calisthenics ®️         -2.130   -2.977     974    1411
+  ig_DWpLvLLDxDZ         CT Calisthenics ®️         -2.133   -3.266     973    1232
+  ig_DVOmeAOkQJm         Bret Contreras “The Glu    -2.133   -3.771     972     779
+  ig_DRqi9pLkXEY         Fit with Coco              -2.134   -3.716     971     836
+  ig_DRrrpGwjXMy         Eric Rivera 👑              -2.135   -4.383     970     313
+  ig_DWBjvr-Ckvf         Chris Davies | Athletic    -2.135   -3.617     969     922
+  ig_DXCzUiUj3Js         Squat University           -2.138   -4.444     968     282
+  ig_DVrObuRjYzq         Christina Vantsi           -2.142   -2.973     967    1413
+  ig_DVbq3g-D8t3         Bret Contreras “The Glu    -2.145   -4.074     966     533
+  ig_DWnnNPwgJUG         Zac Perna                  -2.145   -4.352     965     333
+  ig_DUtdSypEswn         Bria Yoon                  -2.148   -4.368     964     323
+  ig_DVpERu5j_f4         Eric Roberts               -2.149   -4.111     963     507
+  ig_DTLNJwLjWkv         Dulla Khalfan              -2.150   -4.701     962     184
+  ig_DRdxXK5DJM3         Hampton                    -2.153   -4.095     961     520
+  ig_DS45yvvDc1J         CT Calisthenics ®️         -2.156   -2.618     960    1532
+  ig_DWvT4ajjGv3         Daniel Gulsher             -2.157   -4.361     959     329
+  ig_DWE2hCkCkjR         Eric Rivera 👑              -2.158   -4.243     958     392
+  ig_DVyriTMDTW4         Bret Contreras “The Glu    -2.161   -4.398     957     299
+  ig_DXMUwK3Dd3d         Christina Vantsi           -2.161   -3.831     956     731
+  ig_DV3hq_lDVv1         Eric Roberts               -2.163   -4.348     955     334
+  ig_DW2FWzcD19O         CT Calisthenics ®️         -2.164   -3.176     954    1305
+  ig_DSF5TqAjwTD         Lauren Fisher Andersen     -2.164   -3.840     953     719
+  ig_DXNYqLcgDRI         Squat University           -2.171   -3.754     952     802
+  ig_DSNXf8ujmEq         Josh Heenan                -2.171   -4.927     951     134
+  ig_DWPHyPBDvBM         Bret Contreras “The Glu    -2.172   -3.809     950     745
+  ig_DXZT28WjaVl         Christina Vantsi           -2.173   -3.729     949     822
+  ig_DXMK8aADMmy         KAYLA ITSINES              -2.173   -4.582     948     230
+  ig_DRkju_UDzzf         Eric Rivera 👑              -2.175   -3.989     947     595
+  ig_DVrJohXjwId         CT Calisthenics ®️         -2.175   -3.789     946     759
+  ig_DVMZyXeEgOH         Bria Yoon                  -2.175   -3.375     945    1147
+  ig_DTmXiMojIze         Hampton                    -2.179   -4.033     944     563
+  ig_DRzW6KZDDe4         Chris Davies | Athletic    -2.185   -3.565     943     968
+  ig_DTvnZu4jzxd         CT Calisthenics ®️         -2.186   -4.240     942     396
+  ig_DVn7wtKDvf9         Christian Villa |Costa     -2.186   -4.317     941     352
+  ig_DW0LFTCDNhP         ATHLEAN-X™ | Jeff Caval    -2.186   -4.396     940     302
+  ig_DW4bXcdDwJO         Bret Contreras “The Glu    -2.188   -3.821     939     737
+  ig_DW5TMYVDNc9         Hampton                    -2.192   -4.076     938     532
+  ig_DUyw_DTk6Xw         Meghan Callaway - Pull-    -2.199   -4.285     937     373
+  ig_DS2NP0PDR18         KAYLA ITSINES              -2.202   -3.892     936     680
+  ig_DSsgYf-ETIU         ATHLEAN-X™ | Jeff Caval    -2.207   -2.972     935    1414
+  ig_DVT7swUDx0G         ATHLEAN-X™ | Jeff Caval    -2.208   -4.186     934     444
+  ig_DU5sQKSjWk1         Christina Vantsi           -2.213   -4.121     933     493
+  ig_DSHsu6bj2Q1         STEPHANIE SANZO            -2.214   -3.496     932    1041
+  ig_DXXBApxgNUs         Squat University           -2.218   -2.743     931    1503
+  ig_DSOFFLpASLg         Fit with Coco              -2.223   -1.862     930    1630
+  ig_DUfpo7TCB3S         Anna Engelschall           -2.223   -2.988     929    1402
+  ig_DSSYTIQDTnw         Eric Rivera 👑              -2.224   -4.989     928     125
+  ig_DT42GdpkfiY         KAYLA ITSINES              -2.224   -3.840     927     721
+  ig_DXO94NYjdDX         Christina Vantsi           -2.225   -4.030     926     569
+  ig_DVaE11Hjltl         Hampton                    -2.228   -4.242     925     394
+  ig_DUmueI8jd5K         ATHLEAN-X™ | Jeff Caval    -2.231   -3.082     924    1352
+  ig_DWiHYTJiglo         Hampton                    -2.233   -3.746     923     809
+  ig_DSKXoEoCOou         Clara | Yoga Teacher &     -2.234   -4.854     922     152
+  ig_DRbifpREnG0         KAYLA ITSINES              -2.235   -2.259     921    1603
+  ig_DRjDzntDkYy         Hampton                    -2.236   -3.375     920    1146
+  ig_DUDT-PPCJpZ         Zac Perna                  -2.237   -3.961     919     620
+  ig_DWb_iyPsDN5         Daniel Gulsher             -2.242   -2.425     918    1577
+  ig_DS6KJ1OD-xM         Fit with Coco              -2.242   -3.322     917    1191
+  ig_DTxMQSHEfNu         KAYLA ITSINES              -2.245   -3.529     916    1001
+  ig_DRfm296D-va         CT Calisthenics ®️         -2.247   -3.227     915    1267
+  ig_DUCZYVCDDfm         Hampton                    -2.248   -3.601     914     935
+  ig_DUJHgx3jYCO         Dulla Khalfan              -2.248   -3.489     913    1050
+  ig_DTMi9gcjS9_         ATHLEAN-X™ | Jeff Caval    -2.252   -4.238     912     400
+  ig_DWZaTC8kXg1         Eric Roberts               -2.254   -3.435     911    1096
+  ig_DWQ4yntj65e         STEPHANIE SANZO            -2.258   -4.160     910     458
+  ig_DWzAM16Cpwx         Eric Rivera 👑              -2.262   -5.851     909      43
+  ig_DT0USTYDYeP         CT Calisthenics ®️         -2.263   -3.868     908     698
+  ig_DUI129uDowB         Eric Rivera 👑              -2.263   -4.749     907     176
+  ig_DWrB3_mjCqh         Athletic Vision Fitness    -2.264   -4.008     906     590
+  ig_DVurX2-jJFz         ATHLEAN-X™ | Jeff Caval    -2.265   -4.666     905     198
+  ig_DTvQLF4jRcK         Eric Rivera 👑              -2.267   -6.068     904      35
+  ig_DUwV7jtD7LK         CT Calisthenics ®️         -2.269   -4.066     903     535
+  ig_DWhaif8j6H2         CT Calisthenics ®️         -2.269   -3.349     902    1167
+  ig_DSaaIOtjlgm         Eric Rivera 👑              -2.271   -5.374     901      78
+  ig_DSlRojaD8U_         Michelle Lewin             -2.273   -3.418     900    1107
+  ig_DWJOjEljQDq         Christina Vantsi           -2.273   -3.653     899     891
+  ig_DSmTiECjhyg         Hampton                    -2.274   -3.733     898     820
+  ig_DXTKNsVDDPE         Mel Erman                  -2.279   -4.418     897     291
+  ig_DTP5tcvkTHJ         Will Joseph | Mobility     -2.281   -3.552     896     983
+  ig_DWiIQppjNE3         ATHLEAN-X™ | Jeff Caval    -2.285   -4.750     895     174
+  ig_DWbztXbDcOl         Christina Vantsi           -2.286   -4.166     894     456
+  ig_DUso3j0kndJ         Zac Perna                  -2.287   -3.878     893     692
+  ig_DR0LyjGAeaS         Will Joseph | Mobility     -2.289   -4.827     892     159
+  ig_DWjgZpOjThu         Christina Vantsi           -2.289   -3.887     891     685
+  ig_DSQiwkBE-0G         Meghan Callaway - Pull-    -2.290   -3.604     890     931
+  ig_DTAVSIzDxfb         STEPHANIE SANZO            -2.291   -3.395     889    1129
+  ig_DU64P49kdn1         Lauren Fisher Andersen     -2.293   -3.434     888    1098
+  ig_DVRvaMdElRe         Meghan Callaway - Pull-    -2.300   -4.131     887     480
+  ig_DWXOYR5Antz         Squat University           -2.301   -4.392     886     305
+  ig_DVRX3V1jzAd         Bret Contreras “The Glu    -2.301   -3.923     885     656
+  ig_DS700jIjUvE         Eric Rivera 👑              -2.301   -4.883     884     142
+  ig_DXMpR1YjUhD         Christina Vantsi           -2.306   -3.800     883     751
+  ig_DVbVzY9jb6X         CT Calisthenics ®️         -2.306   -3.935     882     647
+  ig_DUbN6bOjR84         Christina Vantsi           -2.307   -2.657     881    1523
+  ig_DWtQHX0j65z         STEPHANIE SANZO            -2.308   -3.245     880    1251
+  ig_DVgPtnIjV3A         Christina Vantsi           -2.311   -3.946     879     636
+  ig_DV15Hu-jsTm         Josh Heenan                -2.312   -4.477     878     268
+  ig_DXY9146DBH7         KAYLA ITSINES              -2.319   -2.781     877    1489
+  ig_DUbGWx4guI7         Meghan Callaway - Pull-    -2.319   -3.133     876    1324
+  ig_DRnN0s-Ei_D         Lauren Fisher Andersen     -2.320   -3.244     875    1252
+  ig_DRvaIYqDRp1         CT Calisthenics ®️         -2.324   -2.409     874    1580
+  ig_DVoLFOQDY-G         Eric Roberts               -2.325   -4.045     873     552
+  ig_DWekR1KvlUB         Fit with Coco              -2.327   -2.840     872    1465
+  ig_DVHVL7Rkpdr         Bria Yoon                  -2.330   -4.015     871     580
+  ig_DTuAPKIDtG8         Hampton                    -2.332   -3.830     870     732
+  ig_DSe6XYHD3kD         STEPHANIE SANZO            -2.333   -3.597     869     939
+  ig_DWMaiE_DRdd         Christina Vantsi           -2.335   -3.003     868    1395
+  ig_DXHh6TNgHsu         CT Calisthenics ®️         -2.335   -3.927     867     653
+  ig_DWb_GsKERtL         Eric Roberts               -2.336   -3.506     866    1030
+  ig_DR3cJHFjJqQ         Hampton                    -2.336   -3.787     865     764
+  ig_DWCJm-sCn1u         Meghan Callaway - Pull-    -2.338   -3.769     864     781
+  ig_DXVgBh-vK93         Fit with Coco              -2.340   -2.765     863    1498
+  ig_DW2gW_oAEbC         Squat University           -2.341   -3.957     862     623
+  ig_DXSzaMtDwWV         Bret Contreras “The Glu    -2.342   -4.149     861     469
+  ig_DU73YZ7ESXG         KAYLA ITSINES              -2.343   -2.367     860    1587
+  ig_DR57fkqjBg8         Fit with Coco              -2.344   -4.216     859     417
+  ig_DWrIlOhAOWv         Squat University           -2.345   -3.572     858     964
+  ig_DWM4lJdD9jH         Bret Contreras “The Glu    -2.345   -4.103     857     514
+  ig_DWDHY1jPDyK         Fit with Coco              -2.349   -3.796     856     754
+  ig_DRhvQhcDlEV         Eric Rivera 👑              -2.352   -4.475     855     270
+  ig_DWjPI7yAExV         Squat University           -2.352   -3.722     854     827
+  ig_DRoyT8JD1x6         STEPHANIE SANZO            -2.355   -3.454     853    1080
+  ig_DXKOUJ2jX4_         Christina Vantsi           -2.357   -2.980     852    1407
+  ig_DXSSAyPDZD7         Christina Vantsi           -2.360   -4.207     851     422
+  ig_DWrEftcDmbu         Bret Contreras “The Glu    -2.360   -3.995     850     594
+  ig_DR7sBlAETzx         Will Joseph | Mobility     -2.360   -2.872     849    1454
+  ig_DTSXpOiEvjR         KAYLA ITSINES              -2.362   -4.747     848     178
+  ig_DXOKE2QDTul         Christina Vantsi           -2.365   -5.490     846      67
+  ig_DW8-RhJDdSm         Christina Vantsi           -2.365   -3.908     846     668
+  ig_DWg6QqxAj7V         Squat University           -2.366   -4.035     845     560
+  ig_DVL-Qa4jYTY         Eric Rivera 👑              -2.367   -4.853     844     153
+  ig_DWmUXKcjYEW         Christina Vantsi           -2.370   -2.981     843    1406
+  ig_DRkydJ-D0EX         CT Calisthenics ®️         -2.374   -3.233     842    1258
+  ig_DVucIdjEVlG         Hampton                    -2.375   -4.393     841     303
+  ig_DWZRyP7jeeB         Christina Vantsi           -2.376   -3.968     840     611
+  ig_DUxi1VNkZMp         KAYLA ITSINES              -2.376   -5.055     839     118
+  ig_DRrOgTPEiuT         Zac Perna                  -2.376   -1.722     838    1635
+  ig_DUza1a6jwv7         Fit with Coco              -2.379   -1.766     837    1633
+  ig_DUpLtqNjkZz         Hampton                    -2.379   -3.653     836     890
+  ig_DTQdssTDrMU         Eric Rivera 👑              -2.380   -4.767     835     169
+  ig_DWZBnTfjevH         Christina Vantsi           -2.381   -3.766     834     783
+  ig_DSYQWKWkuy7         Eric Rivera 👑              -2.382   -4.555     833     243
+  ig_DRtDYsCkb9g         Fit with Coco              -2.383   -3.072     832    1359
+  ig_DWr-Q_hDe7f         CT Calisthenics ®️         -2.384   -3.812     831     744
+  ig_DWerpnaD_2b         Eric Roberts               -2.385   -3.573     830     963
+  ig_DSBbrbDjX6g         CT Calisthenics ®️         -2.393   -3.956     829     626
+  ig_DVmJ4B8kozY         Meghan Callaway - Pull-    -2.398   -4.944     828     131
+  ig_DXZGRLkjwel         STEPHANIE SANZO            -2.398   -4.391     827     307
+  ig_DXRvlQWAFxw         Squat University           -2.400   -4.197     826     430
+  ig_DU_f0BtjeL6         Christina Vantsi           -2.402   -2.766     825    1496
+  ig_DU81-G2jfVP         Christina Vantsi           -2.406   -3.912     824     662
+  ig_DW3dG_ejKlD         Will Joseph | Mobility     -2.407   -5.421     823      75
+  ig_DSDAfXEja27         CT Calisthenics ®️         -2.407   -3.939     822     644
+  ig_DXV8YTpCr2s         Chris Davies | Athletic    -2.410   -3.845     821     714
+  ig_DVJ2Rf9kkno         Bria Yoon                  -2.411   -2.807     820    1478
+  ig_DRwAUK8Do1C         Hampton                    -2.414   -3.483     819    1056
+  ig_DWf2x_csycN         Chris Davies | Athletic    -2.414   -3.598     818     938
+  ig_DTGdrn9kve9         Jani Dittman | Fitness     -2.415   -2.504     817    1562
+  ig_DWSAtxJD0gY         Squat University           -2.416   -3.912     816     664
+  ig_DXMwWHhM7kt         Daniel Gulsher             -2.416   -3.699     815     854
+  ig_DTWfrEZAbne         Fit with Coco              -2.422   -3.249     814    1245
+  ig_DSG_12zDUD8         ATHLEAN-X™ | Jeff Caval    -2.423   -2.824     813    1470
+  ig_DVZHPlwD1rM         Eric Rivera 👑              -2.424   -4.546     812     247
+  ig_DVuPAhBjWXq         Eric Roberts               -2.426   -4.660     811     203
+  ig_DV9C1mtgqNj         Meghan Callaway - Pull-    -2.428   -5.062     810     115
+  ig_DTU8Me9j00R         STEPHANIE SANZO            -2.431   -4.127     809     488
+  ig_DXM0B1JjkqI         Ben Patrick                -2.432   -3.509     808    1027
+  ig_DWojd_lkfX2         Squat University           -2.436   -3.502     807    1034
+  ig_DVEerZQD9X9         Meghan Callaway - Pull-    -2.438   -3.227     806    1269
+  ig_DVt7rwyjw5k         CT Calisthenics ®️         -2.439   -3.057     805    1364
+  ig_DXHMu0XDR-0         Christina Vantsi           -2.439   -3.859     804     707
+  ig_DSj2BvNjjUO         Zac Perna                  -2.439   -2.422     803    1578
+  ig_DRihWWkjC9G         Will Joseph | Mobility     -2.441   -4.028     802     575
+  ig_DWJFdufDSso         Christina Vantsi           -2.441   -3.262     801    1235
+  ig_DTCh0d9D8yj         Fit with Coco              -2.442   -3.509     800    1028
+  ig_DU9LBkgkvkL         Bret Contreras “The Glu    -2.442   -3.137     799    1323
+  ig_DWCz5M1DxAb         Eric Roberts               -2.444   -4.014     798     581
+  ig_DUWB0Wij2c-         Meghan Callaway - Pull-    -2.444   -3.803     797     750
+  ig_DW8WCj-jaRG         Christina Vantsi           -2.444   -3.465     796    1073
+  ig_DSCitExj-hU         STEPHANIE SANZO            -2.445   -3.532     795     997
+  ig_DWX8VNSjvS7         Hampton                    -2.446   -4.037     794     557
+  ig_DT2CmBSjlGW         Hampton                    -2.448   -4.388     793     308
+  ig_DWyKFurjdud         Christina Vantsi           -2.448   -4.678     792     194
+  ig_DW6pqFOjfMI         CT Calisthenics ®️         -2.449   -4.409     791     296
+  ig_DUcsD3GDk92         Hampton                    -2.454   -2.639     790    1529
+  ig_DW9qaZJj2x7         Squat University           -2.455   -3.779     789     770
+  ig_DWOMiSVDa76         Christina Vantsi           -2.457   -3.968     788     613
+  ig_DUaOmbaksn1         Zac Perna                  -2.461   -4.371     787     318
+  ig_DWBZLx5EQ81         KAYLA ITSINES              -2.463   -2.796     786    1486
+  ig_DVrmDXgAet7         Lauren Fisher Andersen     -2.464   -2.909     785    1441
+  ig_DWp40yDjGbK         KAYLA ITSINES              -2.465   -3.403     784    1117
+  ig_DS3spoEjM2B         Hampton                    -2.465   -3.486     783    1054
+  ig_DXCZxoEsd9e         Daniel Gulsher             -2.467   -5.506     782      64
+  ig_DT4Fwalj2eK         Fit with Coco              -2.467   -1.365     781    1646
+  ig_DWIscCoCM98         Christina Vantsi           -2.470   -2.979     780    1408
+  ig_DSUp59WD_MO         STEPHANIE SANZO            -2.473   -4.546     779     248
+  ig_DXFw2i_DTN3         Eric Roberts               -2.473   -5.117     778     105
+  ig_DUKexL1iB8y         Zac Perna                  -2.473   -3.126     777    1330
+  ig_DSdePAekfXT         Hampton                    -2.476   -4.195     776     431
+  ig_DUbDAyLDWkT         MIDASMVMT                  -2.478   -2.121     775    1623
+  ig_DTsHqaHD6bB         STEPHANIE SANZO            -2.488   -3.988     774     597
+  ig_DVLzPGIESzD         Fit with Coco              -2.488   -3.366     773    1160
+  ig_DWoo_W8jSjK         Eric Roberts               -2.488   -3.882     772     689
+  ig_DTE1UF4klre         Zac Perna                  -2.491   -2.735     771    1505
+  ig_DSjF0gED9R4         Fit with Coco              -2.492   -5.124     770     104
+  ig_DV_sH6IDmKK         Lauren Fisher Andersen     -2.493   -3.428     769    1102
+  ig_DRa230SElmb         Zac Perna                  -2.495   -3.581     768     955
+  ig_DRiQoRbj406         CT Calisthenics ®️         -2.496   -3.297     767    1214
+  ig_DTqXQzNDxc2         CT Calisthenics ®️         -2.496   -2.453     766    1570
+  ig_DWctnRuDKlZ         KAYLA ITSINES              -2.501   -3.326     765    1188
+  ig_DUdtuwbDYKg         Dulla Khalfan              -2.507   -3.603     764     932
+  ig_DWPQmy_DUEp         Christina Vantsi           -2.508   -3.249     763    1244
+  ig_DXGYTjgjjvG         Hampton                    -2.509   -3.629     762     913
+  ig_DXR2IK1jV7c         Eric Roberts               -2.511   -3.373     761    1151
+  ig_DXUVT-_DUhc         Eric Roberts               -2.512   -3.746     760     811
+  ig_DSiWm4Gkl9I         Meghan Callaway - Pull-    -2.516   -4.292     759     368
+  ig_DT0nytlDb1M         Dulla Khalfan              -2.518   -4.611     758     218
+  ig_DVltyIgBef8         Kaisa Keranen              -2.518   -4.125     757     490
+  ig_DVK6zEajm03         Hampton                    -2.519   -3.235     756    1257
+  ig_DWUsrLnD-Rd         Eric Roberts               -2.520   -3.792     755     758
+  ig_DSNi7dxAupH         Meghan Callaway - Pull-    -2.522   -3.818     754     741
+  ig_DXR5dyCsa7z         Daniel Gulsher             -2.523   -2.990     753    1399
+  ig_DTCw_WKDn7q         Hampton                    -2.524   -4.080     752     526
+  ig_DWjb0pijZIE         Eric Rivera 👑              -2.526   -6.090     751      33
+  ig_DU7lEfGjj0J         Hampton                    -2.529   -3.722     750     828
+  ig_DWhCbjZDYQZ         Christina Vantsi           -2.532   -3.521     749    1012
+  ig_DTago-BjYck         CT Calisthenics ®️         -2.533   -3.715     748     838
+  ig_DRxw3y6k6W7         Zac Perna                  -2.538   -4.032     747     566
+  ig_DXUv5I-D62Y         Eric Roberts               -2.538   -3.749     746     804
+  ig_DSu_3OKgqzQ         Meghan Callaway - Pull-    -2.541   -4.154     745     463
+  ig_DRt9PW_j2BA         STEPHANIE SANZO            -2.541   -3.958     744     621
+  ig_DVzA_k9j7IB         Eric Rivera 👑              -2.542   -4.364     743     325
+  ig_DV36fiyja5c         Dulla Khalfan              -2.545   -4.603     742     221
+  ig_DWUfdgcDxZD         Squat University           -2.546   -3.318     741    1194
+  ig_DXLON6mvNyk         Fit with Coco              -2.551   -3.228     740    1264
+  ig_DXPwuUIgkvU         Squat University           -2.552   -3.636     739     906
+  ig_DTgejiNklmE         Lauren Fisher Andersen     -2.554   -3.377     738    1145
+  ig_DWBiD6CDfLr         Christina Vantsi           -2.555   -4.039     737     556
+  ig_DSpLKuZEr4P         KAYLA ITSINES              -2.555   -3.402     736    1119
+  ig_DTVxzI1Dfu8         Dulla Khalfan              -2.557   -3.152     735    1318
+  ig_DRdNknHktw2         Lauren Fisher Andersen     -2.558   -2.982     734    1404
+  ig_DRky2iXEYHx         Hampton                    -2.558   -3.761     733     788
+  ig_DR2wNh4j7Ob         CT Calisthenics ®️         -2.558   -4.193     732     437
+  ig_DVlsuwODSOa         Eric Roberts               -2.559   -3.504     731    1033
+  ig_DSrrzZLksCv         KAYLA ITSINES              -2.561   -3.013     730    1386
+  ig_DWcLnqqApcN         Squat University           -2.562   -4.676     729     195
+  ig_DTfI362iOGL         Clara | Yoga Teacher &     -2.565   -4.396     728     301
+  ig_DRz-9sTj3Yw         CT Calisthenics ®️         -2.566   -3.876     727     694
+  ig_DU6lCieD3cV         CT Calisthenics ®️         -2.570   -3.640     726     903
+  ig_DTjylo2j1-e         Fit with Coco              -2.571   -6.314     725      24
+  ig_DWeVehekYax         Eric Roberts               -2.572   -3.843     724     716
+  ig_DR4lQjvDeGy         Dulla Khalfan              -2.577   -3.203     723    1291
+  ig_DWoB_WXjF0v         KAYLA ITSINES              -2.580   -2.718     722    1507
+  ig_DWyH-Atjahe         Christina Vantsi           -2.583   -2.976     721    1412
+  ig_DRafalvj30R         CT Calisthenics ®️         -2.583   -4.047     720     550
+  ig_DUwLm9VktYm         Fit with Coco              -2.587   -3.669     719     876
+  ig_DVJlBbFEWdh         Fit with Coco              -2.590   -4.125     718     491
+  ig_DUX0c6iEsz_         KAYLA ITSINES              -2.590   -3.395     717    1128
+  ig_DWlrFp4DY12         Christina Vantsi           -2.592   -3.928     716     652
+  ig_DUpv4exEjox         KAYLA ITSINES              -2.593   -1.697     715    1639
+  ig_DWtjzIbjVLp         Christina Vantsi           -2.597   -4.013     714     582
+  ig_DWrSs_SkSEe         Eric Roberts               -2.598   -4.136     713     475
+  ig_DWeI9zguKqG         Meghan Callaway - Pull-    -2.599   -3.293     712    1217
+  ig_DT-hAa8jYPI         CT Calisthenics ®️         -2.600   -3.565     711     969
+  ig_DS0RkEaDh8X         Meghan Callaway - Pull-    -2.603   -4.531     710     253
+  ig_DVYfgD6jUWy         CT Calisthenics ®️         -2.604   -2.888     709    1448
+  ig_DWz41ENv1EI         Fit with Coco              -2.604   -3.671     708     875
+  ig_DUV_QBMDcLs         Dulla Khalfan              -2.606   -3.527     707    1003
+  ig_DWJnuEJkUo5         Jani Dittman | Fitness     -2.606   -5.340     706      82
+  ig_DTDzMiKEnUc         Meghan Callaway - Pull-    -2.608   -3.657     705     885
+  ig_DRggaEsjuyY         Hampton                    -2.609   -3.517     704    1019
+  ig_DU2JwrNEqWi         KAYLA ITSINES              -2.611   -4.046     703     551
+  ig_DW1Dv2ej-rr         STEPHANIE SANZO            -2.612   -4.585     702     229
+  ig_DXH-HlTkRBJ         Crystal | Peloton Podca    -2.612   -5.243     701      89
+  ig_DVCNvpwD0Bg         Eric Rivera 👑              -2.613   -4.172     700     453
+  ig_DV7BC49j_oI         Eric Roberts               -2.613   -3.250     699    1243
+  ig_DW247TnDuaQ         Hampton                    -2.616   -3.247     698    1249
+  ig_DTTLQdoDerU         Dulla Khalfan              -2.616   -4.461     697     274
+  ig_DXZXEbfDaNd         Eric Roberts               -2.618   -4.476     696     269
+  ig_DRuchTwDXBE         Dulla Khalfan              -2.621   -3.493     695    1045
+  ig_DRjo9sYDyuA         STEPHANIE SANZO            -2.624   -3.133     694    1325
+  ig_DSMk6TfjkPp         Hampton                    -2.624   -3.539     693     989
+  ig_DSJorhhjt_i         Hampton                    -2.626   -3.578     692     959
+  ig_DSx5RDrEq4p         Meghan Callaway - Pull-    -2.631   -4.061     691     538
+  ig_DTtRVW2EiR6         Fit with Coco              -2.633   -1.349     690    1647
+  ig_DTG0eCtEzof         KAYLA ITSINES              -2.636   -3.116     689    1335
+  ig_DV-MdxsjiSj         Hampton                    -2.642   -3.218     688    1280
+  ig_DSkBgDJDxGv         STEPHANIE SANZO            -2.646   -3.197     687    1292
+  ig_DU8jcSJkcIZ         Fit with Coco              -2.646   -4.035     686     561
+  ig_DWNJjOmh5my         Fit with Coco              -2.646   -3.402     685    1118
+  ig_DTqZU9DAeDk         Meghan Callaway - Pull-    -2.647   -4.116     684     501
+  ig_DWJtHcZC1bg         Meghan Callaway - Pull-    -2.647   -3.950     683     631
+  ig_DTgLY9mEWXp         KAYLA ITSINES              -2.648   -2.617     682    1535
+  ig_DRhQgTMEulZ         Zac Perna                  -2.650   -4.011     681     587
+  ig_DSG_S5SDuQS         Hampton                    -2.651   -4.028     680     574
+  ig_DSUCfBEjkSM         Hampton                    -2.653   -4.002     679     593
+  ig_DVzetarja3o         Eric Roberts               -2.656   -4.942     678     132
+  ig_DSlsEITEuVJ         KAYLA ITSINES              -2.660   -3.139     677    1321
+  ig_DV4DP8sjyUN         Eric Roberts               -2.665   -3.652     676     892
+  ig_DVzRMBIDzaj         Eric Roberts               -2.665   -3.832     675     728
+  ig_DXIy4O-jsj-         Hampton                    -2.665   -3.079     674    1354
+  ig_DVeFfo6jden         Dulla Khalfan              -2.666   -6.258     673      28
+  ig_DWEf0L0xuTN         Eric Roberts               -2.668   -3.334     672    1179
+  ig_DWOUDP9D-Cr         STEPHANIE SANZO            -2.670   -3.408     671    1109
+  ig_DWRYHSIgEgn         Squat University           -2.671   -3.379     670    1143
+  ig_DSwfRfKDiYG         Hampton                    -2.675   -3.448     669    1085
+  ig_DWyXPzjkdf7         Will Joseph | Mobility     -2.675   -5.583     668      58
+  ig_DVWyGVkku7s         Bret Contreras “The Glu    -2.676   -3.937     667     645
+  ig_DTInQoPgjtw         Meghan Callaway - Pull-    -2.677   -3.639     666     904
+  ig_DTimemHDdw4         Dulla Khalfan              -2.677   -4.216     665     416
+  ig_DWAOR3vj615         Eric Roberts               -2.678   -4.916     664     137
+  ig_DUgl04gEjYj         Fit with Coco              -2.683   -3.777     663     773
+  ig_DTa7dBoDT4y         Dulla Khalfan              -2.684   -4.271     662     381
+  ig_DVQDZWzjiWV         Hampton                    -2.684   -2.890     661    1445
+  ig_DW8pQGvjLtV         Will Joseph | Mobility     -2.685   -5.456     660      71
+  ig_DVq2r_ajd9Y         Eric Roberts               -2.685   -3.909     659     665
+  ig_DUoA7-djXnl         Dulla Khalfan              -2.689   -4.279     658     378
+  ig_DSaoNUYEhug         Jani Dittman | Fitness     -2.691   -5.336     657      83
+  ig_DXJPoNlDZfM         Christina Vantsi           -2.691   -3.008     656    1391
+  ig_DW_sB9dgGmt         Squat University           -2.692   -3.586     655     952
+  ig_DUtFkAZiQCP         MIDASMVMT                  -2.694   -5.133     654     103
+  ig_DTUgCGHDtHf         Hampton                    -2.697   -3.007     653    1392
+  ig_DUOepZID71d         CT Calisthenics ®️         -2.702   -4.105     652     513
+  ig_DVgW82VDiUQ         Meghan Callaway - Pull-    -2.704   -4.295     651     366
+  ig_DV83kiYjR65         Eric Roberts               -2.707   -4.141     650     471
+  ig_DSLqRMrkgj_         Fit with Coco              -2.707   -3.092     649    1347
+  ig_DWCBmFMDXnB         Eric Roberts               -2.708   -4.134     648     477
+  ig_DSfWI6MAn9E         Meghan Callaway - Pull-    -2.710   -4.315     647     354
+  ig_DUKvLffDkcw         Hampton                    -2.713   -3.339     646    1175
+  ig_DUadwJBD7Er         STEPHANIE SANZO            -2.714   -2.668     645    1520
+  ig_DXIRaO3jeUi         Eric Roberts               -2.716   -4.860     644     150
+  ig_DU05LzOjUNi         Dulla Khalfan              -2.718   -3.306     643    1208
+  ig_DVAjP64Dse2         Becca (Voigt) Miller       -2.719   -3.103     642    1343
+  ig_DS2B5oqjwg3         STEPHANIE SANZO            -2.721   -2.460     641    1569
+  ig_DUyezRrjvff         Bret Contreras “The Glu    -2.723   -2.769     640    1494
+  ig_DWbLA0IjG46         KAYLA ITSINES              -2.723   -2.443     639    1572
+  ig_DWsDd97CbNY         Hampton                    -2.724   -4.050     638     548
+  ig_DRaglAHEvO4         Fit with Coco              -2.724   -3.217     637    1281
+  ig_DVOmmKCjM5O         MIDASMVMT                  -2.725   -4.125     636     489
+  ig_DRvIIR1DwLY         CT Calisthenics ®️         -2.726   -4.186     635     443
+  ig_DULy4-nDs20         Meghan Callaway - Pull-    -2.727   -3.495     634    1043
+  ig_DRzGu_1D6Qu         STEPHANIE SANZO            -2.728   -3.657     633     884
+  ig_DR4RzAKjywf         STEPHANIE SANZO            -2.728   -3.958     632     622
+  ig_DUvFfavj1k4         STEPHANIE SANZO            -2.728   -3.742     631     813
+  ig_DVwsl8RDcK6         Eric Roberts               -2.729   -4.473     630     273
+  ig_DSVXBNjkuhc         Lauren Fisher Andersen     -2.730   -3.105     629    1342
+  ig_DWWnf4IjUma         Eric Roberts               -2.731   -3.187     628    1302
+  ig_DThT6QUDm0J         Hampton                    -2.735   -2.854     627    1461
+  ig_DVpS297jyV5         Fit with Coco              -2.736   -3.862     626     705
+  ig_DT8x6wzkrWD         Fit with Coco              -2.738   -3.393     625    1134
+  ig_DTBehcJjrpZ         Meghan Callaway - Pull-    -2.740   -3.715     624     839
+  ig_DSBlhfPDLJM         Hampton                    -2.740   -3.609     623     928
+  ig_DU73iNtkuVl         Zac Perna                  -2.741   -3.117     622    1334
+  ig_DU81TY8knrX         MIDASMVMT                  -2.743   -1.401     621    1645
+  ig_DUOp45vEli2         Fit with Coco              -2.745   -3.588     620     949
+  ig_DU8MOeYCAvn         Clara | Yoga Teacher &     -2.746   -3.556     619     982
+  ig_DSK-DqkDwUC         Meghan Callaway - Pull-    -2.747   -3.189     618    1301
+  ig_DSUuu3ZDY0Q         CT Calisthenics ®️         -2.748   -4.317     617     351
+  ig_DR8ZrOgDOYD         Fit with Coco              -2.748   -3.099     616    1345
+  ig_DVRQuOGAqWQ         Meghan Callaway - Pull-    -2.748   -3.291     615    1218
+  ig_DU_TZ3BDcyN         Dulla Khalfan              -2.749   -3.130     614    1328
+  ig_DRuFlRckfvq         Will Joseph | Mobility     -2.749   -4.045     613     553
+  ig_DSpIbZAj-ki         STEPHANIE SANZO            -2.751   -2.346     612    1592
+  ig_DSpdLJiAqjb         Meghan Callaway - Pull-    -2.752   -3.922     611     657
+  ig_DS2blnZjW4I         CT Calisthenics ®️         -2.755   -4.185     610     445
+  ig_DTGrCIyj0bM         Michelle Lewin             -2.757   -3.870     609     695
+  ig_DUQ3crtER_f         MIDASMVMT                  -2.761   -1.872     608    1628
+  ig_DRb6pM8D6pI         STEPHANIE SANZO            -2.762   -3.396     607    1127
+  ig_DU6Cf3MDUqW         Dulla Khalfan              -2.764   -3.886     606     686
+  ig_DWDcRmdjVPj         Hampton                    -2.764   -3.839     605     723
+  ig_DVy2NSRj56A         Michelle Lewin             -2.764   -3.563     604     974
+  ig_DSM1yISj7sL         STEPHANIE SANZO            -2.765   -4.232     603     405
+  ig_DVEVqpGjRpm         Dulla Khalfan              -2.766   -3.755     602     800
+  ig_DSc64Psghg4         Meghan Callaway - Pull-    -2.767   -3.806     601     748
+  ig_DWVXHuqDrAq         Hampton                    -2.769   -2.802     600    1483
+  ig_DSoN-xGjKvg         Hampton                    -2.769   -4.311     599     358
+  ig_DWrc9ASPBhZ         Meghan Callaway - Pull-    -2.769   -3.371     598    1153
+  ig_DUVV3BXjx0c         STEPHANIE SANZO            -2.771   -5.108     597     108
+  ig_DXJh3EGDFHR         Will Joseph | Mobility     -2.771   -5.702     596      53
+  ig_DR8S6SIDQE1         CT Calisthenics ®️         -2.771   -3.049     595    1370
+  ig_DWPIeguDkpu         Lauren Fisher Andersen     -2.772   -2.933     594    1432
+  ig_DTdS6taCRwX         Jani Dittman | Fitness     -2.775   -4.644     593     209
+  ig_DSvk7ZbE90N         KAYLA ITSINES              -2.776   -4.268     592     383
+  ig_DWy9tVwkQ6D         Eric Roberts               -2.777   -3.750     591     803
+  ig_DW8y2hLD0kS         STEPHANIE SANZO            -2.778   -4.867     590     147
+  ig_DSCVxBRiGg4         Clara | Yoga Teacher &     -2.779   -4.005     589     591
+  ig_DWZLOAAEUsi         Eric Roberts               -2.779   -3.481     588    1059
+  ig_DSEz2ziEsRX         Zac Perna                  -2.779   -4.607     587     219
+  ig_DT54PaxDWB1         Dulla Khalfan              -2.781   -4.061     586     540
+  ig_DWbfru7jXSu         Christina Vantsi           -2.782   -3.648     585     897
+  ig_DUYqM8lj_0j         Jani Dittman | Fitness     -2.784   -2.988     584    1401
+  ig_DTD6mdRko9M         Meghan Callaway - Pull-    -2.785   -3.319     583    1193
+  ig_DXZjqlbDsRp         Ben Patrick                -2.786   -3.453     582    1081
+  ig_DSTHlumjxI_         CT Calisthenics ®️         -2.788   -3.863     581     704
+  ig_DR6-vIbDSrd         CT Calisthenics ®️         -2.789   -3.237     580    1256
+  ig_DSlNBrxj4WM         CT Calisthenics ®️         -2.792   -3.549     579     985
+  ig_DUliKkKD_N6         Jani Dittman | Fitness     -2.793   -3.847     578     713
+  ig_DUdtjLgglHG         Meghan Callaway - Pull-    -2.794   -4.379     577     314
+  ig_DWQUrasDHi-         Christina Vantsi           -2.794   -3.254     576    1240
+  ig_DT3mYA_DyFx         CT Calisthenics ®️         -2.799   -4.120     575     495
+  ig_DW1jJs3kYSH         Eric Roberts               -2.801   -4.359     574     330
+  ig_DVUL79qESHp         Hampton                    -2.801   -3.669     573     877
+  ig_DVO8pe4Eloo         Meghan Callaway - Pull-    -2.802   -3.559     572     981
+  ig_DVlSw0GjhDI         Will Joseph | Mobility     -2.802   -5.197     571      94
+  ig_DVrf6XxkaPT         Eric Roberts               -2.802   -4.088     570     522
+  ig_DW12cHzPeui         Meghan Callaway - Pull-    -2.807   -4.235     569     402
+  ig_DWwCqGDjQHU         Christina Vantsi           -2.807   -4.384     568     312
+  ig_DWwdsIQkV0d         Eric Roberts               -2.808   -3.162     567    1312
+  ig_DR9aWNsj_3q         STEPHANIE SANZO            -2.812   -3.215     566    1287
+  ig_DUU1WI3Du7B         Hampton                    -2.812   -2.603     565    1538
+  ig_DWzXlS8grWs         Squat University           -2.813   -3.795     564     756
+  ig_DTs5flpjXd3         Dulla Khalfan              -2.817   -3.634     563     910
+  ig_DU_hYb5E7JP         KAYLA ITSINES              -2.821   -3.686     562     862
+  ig_DV9TwHrj8T7         Crystal | Peloton Podca    -2.821   -6.243     561      29
+  ig_DTgEyEyDDZO         Dulla Khalfan              -2.822   -3.935     560     646
+  ig_DSpyUBMgvQM         Meghan Callaway - Pull-    -2.824   -3.774     559     776
+  ig_DVkzDTDDnEj         Hampton                    -2.824   -2.935     558    1431
+  ig_DVZLbW8kpG1         Meghan Callaway - Pull-    -2.826   -3.617     557     923
+  ig_DS8h7xLkcA6         Hampton                    -2.829   -4.433     556     287
+  ig_DWBTlGhjnJN         Will Joseph | Mobility     -2.830   -4.750     555     175
+  ig_DVfDlGZEVRB         Hampton                    -2.831   -3.884     554     687
+  ig_DRoliw2EqjE         KAYLA ITSINES              -2.832   -4.199     553     428
+  ig_DVgBTz4DvU0         Will Joseph | Mobility     -2.833   -5.036     552     120
+  ig_DW4imtKD1kb         Crystal | Peloton Podca    -2.834   -6.444     551      18
+  ig_DXOyoWCj8LJ         STEPHANIE SANZO            -2.835   -3.720     550     832
+  ig_DWKE1o8x8Sf         Eric Roberts               -2.842   -3.449     549    1084
+  ig_DT4sHNmgHSD         Zac Perna                  -2.843   -3.836     548     726
+  ig_DVvUyszDnhq         Will Joseph | Mobility     -2.847   -4.153     547     465
+  ig_DWD74E6jViU         Christina Vantsi           -2.847   -4.475     546     271
+  ig_DSR1vSpje5l         Dulla Khalfan              -2.848   -4.088     545     523
+  ig_DTr99jDERmL         KAYLA ITSINES              -2.849   -5.503     544      65
+  ig_DV_WS7tjb_9         Eric Roberts               -2.849   -4.300     543     364
+  ig_DWbxewDkUu_         Eric Roberts               -2.851   -3.005     542    1394
+  ig_DVi-2k3goBe         Meghan Callaway - Pull-    -2.853   -2.930     541    1433
+  ig_DXU7n07kgfg         Bret Contreras “The Glu    -2.857   -3.344     540    1171
+  ig_DXKVIykpOuK         Meghan Callaway - Pull-    -2.857   -3.605     539     930
+  ig_DSI7mCHj_IP         CT Calisthenics ®️         -2.858   -4.333     538     342
+  ig_DWMOOUDxqja         Eric Roberts               -2.861   -3.373     537    1152
+  ig_DTfP2pdD6fU         STEPHANIE SANZO            -2.862   -4.016     536     579
+  ig_DSt1uKejv0J         Hampton                    -2.865   -3.592     535     944
+  ig_DWPOg4yDeY7         Christina Vantsi           -2.867   -4.357     534     331
+  ig_DW6rHwXDbXK         Eric Roberts               -2.870   -3.755     533     796
+  ig_DT3M2IdjXeY         Dulla Khalfan              -2.872   -3.654     532     888
+  ig_DT_rs8ZDWoJ         CT Calisthenics ®️         -2.877   -4.132     531     479
+  ig_DR078HGDPIy         Hampton                    -2.882   -4.612     530     217
+  ig_DRaQwjNkhHS         Jani Dittman | Fitness     -2.884   -3.396     529    1124
+  ig_DUMC0sRkolD         Lauren Fisher Andersen     -2.884   -3.230     528    1261
+  ig_DWmoGEhiR4Q         Hampton                    -2.885   -4.216     527     418
+  ig_DTtIWy4iGTN         Zac Perna                  -2.885   -3.611     526     927
+  ig_DWzzX94jS-Z         Eric Roberts               -2.886   -3.760     525     789
+  ig_DTKngtNkreK         KAYLA ITSINES              -2.887   -3.600     524     936
+  ig_DUBgn7jjwxJ         Jani Dittman | Fitness     -2.887   -4.711     523     182
+  ig_DR6mDY-kqbo         KAYLA ITSINES              -2.889   -3.570     522     965
+  ig_DWG31RYDZXq         Christina Vantsi           -2.889   -4.183     521     447
+  ig_DWSOGlwDycq         Eric Roberts               -2.892   -3.505     520    1031
+  ig_DV6MImTjeMH         Eric Roberts               -2.892   -4.109     519     508
+  ig_DWlDY6IDvTx         Hampton                    -2.893   -3.788     518     760
+  ig_DU9msCNEUkc         Hampton                    -2.895   -4.047     517     549
+  ig_DU5WIqJD8Ap         STEPHANIE SANZO            -2.896   -2.534     516    1551
+  ig_DWmaK4Qifhf         Eric Roberts               -2.896   -3.776     515     774
+  ig_DUSL1-ODlZp         Hampton                    -2.898   -3.829     514     733
+  ig_DWhW4tKj0TA         Eric Roberts               -2.898   -3.536     513     993
+  ig_DXbk9h4DAB4         Will Joseph | Mobility     -2.903   -4.859     511     151
+  ig_DSfe2Y6ESEO         Will Joseph | Mobility     -2.903   -3.519     511    1015
+  ig_DVIaRCujjRM         Hampton                    -2.903   -4.036     510     558
+  ig_DSaH1LZglSJ         Meghan Callaway - Pull-    -2.904   -4.301     509     363
+  ig_DWslKvME_DK         Becca (Voigt) Miller       -2.907   -4.565     508     240
+  ig_DUv2IyVjt0G         Meghan Callaway - Pull-    -2.910   -2.402     507    1581
+  ig_DT54zVhgZS7         Meghan Callaway - Pull-    -2.910   -4.111     506     506
+  ig_DVx_dbFj8bw         STEPHANIE SANZO            -2.911   -3.717     505     835
+  ig_DWFE1K6yDyZ         Meghan Callaway - Pull-    -2.913   -2.994     504    1398
+  ig_DXE0Uk_CX0v         Jani Dittman | Fitness     -2.914   -5.553     503      62
+  ig_DXYGPIFEmgl         Zac Perna                  -2.917   -3.702     502     853
+  ig_DW2BefOAnxy         Squat University           -2.919   -3.901     501     672
+  ig_DV1II3wjTiu         Eric Roberts               -2.920   -4.188     500     441
+  ig_DWRlqEOjduu         Dulla Khalfan              -2.920   -4.290     499     369
+  ig_DV8zu3_iYpw         Jani Dittman | Fitness     -2.922   -4.739     498     180
+  ig_DUmiWPgjEfX         Hampton                    -2.923   -4.803     497     163
+  ig_DTfRsnniLDG         Crystal | Peloton Podca    -2.924   -6.711     496       9
+  ig_DWGGZ6XjhUz         Hampton                    -2.924   -3.546     495     986
+  ig_DR20TqSktxW         Meghan Callaway - Pull-    -2.924   -4.026     494     577
+  ig_DVtbTHyjagH         Eric Roberts               -2.925   -4.748     493     177
+  ig_DS6glVJDPnC         Hampton                    -2.927   -3.316     492    1198
+  ig_DUJZlk4juHi         Meghan Callaway - Pull-    -2.927   -3.393     491    1133
+  ig_DWo-r4iP9CJ         Meghan Callaway - Pull-    -2.931   -4.239     490     399
+  ig_DWOUH6XDLx9         KAYLA ITSINES              -2.931   -3.304     489    1211
+  ig_DS4ye_EEWDZ         Will Joseph | Mobility     -2.933   -3.022     488    1380
+  ig_DVJ3YCJEkfg         Meghan Callaway - Pull-    -2.938   -3.520     487    1013
+  ig_DV8Kw7tDvjf         Will Joseph | Mobility     -2.939   -3.912     486     663
+  ig_DUD9-Hljfeu         Dulla Khalfan              -2.940   -3.754     484     801
+  ig_DUQ1qj-jcqF         Dulla Khalfan              -2.940   -3.748     484     805
+  ig_DWvDqG3knJr         Zac Perna                  -2.942   -4.920     483     136
+  ig_DUlcBsljWvz         Dulla Khalfan              -2.943   -3.719     482     834
+  ig_DVeDBrqDVnb         CT Calisthenics ®️         -2.947   -4.693     481     187
+  ig_DR4e5JIEYZC         Will Joseph | Mobility     -2.947   -4.882     480     144
+  ig_DRmU75DkSp9         Will Joseph | Mobility     -2.949   -4.304     479     360
+  ig_DWSw-lFjreY         Hampton                    -2.949   -3.963     478     619
+  ig_DWVAbkivO4P         Fit with Coco              -2.950   -3.348     477    1168
+  ig_DTQn5iYkkRq         Jani Dittman | Fitness     -2.952   -3.589     476     948
+  ig_DTwxXQIDgwz         Hampton                    -2.952   -4.627     475     213
+  ig_DVqNQj5jqFL         Will Joseph | Mobility     -2.952   -4.385     474     311
+  ig_DVqSCTwD3-o         STEPHANIE SANZO            -2.952   -3.353     473    1165
+  ig_DTzZmq_Drni         Hampton                    -2.953   -4.261     472     385
+  ig_DUgSh-vDbDu         Dulla Khalfan              -2.955   -3.975     470     606
+  ig_DV8_ZfvDUWF         Dulla Khalfan              -2.955   -4.203     470     423
+  ig_DVTFcFaD7H1         STEPHANIE SANZO            -2.957   -3.784     469     768
+  ig_DUCb4dRD4nw         Fit with Coco              -2.960   -2.258     468    1604
+  ig_DWED9iDD4jb         STEPHANIE SANZO            -2.960   -3.887     467     684
+  ig_DS_OYc5kfqX         Hampton                    -2.961   -3.374     466    1150
+  ig_DVRNjeujmug         MIDASMVMT                  -2.965   -2.205     465    1615
+  ig_DWqCp2bDkH5         Hampton                    -2.970   -3.762     464     786
+  ig_DS0mnVAj5Li         Michelle Lewin             -2.970   -3.312     463    1202
+  ig_DTMp0H6jlCJ         Hampton                    -2.972   -3.908     462     666
+  ig_DSDo5XVD1UJ         CT Calisthenics ®️         -2.974   -3.526     461    1004
+  ig_DUHEdIPj8Qo         CT Calisthenics ®️         -2.974   -3.957     460     624
+  ig_DTK16slkT8U         Will Joseph | Mobility     -2.977   -2.513     459    1560
+  ig_DTvLSqICB-d         Clara | Yoga Teacher &     -2.979   -4.579     458     232
+  ig_DViZ9wPjHVR         KAYLA ITSINES              -2.980   -4.453     457     277
+  ig_DWo-Q8PiR44         Eric Roberts               -2.980   -3.394     456    1131
+  ig_DWjyy1aOXcH         Meghan Callaway - Pull-    -2.982   -4.202     455     424
+  ig_DTiejVODqMd         Meghan Callaway - Pull-    -2.984   -3.303     454    1213
+  ig_DVOo3rgjVUe         Dulla Khalfan              -2.985   -3.896     453     675
+  ig_DWGltPpjzTF         STEPHANIE SANZO            -2.986   -3.734     452     819
+  ig_DR0DjY1EgDQ         Meghan Callaway - Pull-    -2.986   -2.890     451    1446
+  ig_DS6gzZqkci6         KAYLA ITSINES              -2.990   -3.479     450    1063
+  ig_DXMpaI5iWNZ         Jani Dittman | Fitness     -2.992   -4.487     449     260
+  ig_DWKZiPXj-Jk         Eric Roberts               -2.993   -3.831     448     730
+  ig_DTeZxFojGzC         Hampton                    -2.994   -3.844     447     715
+  ig_DVZTQwqj47w         Michelle Lewin             -2.997   -3.393     446    1132
+  ig_DXMsUwJjdLX         Eric Roberts               -2.998   -4.237     445     401
+  ig_DTD3ZyBkl6a         Lauren Fisher Andersen     -2.999   -3.585     444     954
+  ig_DTslfFcAXZc         Kaisa Keranen              -3.002   -3.589     443     946
+  ig_DW6KoBWDDiS         KAYLA ITSINES              -3.002   -3.550     442     984
+  ig_DTJruN9DJgF         Hampton                    -3.002   -4.117     441     500
+  ig_DV3BJ68DHzR         KAYLA ITSINES              -3.003   -2.777     440    1490
+  ig_DXUHY8di-Ny         Meghan Callaway - Pull-    -3.004   -4.346     439     336
+  ig_DWRewNIjU-Q         Eric Roberts               -3.006   -3.270     438    1229
+  ig_DSGfVUIEgMJ         Zac Perna                  -3.006   -5.020     437     123
+  ig_DWQSaaQgKKE         Zac Perna                  -3.009   -3.084     436    1349
+  ig_DV4BF7-DxMa         Meghan Callaway - Pull-    -3.010   -4.077     435     530
+  ig_DVZxrH5jslO         Bret Contreras “The Glu    -3.010   -3.500     434    1037
+  ig_DTNOLqgEUcB         KAYLA ITSINES              -3.011   -3.156     433    1315
+  ig_DXB4pmUDHAU         KAYLA ITSINES              -3.012   -4.616     432     215
+  ig_DV1Sf5tAk0V         Meghan Callaway - Pull-    -3.014   -4.790     431     165
+  ig_DTWxWKmkgdA         Zac Perna                  -3.015   -2.662     430    1522
+  ig_DXHFNe3D0b0         STEPHANIE SANZO            -3.019   -3.575     429     961
+  ig_DWQNXd-DqPe         Hampton                    -3.025   -4.144     428     470
+  ig_DR2QGYuAnPC         Meghan Callaway - Pull-    -3.029   -4.377     427     317
+  ig_DTQjH1nj5oH         Michelle Lewin             -3.029   -4.004     426     592
+  ig_DWUvjr4EvJf         Lauren Fisher Andersen     -3.033   -3.683     425     865
+  ig_DTvfEI4D13X         Lauren Fisher Andersen     -3.033   -3.212     424    1288
+  ig_DVldG9FAkdc         Meghan Callaway - Pull-    -3.034   -4.106     423     511
+  ig_DTdp81WjTZ4         Dulla Khalfan              -3.035   -3.831     422     729
+  ig_DT3IvWjAstf         Meghan Callaway - Pull-    -3.042   -4.281     421     376
+  ig_DUOuprykjk3         Jani Dittman | Fitness     -3.044   -3.635     420     909
+  ig_DXJt6WXDCG1         KAYLA ITSINES              -3.046   -2.652     419    1525
+  ig_DUFPE4_jjSV         Hampton                    -3.048   -4.190     418     439
+  ig_DWJNrcdEkkO         KAYLA ITSINES              -3.050   -1.705     417    1637
+  ig_DSxvuongU7z         Meghan Callaway - Pull-    -3.051   -4.946     416     129
+  ig_DXYO76kjAPj         Hampton                    -3.053   -2.640     415    1528
+  ig_DV-3Gyzj6lo         STEPHANIE SANZO            -3.054   -4.532     414     252
+  ig_DSTHFCJk1f5         Meghan Callaway - Pull-    -3.059   -4.118     413     499
+  ig_DWmQd4uRkjm         Michelle Lewin             -3.061   -3.720     412     831
+  ig_DVHPSaKknSZ         Meghan Callaway - Pull-    -3.062   -3.974     411     608
+  ig_DVtiiDhDaBb         Dulla Khalfan              -3.064   -4.449     410     279
+  ig_DUgno0akt34         Meghan Callaway - Pull-    -3.064   -3.595     409     941
+  ig_DW7yyFsDMFD         Hampton                    -3.068   -3.367     408    1158
+  ig_DULAPTDEmQE         Zac Perna                  -3.070   -4.330     407     344
+  ig_DT1ByNuj4z-         CT Calisthenics ®️         -3.070   -3.243     406    1254
+  ig_DV1KfFADX9I         Dulla Khalfan              -3.070   -4.438     405     284
+  ig_DU-h4Ayj8xJ         STEPHANIE SANZO            -3.074   -2.711     404    1510
+  ig_DS7tOLNAmNR         Meghan Callaway - Pull-    -3.078   -4.433     403     288
+  ig_DSLYTm2jyU7         CT Calisthenics ®️         -3.083   -3.173     402    1306
+  ig_DWaXlUajGdB         Hampton                    -3.083   -3.679     401     869
+  ig_DWdu13HD-Ts         STEPHANIE SANZO            -3.084   -2.213     400    1614
+  ig_DXHjPqSjV4z         Eric Roberts               -3.084   -4.412     399     294
+  ig_DTYWlHWjXco         Dulla Khalfan              -3.087   -4.254     398     386
+  ig_DWuR_zcki5h         Lauren Fisher Andersen     -3.087   -3.637     397     905
+  ig_DXB4dIij30m         STEPHANIE SANZO            -3.091   -3.563     396     973
+  ig_DV9RfBWD3uT         Eric Roberts               -3.095   -3.798     395     753
+  ig_DS2tITTicmx         Jani Dittman | Fitness     -3.096   -2.584     394    1541
+  ig_DU1R-D4E5Bf         Meghan Callaway - Pull-    -3.099   -4.184     393     446
+  ig_DVJfVZjjQ3u         Dulla Khalfan              -3.101   -2.463     392    1565
+  ig_DWUUvvsEc9y         CT Calisthenics ®️         -3.105   -3.536     391     994
+  ig_DUY6Ot_ErUv         Meghan Callaway - Pull-    -3.107   -4.229     390     407
+  ig_DVz3vkFjhFx         Hampton                    -3.110   -3.054     389    1365
+  ig_DVoEs04gtYA         Meghan Callaway - Pull-    -3.110   -5.739     388      52
+  ig_DTJBM9wEsrS         Meghan Callaway - Pull-    -3.111   -3.966     387     615
+  ig_DW4GAgQDemF         Eric Roberts               -3.112   -3.917     386     659
+  ig_DVtJsB-gpfH         Meghan Callaway - Pull-    -3.112   -4.233     385     404
+  ig_DW-V1lFDB_M         Hampton                    -3.114   -3.915     384     661
+  ig_DS-QGRfAoJO         Meghan Callaway - Pull-    -3.115   -3.481     383    1061
+  ig_DT39xzaid_q         Hampton                    -3.118   -3.620     382     919
+  ig_DWZloL_AcMb         Lauren Fisher Andersen     -3.118   -3.477     381    1065
+  ig_DS5knjqEha1         Meghan Callaway - Pull-    -3.118   -4.436     380     285
+  ig_DTIFoD2CIVM         Crystal | Peloton Podca    -3.121   -5.424     379      73
+  ig_DSH4kpvEWWh         Will Joseph | Mobility     -3.122   -4.135     378     476
+  ig_DXa6W5hjiHw         Hampton                    -3.125   -3.315     377    1199
+  ig_DVa2KOaj9R1         STEPHANIE SANZO            -3.125   -4.140     376     472
+  ig_DVWbXaPjd5u         Dulla Khalfan              -3.129   -3.652     375     893
+  ig_DVAxA-5CnVA         Hampton                    -3.130   -2.641     374    1527
+  ig_DUlf39nj6Sy         Meghan Callaway - Pull-    -3.135   -3.759     373     792
+  ig_DR6I6cODB_j         Hampton                    -3.138   -4.161     372     457
+  ig_DV13LgyD-W8         Eric Roberts               -3.144   -3.955     371     627
+  ig_DTf-d6Xj3WH         Meghan Callaway - Pull-    -3.145   -4.244     370     391
+  ig_DXQVKREjCVN         Hampton                    -3.149   -3.482     369    1057
+  ig_DUqlupgjRzX         Dulla Khalfan              -3.150   -3.713     368     841
+  ig_DWRdyWfEcbX         Jani Dittman | Fitness     -3.156   -4.281     367     375
+  ig_DTvMjPqiPr0         Clara | Yoga Teacher &     -3.158   -2.815     366    1474
+  ig_DVhNXoEj700         CT Calisthenics ®️         -3.158   -3.247     365    1248
+  ig_DW_6AQUkZU8         Eric Roberts               -3.161   -4.664     364     200
+  ig_DTkkCfdEYVD         Will Joseph | Mobility     -3.164   -3.221     363    1274
+  ig_DW9srxfD-B_         CT Calisthenics ®️         -3.164   -4.035     362     559
+  ig_DUWYgc7Dyzj         CT Calisthenics ®️         -3.168   -3.853     361     711
+  ig_DUAWR2MjlY2         Hampton                    -3.168   -3.012     360    1389
+  ig_DURNyWoEzzs         Meghan Callaway - Pull-    -3.168   -4.012     359     586
+  ig_DV_hivDglDE         Meghan Callaway - Pull-    -3.169   -4.496     358     257
+  ig_DToDWoPEt2G         Meghan Callaway - Pull-    -3.180   -3.689     357     860
+  ig_DTLa2nfD_KF         Meghan Callaway - Pull-    -3.182   -4.699     356     185
+  ig_DVs3-oDDIXg         KAYLA ITSINES              -3.182   -4.337     355     340
+  ig_DUtKvmzjTxK         Dulla Khalfan              -3.183   -3.497     354    1039
+  ig_DWmkZdZD1Lj         CT Calisthenics ®️         -3.189   -3.736     353     818
+  ig_DVHcQc7Ev4w         Becca (Voigt) Miller       -3.192   -3.793     352     757
+  ig_DSZLHrnDlLJ         Hampton                    -3.192   -3.518     351    1017
+  ig_DTVpxw-gtul         Meghan Callaway - Pull-    -3.192   -4.223     350     410
+  ig_DSpSNUOkWHw         Will Joseph | Mobility     -3.192   -3.534     349     995
+  ig_DUq_24KE450         Meghan Callaway - Pull-    -3.196   -4.638     348     210
+  ig_DXPlkgXjprw         Lauren Fisher Andersen     -3.200   -2.682     347    1516
+  ig_DSbUQKujIKv         Hampton                    -3.205   -4.191     346     438
+  ig_DUY1gB1EoIa         MIDASMVMT                  -3.215   -4.602     345     222
+  ig_DUj6KzgDF7C         Hampton                    -3.220   -2.773     344    1493
+  ig_DSnDuAVAjCu         Meghan Callaway - Pull-    -3.221   -5.293     343      85
+  ig_DSUwbJ2EZGH         Will Joseph | Mobility     -3.222   -4.647     342     207
+  ig_DUkojfdEnKn         Zac Perna                  -3.228   -4.080     341     527
+  ig_DVsF9BKDuEU         Hampton                    -3.229   -3.457     340    1078
+  ig_DVRN5Apjc-O         Dulla Khalfan              -3.236   -4.445     339     281
+  ig_DT8JBldgs3m         Meghan Callaway - Pull-    -3.239   -4.491     338     258
+  ig_DWPI8qeCexk         Meghan Callaway - Pull-    -3.240   -3.286     337    1220
+  ig_DU1a1BdD7ba         Michelle Lewin             -3.241   -4.064     336     536
+  ig_DT0u9JdEjnk         Meghan Callaway - Pull-    -3.241   -4.118     334     497
+  ig_DVytFyigsYr         Meghan Callaway - Pull-    -3.241   -3.528     334    1002
+  ig_DVxZYJBjhFZ         Hampton                    -3.249   -3.759     333     791
+  ig_DXFCLAfiduA         Meghan Callaway - Pull-    -3.255   -2.820     332    1471
+  ig_DVyfWjSjdDP         CT Calisthenics ®️         -3.259   -4.195     331     432
+  ig_DRcCACAkd1a         Will Joseph | Mobility     -3.259   -4.411     330     295
+  ig_DWRtkoNicDx         Meghan Callaway - Pull-    -3.262   -5.027     329     122
+  ig_DViGWwkDnek         Hampton                    -3.263   -3.727     328     824
+  ig_DUQzcNfgjwW         Meghan Callaway - Pull-    -3.263   -3.351     326    1166
+  ig_DWULiDFCsDD         Meghan Callaway - Pull-    -3.263   -4.182     326     449
+  ig_DScbb7XEU-B         Will Joseph | Mobility     -3.264   -3.925     325     655
+  ig_DVjLcaWCckq         Jani Dittman | Fitness     -3.265   -3.760     324     790
+  ig_DTAfOvsEeE9         Will Joseph | Mobility     -3.268   -2.911     323    1440
+  ig_DVVmhikkRpq         KAYLA ITSINES              -3.277   -3.324     322    1189
+  ig_DUXMZpjDn0K         Hampton                    -3.278   -3.228     321    1263
+  ig_DRz4HR-D7PW         Jani Dittman | Fitness     -3.283   -3.216     320    1284
+  ig_DUlzwujEo5q         Meghan Callaway - Pull-    -3.284   -4.181     319     450
+  ig_DRwr9xaEeA1         Will Joseph | Mobility     -3.284   -4.063     318     537
+  ig_DXE_-uGESfN         Eric Roberts               -3.286   -4.363     317     328
+  ig_DUaLRrJjrgZ         Hampton                    -3.288   -3.828     316     734
+  ig_DTnq9KZj2lu         Michelle Lewin             -3.291   -3.195     315    1295
+  ig_DUHnZ0iDKQG         Hampton                    -3.295   -3.703     314     852
+  ig_DTcsxJ5kfwG         Crystal | Peloton Podca    -3.295   -5.414     313      76
+  ig_DSXINuKDjc5         Hampton                    -3.305   -4.327     312     345
+  ig_DVwabAfkysx         Meghan Callaway - Pull-    -3.309   -4.289     311     371
+  ig_DSm2oWFESCW         Will Joseph | Mobility     -3.310   -3.883     310     688
+  ig_DWg7PesCbJT         Eric Roberts               -3.313   -3.771     309     780
+  ig_DVcstkbkUIS         Hampton                    -3.315   -4.180     308     451
+  ig_DTXiF3TkXze         KAYLA ITSINES              -3.316   -3.468     307    1072
+  ig_DWJ7lh7jeb3         Dulla Khalfan              -3.318   -4.217     306     415
+  ig_DWjhm82jpt3         Lauren Fisher Andersen     -3.319   -3.052     305    1366
+  ig_DXReNH5jCT0         KAYLA ITSINES              -3.321   -3.396     304    1125
+  ig_DULsOO3jZQp         Dulla Khalfan              -3.322   -3.764     303     784
+  ig_DT2JjR_iNDK         Zac Perna                  -3.326   -3.707     302     847
+  ig_DS99ASlEVea         Will Joseph | Mobility     -3.326   -4.545     301     249
+  ig_DTh_kqrkRnm         Will Joseph | Mobility     -3.329   -3.170     300    1309
+  ig_DXZ9krvBCSS         Meghan Callaway - Pull-    -3.339   -3.289     299    1219
+  ig_DVMEMG8jfoy         Dulla Khalfan              -3.339   -4.607     298     220
+  ig_DVGJjRTEsc_         KAYLA ITSINES              -3.340   -3.812     297     743
+  ig_DU2g2YGDiCD         Hampton                    -3.342   -3.861     296     706
+  ig_DSEArTUETPm         Hampton                    -3.344   -3.181     295    1304
+  ig_DSZ4RkwEUag         Will Joseph | Mobility     -3.348   -4.193     294     436
+  ig_DSTvlSnDEiD         Will Joseph | Mobility     -3.350   -6.014     293      39
+  ig_DWhwIUnDXnj         Eric Roberts               -3.351   -3.949     292     632
+  ig_DXNZipGJh_p         Eric Roberts               -3.354   -4.344     291     337
+  ig_DRpKA4KkZ1V         Will Joseph | Mobility     -3.358   -4.843     290     157
+  ig_DSuel6TEaJJ         Will Joseph | Mobility     -3.360   -3.330     289    1183
+  ig_DTNUuiOEe4X         Will Joseph | Mobility     -3.363   -3.706     288     848
+  ig_DSAGiEjkZ81         Will Joseph | Mobility     -3.378   -3.664     287     881
+  ig_DTcUVt-jik9         Hampton                    -3.380   -4.116     286     502
+  ig_DSkMEZwkRB8         Will Joseph | Mobility     -3.388   -3.720     285     833
+  ig_DWfNHJrDXNR         Eric Roberts               -3.389   -3.114     284    1336
+  ig_DTNLz9sjhS_         Zac Perna                  -3.392   -3.768     283     782
+  ig_DVRo_Z5lWTN         Crystal | Peloton Podca    -3.403   -5.142     282     100
+  ig_DSx7Eb6DyhG         Michelle Lewin             -3.406   -3.012     281    1388
+  ig_DU0IeZBEhoR         Zac Perna                  -3.416   -3.816     280     742
+  ig_DRyDi2QDGtg         Hampton                    -3.416   -3.227     279    1268
+  ig_DXM7cEgClIw         Michelle Lewin             -3.417   -3.965     278     616
+  ig_DTIN9WZkfJX         Will Joseph | Mobility     -3.419   -3.644     277     901
+  ig_DWtzGJFjWWl         Eric Roberts               -3.421   -3.561     276     975
+  ig_DTarW_bAp7e         Meghan Callaway - Pull-    -3.426   -4.627     275     214
+  ig_DXLTKVADE5K         Hampton                    -3.427   -4.314     274     356
+  ig_DTx_oy-AgO4         Meghan Callaway - Pull-    -3.428   -3.524     273    1009
+  ig_DUwDx5zlU0u         Crystal | Peloton Podca    -3.430   -6.033     272      38
+  ig_DS2QgokEQtf         Will Joseph | Mobility     -3.435   -4.482     271     264
+  ig_DRn5o0_jJiZ         Hampton                    -3.436   -3.538     270     992
+  ig_DUqvTtwD4Rr         Crystal | Peloton Podca    -3.437   -3.383     269    1140
+  ig_DTOLdmlEkrS         Meghan Callaway - Pull-    -3.438   -3.857     268     708
+  ig_DWpdkxiDdH-         Eric Roberts               -3.448   -3.777     267     772
+  ig_DUl1TCbiq8g         Crystal | Peloton Podca    -3.452   -5.472     266      70
+  ig_DW0IdkDjJMn         Hampton                    -3.454   -2.916     265    1439
+  ig_DUJm05Wk3D5         KAYLA ITSINES              -3.456   -3.891     264     681
+  ig_DTPtfZXEiyR         KAYLA ITSINES              -3.466   -4.159     263     459
+  ig_DXHqR8BMMfx         Daniel Gulsher             -3.467   -2.896     262    1443
+  ig_DSVhPLZkus6         Meghan Callaway - Pull-    -3.473   -4.315     261     355
+  ig_DV8XCeWjE2q         KAYLA ITSINES              -3.476   -4.325     260     346
+  ig_DUD-eGSgpWr         Meghan Callaway - Pull-    -3.485   -3.948     259     634
+  ig_DUnNZvkkuFe         KAYLA ITSINES              -3.490   -4.029     258     573
+  ig_DVZcvpuD4f9         CT Calisthenics ®️         -3.491   -3.518     257    1018
+  ig_DUEoGW3Ej5e         Lauren Fisher Andersen     -3.496   -3.168     256    1310
+  ig_DSX51hTD9pn         Meghan Callaway - Pull-    -3.517   -5.289     255      86
+  ig_DVEeUcnjzJb         Meghan Callaway - Pull-    -3.532   -3.420     254    1104
+  ig_DUp3NzRksHY         Zac Perna                  -3.532   -4.662     253     202
+  ig_DR11dUxEQyj         Will Joseph | Mobility     -3.535   -4.220     252     413
+  ig_DWkY87WjaDa         Eric Roberts               -3.541   -4.012     251     585
+  ig_DWbWYbOs0yR         Daniel Gulsher             -3.542   -3.050     250    1368
+  ig_DRhiFlfEdoB         Kaisa Keranen              -3.562   -4.378     249     316
+  ig_DV2TQagDudm         Hampton                    -3.564   -3.441     248    1088
+  ig_DV6vEmiCpzj         Crystal | Peloton Podca    -3.568   -4.982     247     127
+  ig_DULEruDEn7C         KAYLA ITSINES              -3.571   -3.491     246    1048
+  ig_DWyYDB1DKix         KAYLA ITSINES              -3.574   -3.216     245    1285
+  ig_DT_NiGIjlvg         Meghan Callaway - Pull-    -3.587   -3.621     244     918
+  ig_DTFaDQMkeqL         KAYLA ITSINES              -3.593   -2.889     243    1447
+  ig_DWerRqnDbOk         Crystal | Peloton Podca    -3.599   -3.392     242    1135
+  ig_DVLTgMDkvHK         KAYLA ITSINES              -3.599   -4.303     241     361
+  ig_DUOeRwWAX44         Meghan Callaway - Pull-    -3.603   -3.491     240    1047
+  ig_DTi5XlvESul         KAYLA ITSINES              -3.604   -3.854     239     709
+  ig_DTvugaLErPF         Meghan Callaway - Pull-    -3.614   -4.212     238     421
+  ig_DT7eBvykQ5_         KAYLA ITSINES              -3.620   -2.287     237    1601
+  ig_DUFzJweEhig         KAYLA ITSINES              -3.624   -4.232     236     406
+  ig_DUefEFuEn0B         KAYLA ITSINES              -3.642   -4.363     235     327
+  ig_DW6JlYqsRH0         Daniel Gulsher             -3.645   -3.014     234    1385
+  ig_DXN8N6eDquj         Hampton                    -3.648   -3.663     233     882
+  ig_DSVVxCOgcmw         Meghan Callaway - Pull-    -3.651   -4.405     232     297
+  ig_DTph9_2Ea6P         KAYLA ITSINES              -3.652   -3.664     231     880
+  ig_DXS8pccjB3T         KAYLA ITSINES              -3.668   -2.959     230    1418
+  ig_DTdudm3khhZ         Meghan Callaway - Pull-    -3.679   -4.247     229     388
+  ig_DUgsYzhiv1i         Crystal | Peloton Podca    -3.682   -6.482     228      15
+  ig_DThpuNRiH09         Clara | Yoga Teacher &     -3.684   -3.390     227    1136
+  ig_DXKBsMgiWAp         Meghan Callaway - Pull-    -3.685   -3.728     226     823
+  ig_DVQejQ4kjIr         KAYLA ITSINES              -3.694   -2.668     225    1519
+  ig_DXIDuWBj0We         Eric Roberts               -3.697   -4.026     224     576
+  ig_DSKEMx7AXOP         KAYLA ITSINES              -3.705   -2.878     223    1452
+  ig_DRl5Lk6EsLp         KAYLA ITSINES              -3.709   -2.181     222    1616
+  ig_DUTarlkjrZg         Meghan Callaway - Pull-    -3.710   -4.010     221     588
+  ig_DXQ6dFvMg9-         Daniel Gulsher             -3.711   -3.677     220     870
+  ig_DW0_OnkDNHe         KAYLA ITSINES              -3.740   -2.335     219    1594
+  ig_DRrO-Hokp_o         KAYLA ITSINES              -3.742   -3.879     218     691
+  ig_DWrU4COlT5R         Koboko Fitness             -3.742   -4.689     217     189
+  ig_DWThGEnGKQV         Koboko Fitness             -3.749   -4.429     216     290
+  ig_DVGr4k8Ash9         Meghan Callaway - Pull-    -3.760   -5.557     215      61
+  ig_DULsKtdDqLQ         Crystal | Peloton Podca    -3.766   -6.708     214      10
+  ig_DT2adqPkgI2         KAYLA ITSINES              -3.770   -4.353     213     332
+  ig_DWeCBXFExya         Koboko Fitness             -3.779   -4.766     212     170
+  ig_DWlcloEDCXJ         KAYLA ITSINES              -3.788   -1.907     211    1626
+  ig_DU-bRIYkqaB         KAYLA ITSINES              -3.791   -2.798     210    1485
+  ig_DWd0dBYkZxK         Koboko Fitness             -3.795   -3.989     209     596
+  ig_DWL7WQgMj36         Daniel Gulsher             -3.796   -3.449     208    1083
+  ig_DUVPV55Eo1U         KAYLA ITSINES              -3.796   -3.397     207    1122
+  ig_DRy7bctElvB         KAYLA ITSINES              -3.800   -2.225     206    1611
+  ig_DSE5GtyEkHX         KAYLA ITSINES              -3.802   -2.898     205    1442
+  ig_DW-3I6nsK_W         Daniel Gulsher             -3.802   -1.687     204    1640
+  ig_DUGeRA4AoEw         Meghan Callaway - Pull-    -3.804   -4.371     203     319
+  ig_DTznq8fEQq0         KAYLA ITSINES              -3.816   -3.327     202    1186
+  ig_DXT5oFoM_3h         Daniel Gulsher             -3.830   -3.285     201    1221
+  ig_DU6Guc1D4qY         Meghan Callaway - Pull-    -3.833   -4.119     200     496
+  ig_DXI-YjVMNhn         Daniel Gulsher             -3.841   -3.616     199     924
+  ig_DTukoy_kUSM         KAYLA ITSINES              -3.851   -2.653     198    1524
+  ig_DXNjZFnE73v         KAYLA ITSINES              -3.862   -4.151     197     468
+  ig_DVqLdGdDFvJ         KAYLA ITSINES              -3.864   -3.155     196    1316
+  ig_DWMoHKliHpz         Anna Engelschall           -3.867   -2.806     195    1479
+  ig_DXZro9wEfb-         Koboko Fitness             -3.870   -3.809     194     746
+  ig_DSSz4X-Egwh         Lauren Fisher Andersen     -3.879   -3.173     193    1307
+  ig_DUg_2gWEnBO         KAYLA ITSINES              -3.880   -4.489     192     259
+  ig_DTRYJi1D0MW         Danielle Brandon           -3.884   -3.511     191    1024
+  ig_DV0n5fcD44R         Koboko Fitness             -3.893   -4.106     190     512
+  ig_DTaO1T4Evgl         KAYLA ITSINES              -3.897   -4.128     189     486
+  ig_DWmL2LfMUOU         Daniel Gulsher             -3.901   -3.618     188     921
+  ig_DVYaB84AdN7         Koboko Fitness             -3.905   -6.035     187      37
+  ig_DWGwCqdsH-c         Daniel Gulsher             -3.908   -3.755     186     798
+  ig_DWYj9nujMgN         KAYLA ITSINES              -3.908   -2.517     185    1556
+  ig_DRwOGZ-kUOB         KAYLA ITSINES              -3.912   -2.583     184    1542
+  ig_DXGWi6LE_ZW         Koboko Fitness             -3.913   -4.547     183     246
+  ig_DU3x71rEdwA         Crystal | Peloton Podca    -3.914   -5.090     182     110
+  ig_DTf6c-WgmMa         Meghan Callaway - Pull-    -3.916   -3.444     181    1087
+  ig_DSZiyiDEU61         KAYLA ITSINES              -3.920   -2.553     180    1547
+  ig_DWLy73Klco5         Koboko Fitness             -3.923   -3.531     179     999
+  ig_DV-vjSVDITv         KAYLA ITSINES              -3.930   -2.439     178    1573
+  ig_DWOYEYLDuxE         Koboko Fitness             -3.931   -3.894     177     677
+  ig_DS7jfdbkkhJ         KAYLA ITSINES              -3.933   -2.956     176    1420
+  ig_DWzDUTAsMK8         Daniel Gulsher             -3.944   -3.981     175     603
+  ig_DW63WxwhgQ3         Michelle Lewin             -3.944   -3.907     174     669
+  ig_DWEEsQ5DeCF         Koboko Fitness             -3.957   -5.768     173      48
+  ig_DXWgcvBjNh0         KAYLA ITSINES              -3.957   -2.214     172    1613
+  ig_DVyCahdETvw         Koboko Fitness             -3.960   -2.828     171    1468
+  ig_DUQ1iONDeBj         Crystal | Peloton Podca    -3.971   -7.010     170       2
+  ig_DVHQDD1Eips         Meghan Callaway - Pull-    -3.977   -3.930     169     651
+  ig_DWbQCs9lL_v         Koboko Fitness             -3.979   -5.570     168      59
+  ig_DWBfwe9Dr8w         Koboko Fitness             -3.987   -4.054     167     545
+  ig_DW_c3bTDN3Y         KAYLA ITSINES              -3.994   -4.076     166     531
+  ig_DUsZBysEkVq         KAYLA ITSINES              -3.995   -3.366     165    1159
+  ig_DVO2Y6Oj5p2         Koboko Fitness             -3.995   -3.748     164     807
+  ig_DWgZg_6gsL8         Koboko Fitness             -3.998   -4.201     162     427
+  ig_DXB3vZ5DTAD         Koboko Fitness             -3.998   -4.043     162     555
+  ig_DWliMKoieVo         Koboko Fitness             -4.001   -3.101     160    1344
+  ig_DWJOQa_AnbO         Koboko Fitness             -4.001   -4.347     160     335
+  ig_DVdjfn2DbhU         Koboko Fitness             -4.006   -3.563     159     971
+  ig_DWgQRC0jBwj         KAYLA ITSINES              -4.007   -3.255     158    1239
+  ig_DVD6RECk6aD         Koboko Fitness             -4.018   -3.758     156     794
+  ig_DV-69fWjdyy         Koboko Fitness             -4.018   -4.158     156     460
+  ig_DWO6dVFCLlr         Clara | Yoga Teacher &     -4.028   -4.198     155     429
+  ig_DUjQfcFDel9         Crystal | Peloton Podca    -4.033   -5.082     154     113
+  ig_DTKq40RAtz2         Crystal | Peloton Podca    -4.037   -5.069     153     114
+  ig_DUAu3EFkvCy         KAYLA ITSINES              -4.043   -2.811     152    1476
+  ig_DWGncJcDAGj         KAYLA ITSINES              -4.048   -3.031     151    1376
+  ig_DRno_e7kx9c         Crystal | Peloton Podca    -4.058   -4.156     150     461
+  ig_DVa-7Tnk899         Koboko Fitness             -4.061   -3.332     149    1180
+  ig_DWv1fQMgMW-         Koboko Fitness             -4.070   -3.273     147    1228
+  ig_DV3Mk4tmD2V         Koboko Fitness             -4.070   -4.963     147     128
+  ig_DWYrJStCuGo         Koboko Fitness             -4.079   -4.416     146     293
+  ig_DUTa_h6Dz27         Crystal | Peloton Podca    -4.085   -6.350     145      22
+  ig_DVnvzmSkslR         Koboko Fitness             -4.088   -4.653     144     205
+  ig_DWzX3wnk2Ql         Crystal | Peloton Podca    -4.093   -6.385     143      21
+  ig_DXJlGMgAS9d         Koboko Fitness             -4.094   -4.182     142     448
+  ig_DWi9T3Pif8x         Koboko Fitness             -4.106   -5.795     141      47
+  ig_DWGoin0D_Gl         Koboko Fitness             -4.110   -3.787     139     765
+  ig_DWQ717yE6SB         Koboko Fitness             -4.110   -5.997     139      40
+  ig_DVGe-owEwGx         Koboko Fitness             -4.116   -4.121     138     494
+  ig_DW8tlTTgiVW         Koboko Fitness             -4.119   -3.396     137    1123
+  ig_DWWFjF0iCDD         Koboko Fitness             -4.122   -4.261     136     384
+  ig_DWzDvmzFMfO         Koboko Fitness             -4.125   -3.344     135    1173
+  ig_DW3jpZ4kny7         Koboko Fitness             -4.141   -2.508     134    1561
+  ig_DVgHuZBAJMZ         Koboko Fitness             -4.144   -5.869     133      42
+  ig_DXPZCb7DeAF         Koboko Fitness             -4.170   -3.941     132     643
+  ig_DUJHsDEgEo1         Crystal | Peloton Podca    -4.171   -5.048     131     119
+  ig_DWwzaxOFwHf         Crystal | Peloton Podca    -4.186   -5.055     130     116
+  ig_DTFhD7mD4wu         Crystal | Peloton Podca    -4.197   -6.278     129      26
+  ig_DUypLNrgfza         Crystal | Peloton Podca    -4.202   -5.140     128     101
+  ig_DVHEjyzlJU6         Koboko Fitness             -4.207   -5.345     127      81
+  ig_DTDGxK4CAOp         Clara | Yoga Teacher &     -4.213   -3.110     126    1340
+  ig_DVMMU0hgpSR         Koboko Fitness             -4.221   -5.309     125      84
+  ig_DVMl9jPEly3         Meghan Callaway - Pull-    -4.228   -3.741     124     814
+  ig_DXT5MPUDQC3         Koboko Fitness             -4.235   -2.610     123    1536
+  ig_DU7RBu-kx_v         Koboko Fitness             -4.239   -4.400     121     298
+  ig_DV8WZQDjpKI         Koboko Fitness             -4.239   -4.925     121     135
+  ig_DVvdvXJgh0m         Koboko Fitness             -4.246   -3.748     120     806
+  ig_DWTa_NKDG6U         KAYLA ITSINES              -4.249   -2.462     119    1567
+  ig_DXHp3aij8TN         Koboko Fitness             -4.249   -4.371     117     321
+  ig_DVisdowDYNc         Koboko Fitness             -4.249   -3.684     117     863
+  ig_DV5-4KjkxdQ         Koboko Fitness             -4.264   -3.842     115     717
+  ig_DW6ytYhCpZu         Koboko Fitness             -4.264   -5.352     115      80
+  ig_DWt54sngCGD         Koboko Fitness             -4.267   -4.567     114     239
+  ig_DVTAqEREfMm         KAYLA ITSINES              -4.270   -4.581     113     231
+  ig_DW0_i9iiK1Y         Koboko Fitness             -4.278   -5.848     111      44
+  ig_DU-wpSYk_zt         Koboko Fitness             -4.278   -4.170     111     455
+  ig_DW1jgy4sKuJ         Daniel Gulsher             -4.285   -3.419     110    1106
+  ig_DVV7vB1E908         Koboko Fitness             -4.289   -3.787     109     762
+  ig_DXbnjixDya4         Koboko Fitness             -4.308   -3.309     108    1206
+  ig_DWowpwgjbDD         Koboko Fitness             -4.312   -2.449     107    1571
+  ig_DTh2IRyjOtI         Crystal | Peloton Podca    -4.318   -6.080     106      34
+  ig_DXXHhmXCj6x         Koboko Fitness             -4.320   -4.473     105     272
+  ig_DU5Py6_En6n         KAYLA ITSINES              -4.331   -3.531     104     998
+  ig_DVqUt_EDr7z         Koboko Fitness             -4.331   -5.870     103      41
+  ig_DVlRbE6Anj7         Koboko Fitness             -4.383   -5.627     102      56
+  ig_DWDjzd1slV9         Daniel Gulsher             -4.384   -3.215     101    1286
+  ig_DUq_NZ3FuAN         Crystal | Peloton Podca    -4.434   -6.895     100       5
+  ig_DTBJEREiWiz         Crystal | Peloton Podca    -4.451   -5.545      99      63
+  ig_DTd-t0igcU7         Crystal | Peloton Podca    -4.461   -6.738      98       8
+  ig_DTgjnifidiW         Crystal | Peloton Podca    -4.478   -6.644      97      13
+  ig_DW_8JWpjelv         Koboko Fitness             -4.481   -2.593      96    1540
+  ig_DXR9QcfE1KW         Koboko Fitness             -4.486   -4.658      95     204
+  ig_DXFE9HsARrC         Koboko Fitness             -4.495   -6.037      94      36
+  ig_DWHZRpPMw0N         Daniel Gulsher             -4.499   -5.501      93      66
+  ig_DVhGNV9jH9Y         Crystal | Peloton Podca    -4.510   -5.235      92      90
+  ig_DXMzNSaDgaQ         Koboko Fitness             -4.518   -3.783      91     769
+  ig_DUbic4uCWrT         Crystal | Peloton Podca    -4.521   -6.479      90      16
+  ig_DVJ3LkjEpuF         Meghan Callaway - Pull-    -4.541   -3.228      89    1266
+  ig_DVWyTRXj1MF         Crystal | Peloton Podca    -4.541   -5.740      87      51
+  ig_DVEwx9FlHRL         Crystal | Peloton Podca    -4.541   -3.894      87     676
+  ig_DUoaMsIDpVR         Crystal | Peloton Podca    -4.542   -5.599      86      57
+  ig_DU6m0KqgXWv         Crystal | Peloton Podca    -4.543   -5.255      85      88
+  ig_DWhWiWrlVW3         Crystal | Peloton Podca    -4.552   -4.845      84     155
+  ig_DWcNg3kDYHC         Crystal | Peloton Podca    -4.571   -5.479      83      69
+  ig_DW1AkPfMeAo         Daniel Gulsher             -4.619   -2.775      82    1491
+  ig_DW6xtwnMKkl         Daniel Gulsher             -4.638   -3.114      81    1337
+  ig_DWpFme0j2sM         Crystal | Peloton Podca    -4.640   -4.896      80     139
+  ig_DUeHk7niAjp         Crystal | Peloton Podca    -4.649   -6.904      79       4
+  ig_DWexZXIk4CG         Crystal | Peloton Podca    -4.653   -4.808      78     162
+  ig_DXXDk-yMGyP         Daniel Gulsher             -4.656   -2.979      77    1409
+  ig_DWmgM5nmG0x         Crystal | Peloton Podca    -4.657   -5.226      76      91
+  ig_DXbnbApMISD         Daniel Gulsher             -4.661   -3.123      75    1331
+  ig_DWbYIUJAkUX         Anna Engelschall           -4.667   -3.315      74    1200
+  ig_DXC1qVWjcjO         Crystal | Peloton Podca    -4.707   -3.688      73     861
+  ig_DTY16yKjfF_         Crystal | Peloton Podca    -4.764   -5.748      72      50
+  ig_DVMe6TgCakH         Crystal | Peloton Podca    -4.778   -6.668      71      12
+  ig_DUtoJHzijcq         Crystal | Peloton Podca    -4.782   -6.271      70      27
+  ig_DVUNjlPCnsN         Crystal | Peloton Podca    -4.806   -4.822      69     160
+  ig_DVZX7zzjVOC         Crystal | Peloton Podca    -4.811   -5.168      68      99
+  ig_DU1NX8tERhE         Crystal | Peloton Podca    -4.813   -5.107      67     109
+  ig_DXb1KqoTw9m         Koboko Fitness             -4.828   -3.518      66    1016
+  ig_DVs5n-DmR6B         Koboko Fitness             -4.834   -6.135      65      32
+  ig_DUOQhVPivXy         Crystal | Peloton Podca    -4.843   -6.291      64      25
+  ig_DVHWYsDk7Ji         Crystal | Peloton Podca    -4.859   -5.487      63      68
+  ig_DVB0DEGldh3         Crystal | Peloton Podca    -4.870   -5.028      62     121
+  ig_DXU21H5DGj6         Crystal | Peloton Podca    -4.896   -5.116      61     106
+  ig_DXKi6EDCfsv         Crystal | Peloton Podca    -4.936   -5.168      60      98
+  ig_DTbZzjqEg8y         Crystal | Peloton Podca    -4.939   -6.386      59      20
+  ig_DTxmB4piCTn         Clara | Yoga Teacher &     -4.954   -3.738      58     816
+  ig_DXT9sw0iPGJ         Clara | Yoga Teacher &     -4.959   -4.665      57     199
+  ig_DWtUgTMMFIC         Daniel Gulsher             -4.971   -3.263      56    1234
+  ig_DXaAOCOgiyh         Crystal | Peloton Podca    -4.973   -5.372      55      79
+  ig_DVJ65X3jxid         Crystal | Peloton Podca    -5.006   -5.559      54      60
+  ig_DV4KY3wE4ZT         Crystal | Peloton Podca    -5.025   -6.318      53      23
+  ig_DXFZbjAjT4u         Crystal | Peloton Podca    -5.029   -4.845      52     156
+  ig_DVn9Ur7k6zx         Koboko Fitness             -5.040   -3.714      51     840
+  ig_DW19O7HD67j         Crystal | Peloton Podca    -5.050   -5.212      50      93
+  ig_DW7Gl8zDyl1         Crystal | Peloton Podca    -5.060   -4.687      49     191
+  ig_DWT3OfGCGz6         Clara | Yoga Teacher &     -5.061   -4.568      48     238
+  ig_DTxL9Q-CNlu         Clara | Yoga Teacher &     -5.066   -3.043      47    1371
+  ig_DWuPMTHgD0N         Crystal | Peloton Podca    -5.067   -6.621      46      14
+  ig_DXNHunhDVac         Crystal | Peloton Podca    -5.075   -5.055      45     117
+  ig_DUYkfXKAhDI         Crystal | Peloton Podca    -5.116   -4.930      44     133
+  ig_DVJNcTkCFPB         Clara | Yoga Teacher &     -5.125   -4.154      43     462
+  ig_DXMLNKWMJl8         Daniel Gulsher             -5.125   -3.576      42     960
+  ig_DXPVzXXsJ6-         Daniel Gulsher             -5.156   -3.257      41    1238
+  ig_DVehL4iDd8P         Crystal | Peloton Podca    -5.168   -6.218      40      30
+  ig_DVb8KSrlRxR         Crystal | Peloton Podca    -5.237   -4.814      39     161
+  ig_DVa8i8LjL8G         Clara | Yoga Teacher &     -5.240   -4.945      38     130
+  ig_DUV-qPfiXKR         Crystal | Peloton Podca    -5.267   -5.398      37      77
+  ig_DWj8HGjie3h         Crystal | Peloton Podca    -5.309   -5.108      36     107
+  ig_DXXcBrgDE0B         Crystal | Peloton Podca    -5.352   -5.193      35      95
+  ig_DTvFgerCAkB         Clara | Yoga Teacher &     -5.362   -6.413      34      19
+  ig_DT8DtvGCD2v         Clara | Yoga Teacher &     -5.369   -3.982      33     602
+  ig_DU8L3SiCMud         Clara | Yoga Teacher &     -5.475   -3.908      32     667
+  ig_DXXzSCLDT2X         Eric Roberts               -5.660   -4.696      31     186
+  ig_DVypdXwgrJi         Meghan Callaway - Pull-    -5.745   -3.014      30    1384
+  ig_DRxq6oVkuMu         Jani Dittman | Fitness     -5.846   -4.084      29     524
+  ig_DXIH6FKDxw2         Eric Roberts               -5.870   -3.827      28     735
+  ig_DXIIOdsj4kC         Eric Roberts               -5.894   -3.981      27     604
+  ig_DXXzk5LDQxh         Eric Roberts               -5.912   -4.281      26     377
+  ig_DXXz_rqDS8a         Eric Roberts               -5.936   -3.623      25     917
+  ig_DTa3ZlKiDE7         Anna Engelschall           -6.038   -3.259      24    1236
+  ig_DXUSuuuDUZD         Eric Roberts               -6.136   -4.129      23     484
+  ig_DXX0NhuDe6x         Eric Roberts               -6.199   -4.663      22     201
+  ig_DXX0hFmjYYN         Eric Roberts               -6.296   -3.898      21     673
+  ig_DVhoaSljc4E         Eric Roberts               -6.304   -3.951      20     629
+  ig_DVkLbnNDX4B         Eric Roberts               -6.362   -4.106      19     510
+  ig_DXDXHz2jaqG         Eric Roberts               -6.531   -3.307      18    1207
+  ig_DW6eGbiDRl9         Eric Roberts               -6.569   -3.970      17     610
+  ig_DS255ykiHT3         Anna Engelschall           -6.587   -3.538      16     991
+  ig_DU4hY-gEj5l         KAYLA ITSINES              -7.290   -4.904      15     138
+  ig_DV9KDddDyC2         Meghan Callaway - Pull-    -7.548   -4.338      14     339
+  ig_DVv7JKAjS9R         Eric Roberts               -7.703   -4.201      13     425
+  ig_DSGfldDkhAM         Zac Perna                  -8.181   -3.905      12     670
+  ig_DWeeHR-MHWJ         Daniel Gulsher             -8.216   -2.249      11    1605
+  ig_DWJ-DYQM-Ee         Daniel Gulsher             -8.399   -3.282      10    1223
+  ig_DWToAt5MlQ0         Daniel Gulsher             -8.622   -3.327       7    1187
+  ig_DWbYImcsZma         Daniel Gulsher             -8.622   -3.069       7    1360
+  ig_DWWOh1-Mhl6         Daniel Gulsher             -8.622   -3.721       7     829
+  ig_DWW2hopsQ3H         Daniel Gulsher             -8.622   -3.257       7    1237
+  ig_DWOe8MTsWyz         Daniel Gulsher             -8.910   -3.294       4    1216
+  ig_DWhCR-IM_t1         Daniel Gulsher             -8.910   -2.248       4    1606
+  ig_DW9UOZls0PS         Daniel Gulsher             -9.315   -5.455       2      72
+  ig_DWRDL4fMyFn         Daniel Gulsher             -9.315   -3.625       2     915
+  ig_DWBmcPjMNd3         Daniel Gulsher            -10.008   -3.051       1    1367
+
+INTERPRETATION:
+  Spearman +0.234 -> WEAK signal at n=1649 (SE ~ +/- 0.2).
+  -> Inconclusive. Borderline call -- a larger IG corpus would settle it.

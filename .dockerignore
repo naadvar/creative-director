@@ -1,0 +1,17 @@
+# Keep the build context small: the serve image only needs api/ + creative_director/
+# + requirements-serve.txt + entrypoint.sh (all COPYed explicitly in the Dockerfile).
+.git
+.venv
+.venv-serve
+**/__pycache__
+**/*.pyc
+node_modules
+frontend
+scripts
+data
+*.db
+*.db-*
+*.db.*
+*.out
+.env
+seed_channels

@@ -1,0 +1,16 @@
+# MID tier batch: 100k-1M followers, 11 creators.
+# Stage 1 ingest: high per-creator cap (80) -- this is the heart of the
+# target band for the product (creators big enough to have real data,
+# small enough that views/follower lift still matters).
+accounts:
+  - "@laurenfisher"          # 990K - CrossFit
+  - "@ericrobertsfitness"    # 944K - general fitness
+  - "@hybrid.calisthenics"   # 937K - Hampton Liu, calisthenics
+  - "@daniellebrandon7"      # 833K - CrossFit
+  - "@fitwithcoco"           # 794K - general fitness
+  - "@movewithnicole"        # 591K - pilates / mobility
+  - "@stephanie_buttermore"  # 528K - science fitness
+  - "@zacperna"              # 507K - Australian fitness
+  - "@midasmvmt"             # 479K - movement / functional
+  - "@meghancallaway"        # 325K - women's strength
+  - "@ctcalisthenics"        # 265K - calisthenics

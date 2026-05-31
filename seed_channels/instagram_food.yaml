@@ -1,0 +1,74 @@
+# Instagram FOOD / RECIPE creators — pilot niche #2 (niche tag: ig_food).
+#
+# ⚠️ CANDIDATE LIST — follower counts below are APPROXIMATE (from memory, not
+# verified). Handles may be wrong/renamed. ALWAYS run the cheap profiles-only
+# pre-flight first to (a) confirm each handle resolves, (b) get the REAL
+# follower count, then move/drop accounts into the right tier before the full
+# reel pull. This mirrors how the fitness seed was built.
+#
+#   # 1. verify handles + real follower tiers (~$0.04 for ~30 creators)
+#   python -m scripts.ingest_instagram_apify --niche ig_food \
+#       --seed-file seed_channels/instagram_food.yaml --profiles-only
+#
+#   # 2. fill the SMALL/MID tier by hashtag discovery (food hashtags)
+#   python -m scripts.discover_ig_creators --niche ig_food \
+#       --hashtags easyrecipes,recipereels,highproteinrecipes,mealprepideas
+#
+#   # 3. full reel pull (self-downloads mp4s; ~$0.004/reel, cost-capped)
+#   python -m scripts.ingest_instagram_apify --niche ig_food \
+#       --seed-file seed_channels/instagram_food.yaml --max-reels 60 --max-cost-usd 8
+#
+#   # 4. extract + label exactly like fitness
+#   python -m scripts.extract_features  --niche ig_food --all-labeled
+#   python -m scripts.extract_timelines --niche ig_food
+#   python -m scripts.compute_labels    --niche ig_food
+#
+# Sub-category taxonomy comes later (food needs its own keyword set in
+# creative_director/advice/categories.py — e.g. baking / high-protein /
+# quick-meals / dessert / grilling / vegan). Launch category-less first.
+
+accounts:
+  # Verified 2026-05-29 via --profiles-only (real followersCount from Apify).
+  # 6 candidate handles were dropped as squatters/wrong (thatdudecancook,
+  # nickdigiovanni, owen_han, brianlagerstrom, poppycooks, carolinegelen).
+  #
+  # --- LARGE (1M+ followers) ---
+  - "@buzzfeedtasty"       # 43.4M - Tasty
+  - "@gordongram"          # 19.5M - Gordon Ramsay
+  - "@jamieoliver"         # 10.6M - Jamie Oliver
+  - "@halfbakedharvest"    #  5.4M - Tieghan Gerard
+  - "@feelgoodfoodie"      #  4.8M - Yumna Jawad
+  - "@thegoldenbalance"    #  4.8M - Egyptian-American home cooking
+  - "@joshuaweissman"      #  2.4M - chef / recipes
+  - "@cookingwithlynja"    #  2.2M - high-energy edited cooking
+  - "@justine_snacks"      #  1.3M - Justine Doiron
+  - "@cookingwithshereen"  #  1.3M - "not a chef" home cooking
+  - "@doobydobap"          #  1.1M - Tina Choi
+
+  # --- MID (100k–1M followers) ---
+  - "@thecozycook"         #  659K - comfort-food recipes
+  - "@emmymade"            #  349K - taste tests / recipes
+  - "@gimmesomeoven"       #  274K - recipe blog
+
+  # --- SMALL (<100k) — from discover_ig_creators 2026-05-29 (food hashtags),
+  #     curated to clear food creators (dropped brands/bookstore/pure-fitness) ---
+  - "@4ingredients"            #  99.9K
+  - "@dewi.jalal"              #  68.7K
+  - "@cooking_day_diaries"     #  58.9K
+  - "@danielmancini"           #  53.8K - verified
+  - "@healthmylifestyle"       #  40.1K
+  - "@espressoandlime"         #  37.5K
+  - "@fitbites.by.harshita"    #  26.1K - high-protein recipes
+  - "@healthyish_by_mcnaim"    #  23.8K - verified
+  - "@erinelizabethalexander"  #  23.6K - verified
+  - "@emilys_plate_"           #  22.9K
+  - "@_yasmeens_kitchen_"      #  21.5K
+  - "@fit_foodie_jade"         #  20.0K - food-forward
+  - "@flavourdeshkitchen"      #  17.1K
+  - "@gousiyakitchen__"        #  15.9K
+  - "@fatimabakes.sargodha"    #  14.5K - verified
+  - "@chef.tatiana"            #  13.9K - verified
+  - "@acedarspoon"             #  12.9K - verified
+  - "@eatdeliciousrecipe"      #  12.9K
+  - "@foulmouthgourmet"        #  10.0K
+  - "@gigi.skitchen"           #   5.6K

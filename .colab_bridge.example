@@ -1,0 +1,4 @@
+# Copy to .colab_bridge after starting the bridge cell in Colab.
+# The bridge cell prints both values; paste them here (one per line).
+BRIDGE_URL=https://EXAMPLE-something.trycloudflare.com
+BRIDGE_TOKEN=EXAMPLE_TOKEN_PASTE_FROM_NOTEBOOK

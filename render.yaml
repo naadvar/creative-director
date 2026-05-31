@@ -1,0 +1,40 @@
+# Render Blueprint for the SERVE-ONLY backend (Phase 1).
+# Deploy: Render dashboard -> New -> Blueprint -> pick this repo. Then paste the
+# secret env vars marked `sync: false` (R2 creds, Anthropic key, your Vercel URL).
+#
+# `plan: free` spins down after ~15 min idle (≈30-60s cold start) and has an
+# ephemeral disk, so the entrypoint re-fetches the 648 MB DB from R2 on each cold
+# start. For always-on + a one-time DB fetch, switch to `plan: starter` ($7/mo)
+# and add a `disk:` block mounted at /app/data.
+services:
+  - type: web
+    name: creative-director-api
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: ENABLE_INGEST            # serve-only: no torch/CLIP/Whisper
+        value: "false"
+      - key: API_LABEL_SCHEME         # the validated views-per-sub model target
+        value: views_per_sub_aged_v1
+      - key: API_ALLOW_DEV_LOGIN      # public demo sign-in; set false once real auth lands
+        value: "true"
+      - key: API_SESSION_SECRET
+        generateValue: true
+      - key: R2_BUCKET
+        value: creative-director-corpus
+      # --- secrets / per-deploy values: set these in the Render dashboard ---
+      - key: R2_ACCOUNT_ID
+        sync: false
+      - key: R2_ACCESS_KEY_ID
+        sync: false
+      - key: R2_SECRET_ACCESS_KEY     # a READ-capable R2 token is enough here
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: API_CORS_ORIGINS         # JSON list incl. your Vercel URL, e.g. ["https://xxx.vercel.app"]
+        sync: false
+      - key: API_FRONTEND_BASE_URL    # your Vercel URL, e.g. https://xxx.vercel.app
+        sync: false

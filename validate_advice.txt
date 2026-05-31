@@ -1,0 +1,63 @@
+﻿Building benchmarks for ig_fitness ...
+Scanning 1649 labeled ig_fitness reels ...
+
+========================================================================
+OFF-BENCHMARK COUNT DISTRIBUTION BY ACTUAL TERCILE
+========================================================================
+(if advice tracks outcome perfectly, high-tercile rows lean LOW;
+ low-tercile rows lean HIGH. random noise = identical columns.)
+
+   off_count        low       mid      high
+           0          8        11        24
+           1         28        57        83
+           2         98        91       120
+           3        191       189       178
+           4        163       163       127
+           5         62        38        18
+
+OFF-BENCHMARK COUNTS PER TERCILE:
+  low   : n=550 mean= 3.20 p25=3 med=3 p75=4
+  mid   : n=549 mean= 3.00 p25=2 med=3 p75=4
+  high  : n=550 mean= 2.65 p25=2 med=3 p75=4
+
+SUM-OF-GAP-MAGNITUDES PER TERCILE:
+  low   : n=550 mean_sum_gap= 3.14
+  mid   : n=549 mean_sum_gap= 2.90
+  high  : n=550 mean_sum_gap= 2.56
+
+========================================================================
+OUTLIERS: HIGH-TERCILE REELS WITH THE MOST OFF-BENCHMARK FINDINGS
+========================================================================
+(if these exist, the dashboard would have warned a creator AWAY
+ from a recipe that actually worked. that's a model error.)
+
+  video_id                 tier   arch      score  off  sum_gap  channel  -- title
+  ig_DRcEflFjorV           small  demo      -0.88    5     8.85  Christian Villa |Costa -- * Propósito de este entrenamiento con @jennifervargascr  Es 
+  ig_DSVFdjiDva-           small  demo      -1.65    5     7.63  Josh Heenan -- If your brain doesn’t know where you are in time and space, 
+  ig_DXZ6QHcjFEr           small  demo      +2.32    5     6.92  Josh Heenan -- The eyes are the only part of the brain we can see from the 
+  ig_DWbXMkDD0w3           small  demo      -1.10    5     6.83  Calisthenics Amsterdam -- Sometimes you just need that extra push to get you there ;) 
+  ig_DT7gnI9jbSZ           small  demo      -1.32    5     6.25  Debby - Personal Train -- I risultati a casa arrivano
+  ig_DSmeg73jTTq           small  demo      -0.81    5     6.00  Debby - Personal Train -- Tutti fanno affondi.
+  ig_DTkU1khDXFt           small  demo      -1.62    5     5.58  Debby - Personal Train -- POV: stai per iniziare il workout…
+  ig_DTP8d3pDQI4           small  demo      -0.84    5     5.43  Debby - Personal Train -- Tutte fissate con glutei e addome…
+  ig_DXXuza5E_6b           small  demo      -1.80    5     5.06  Cici Flows | Yoga Teac -- Because nothing bonds you to new friends quite like an impro
+  ig_DTxOTbVDZdB           small  demo      -0.90    5     5.04  Debby - Personal Train -- Nei miei programmi lo inserisco perché è un esercizio comple
+
+========================================================================
+OUTLIERS: LOW-TERCILE REELS WITH THE FEWEST OFF-BENCHMARK FINDINGS
+========================================================================
+(if these exist, the reel looked 'good' on every dimension we
+ measure but still bombed -- the features don't capture what
+ actually matters for it. dashboard advice would have over-praised.)
+
+  video_id                 tier   arch      score  off  sum_gap  channel  -- title
+  ig_DXNjZFnE73v           large  talking   -3.86    0     0.00  KAYLA ITSINES -- Comment “ABS” and I’ll dm you an ab workout that you can do 
+  ig_DW2BefOAnxy           large  talking   -2.92    0     0.00  Squat University -- What injuries are you dealing with? Let me know so I can cre
+  ig_DXX0hFmjYYN           mid    talking   -6.30    0     0.00  Eric Roberts -- Why you workout hard but can’t lose weight 🥲
+  ig_DXX0NhuDe6x           mid    talking   -6.20    0     0.00  Eric Roberts -- The best exercise to lose weight is…. 🧐
+  ig_DXXzk5LDQxh           mid    talking   -5.91    0     0.00  Eric Roberts -- If you’ve hit a weight loss plateau 😡
+  ig_DWo-Q8PiR44           mid    talking   -2.98    0     0.00  Eric Roberts -- How to know if you’re going too heavy 🤕
+  ig_DVkLbnNDX4B           mid    talking   -6.36    0     0.00  Eric Roberts -- If fat loss is “slow”, watch this ✈️
+  ig_DVRN5Apjc-O           small  talking   -3.24    0     0.00  Dulla Khalfan -- YOUR TURN — HOW MANY SECONDS CAN YOU LAST?
+  ig_DS255ykiHT3           large  demo      -6.59    1     0.27  Anna Engelschall -- nothing wrong with these things ❤️ let’s normalise them
+  ig_DVhoaSljc4E           mid    talking   -6.30    1     0.29  Eric Roberts -- If hack squat always hurts your knees 😅

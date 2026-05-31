@@ -1,0 +1,23 @@
+rows=1649 features=124 folds=5
+
+=== TOP 12 SINGLE FEATURES (mean test-fold Spearman) ===
+  hook_emotion_surprised       -0.3731  (|0.3731|)
+  thumb_clip_pca_0             +0.3216  (|0.3216|)
+  thumb_contrast               -0.3107  (|0.3107|)
+  audio_voice_ratio            +0.2742  (|0.2742|)
+  hook_emotion_neutral         +0.2733  (|0.2733|)
+  hook_img_pca_7               +0.2651  (|0.2651|)
+  hook_img_pca_0               -0.2614  (|0.2614|)
+  audio_loudness_mean          +0.2411  (|0.2411|)
+  speech_pace_wpm              -0.2323  (|0.2323|)
+  creator_posting_rate_30d     -0.2275  (|0.2275|)
+  hook_word_count              -0.2259  (|0.2259|)
+  desc_emb_pca_1               -0.2129  (|0.2129|)
+
+=== BASELINE LADDER (CV Spearman) ===
+  predict-mean (no ranking)          : 0.000  (floor)
+  best single feature univariate     : 0.3731  [hook_emotion_surprised]
+  LightGBM on best single feature    : +0.2988
+  FULL MODEL (all 124 features)     : +0.5435
+
+  ML value-add over best one-line rule: +0.1704

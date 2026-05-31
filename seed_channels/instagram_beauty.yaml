@@ -1,0 +1,29 @@
+# Instagram BEAUTY / SKINCARE creators — niche tag: ig_beauty.
+#
+# ⚠️ CANDIDATE LIST — anchor accounts only (verify with --profiles-only first;
+# handles/tiers are from memory). Fill the small/mid tier with discovery.
+#
+#   python -m scripts.ingest_instagram_apify --niche ig_beauty \
+#       --seed-file seed_channels/instagram_beauty.yaml --profiles-only
+#   python -m scripts.discover_ig_creators --niche ig_beauty \
+#       --hashtags makeuptutorial,skincareroutine,grwm,makeuphacks,beautytips,skincaretips \
+#       --seed-file seed_channels/instagram_beauty.yaml
+#   python -m scripts.ingest_instagram_apify --niche ig_beauty \
+#       --seed-file seed_channels/instagram_beauty.yaml --max-reels 60 --max-cost-usd 10
+
+accounts:
+  # --- LARGE (1M+) anchors ---
+  - "@hudabeauty"        # Huda Kattan
+  - "@jamescharles"      # makeup artist
+  - "@nikkietutorials"   # Nikkie de Jager
+  - "@bretmanrock"       # beauty / lifestyle
+  - "@mikaylanogueira"   # makeup, huge reel reach
+  - "@patrickstarrr"     # makeup artist
+
+  # --- MID (100k–1M) anchors ---
+  - "@jackieaina"        # beauty / inclusivity
+  - "@hyram"             # skincare science
+  - "@glowwithava"       # skincare
+  - "@itsmyrabeauty"     # makeup tutorials
+
+  # --- SMALL (<100k) — fill via discover_ig_creators (beauty hashtags) ---

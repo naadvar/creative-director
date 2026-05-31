@@ -1,0 +1,41 @@
+# SMALL tier batch: <100k followers, 27 creators.
+# Stage 1 ingest: per-creator cap 50; high N to dominate the corpus
+# (this is where high views/follower lift comes from, and these creators
+# ARE the target user of the product).
+#
+# Original 3 from the May 20 verification + 24 from May 20 hashtag discovery.
+accounts:
+  # --- Upper SMALL (50k-100k followers) ---
+  - "@clipoutcrystal"        # 95K  verified
+  - "@fitditts"              # 85K
+  - "@drheenan"              # 70K  verified
+  - "@christinavantsi"       # 69K
+  - "@beccavoigt"            # 54K (CrossFit veteran)
+  - "@carol_enrico"          # 51K  verified
+  - "@alessiakoff"           # 51K
+
+  # --- Mid SMALL (15k-50k followers) ---
+  - "@hexthenics"            # 30K  verified, calisthenics
+  - "@claradelsolyoga"       # 28K  yoga
+  - "@backpain_sciatica"     # 24K  niche health
+  - "@hipability_"           # 22K  mobility
+  - "@kobokofitness"         # 19.6K calisthenics
+  - "@anatomymuscles"        # 19K  educational
+  - "@fitnessphenom21"       # 18K  verified
+
+  # --- Lower SMALL (5k-15k followers) ---
+  - "@briaaalove"            # 14K
+  - "@debbyspiriti"          # 12K
+  - "@fms.will"              # 12K  verified, FMS specialist
+  - "@costaricatrainer"      # 9.8K trainer
+  - "@e1ena___s"             # 8.5K
+  - "@emily.thorpe_"         # 8.4K verified
+  - "@cici_flows"            # 8.1K
+  - "@amydotfit"             # 7.8K
+  - "@dullah_fitness"        # 6.5K
+  - "@athleticvisionfitness" # 6.3K
+  - "@christhespartandavies" # 5.6K
+  - "@calisthenics_amsterdam"# 5.3K
+
+  # --- Tiny / original ---
+  - "@audreykoomar"          # 1.7K strength training

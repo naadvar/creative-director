@@ -1,0 +1,36 @@
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.venv/
+venv/
+env/
+*.egg-info/
+.pytest_cache/
+
+.env
+.env.local
+.colab_bridge
+
+data/
+!data/.gitkeep
+
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+.cache/
+models/
+
+# Node / frontend build artifacts
+node_modules/
+frontend/dist/
+
+# Local DB files + backups (the corpus DB lives in R2, fetched at deploy time)
+*.db
+*.db-*
+*.db.bak*
+
+# Scratch outputs / logs
+*.out

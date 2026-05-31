@@ -1,0 +1,640 @@
+﻿
+==================================================================
+scheme=per_channel_log_residual_v1  task=classification  features=all (57)
+==================================================================
+Dataset      : 5167 videos  (4133 train / 1034 test)
+Single split : acc 0.365   (random 0.333)
+Time-series CV: acc 0.351 +/- 0.015   (5 folds)  folds=[0.33, 0.36, 0.33, 0.36, 0.37]
+
+              precision    recall  f1-score   support
+
+         low       0.43      0.49      0.46       417
+         med       0.28      0.25      0.26       306
+        high       0.34      0.30      0.32       311
+
+    accuracy                           0.36      1034
+   macro avg       0.35      0.35      0.35      1034
+weighted avg       0.36      0.36      0.36      1034
+
+Confusion matrix (rows=true, cols=pred), order [low, med, high]:
+[[205 113  99]
+ [143  78  85]
+ [125  92  94]]
+
+Top 15 features by mean |SHAP|:
+  thumb_clip_pca_4         0.0433
+  thumb_brightness         0.0396
+  title_sim_winner         0.0361
+  publish_hour             0.0353
+  audio_loudness_mean      0.0299
+  thumb_saturation         0.0287
+  thumb_sim_winner         0.0284
+  hashtag_count            0.0284
+  audio_loudness_max       0.0274
+  transcript_word_count    0.0258
+  thumb_clip_pca_0         0.0250
+  avg_shot_length          0.0247
+  thumb_clip_pca_3         0.0237
+  title_emb_pca_3          0.0237
+  duration_seconds         0.0230
+
+==================================================================
+scheme=per_channel_log_residual_v1  task=classification  features=intrinsic (48)
+==================================================================
+Dataset      : 5167 videos  (4133 train / 1034 test)
+Single split : acc 0.364   (random 0.333)
+Time-series CV: acc 0.350 +/- 0.020   (5 folds)  folds=[0.33, 0.35, 0.35, 0.34, 0.39]
+
+              precision    recall  f1-score   support
+
+         low       0.44      0.47      0.45       417
+         med       0.28      0.26      0.27       306
+        high       0.33      0.32      0.33       311
+
+    accuracy                           0.36      1034
+   macro avg       0.35      0.35      0.35      1034
+weighted avg       0.36      0.36      0.36      1034
+
+Confusion matrix (rows=true, cols=pred), order [low, med, high]:
+[[195 114 108]
+ [130  81  95]
+ [119  92 100]]
+
+Top 15 features by mean |SHAP|:
+  thumb_clip_pca_4         0.0525
+  publish_hour             0.0411
+  thumb_brightness         0.0400
+  audio_loudness_mean      0.0390
+  audio_loudness_max       0.0320
+  thumb_saturation         0.0304
+  thumb_dominant_face_area 0.0293
+  thumb_clip_pca_0         0.0281
+  hashtag_count            0.0279
+  transcript_word_count    0.0266
+  title_emb_pca_3          0.0265
+  first3s_motion_intensity 0.0259
+  avg_shot_length          0.0258
+  thumb_clip_pca_3         0.0253
+  thumb_clip_pca_5         0.0246
+
+==================================================================
+scheme=per_channel_log_residual_v1  task=regression  features=all (57)
+==================================================================
+Dataset      : 5167 videos  (4133 train / 1034 test)
+Single split : acc 0.297   (random 0.333)
+               spearman 0.010   MAE 0.782
+Time-series CV: acc 0.327 +/- 0.038   (5 folds)  folds=[0.33, 0.38, 0.31, 0.34, 0.27]
+               spearman 0.043 (CV mean)
+
+              precision    recall  f1-score   support
+
+         low       0.35      0.16      0.22       417
+         med       0.28      0.70      0.40       306
+        high       0.31      0.08      0.13       311
+
+    accuracy                           0.30      1034
+   macro avg       0.31      0.31      0.25      1034
+weighted avg       0.32      0.30      0.25      1034
+
+Confusion matrix (rows=true, cols=pred), order [low, med, high]:
+[[ 68 320  29]
+ [ 66 214  26]
+ [ 62 224  25]]
+
+Top 15 features by mean |SHAP|:
+  hashtag_count            0.1270
+  thumb_brightness         0.0884
+  title_emb_pca_3          0.0678
+  publish_hour             0.0508
+  thumb_clip_pca_5         0.0445
+  thumb_contrast           0.0443
+  thumb_clip_pca_7         0.0427
+  tl_cuts_per_10s          0.0421
+  thumb_clip_pca_4         0.0375
+  dev_max                  0.0369
+  audio_loudness_mean      0.0363
+  title_emoji_count        0.0310
+  title_emb_pca_2          0.0305
+  dev_flagged_frac         0.0301
+  description_char_count   0.0293
+
+==================================================================
+scheme=per_channel_log_residual_v1  task=regression  features=intrinsic (48)
+==================================================================
+Dataset      : 5167 videos  (4133 train / 1034 test)
+Single split : acc 0.297   (random 0.333)
+               spearman 0.011   MAE 0.782
+Time-series CV: acc 0.327 +/- 0.025   (5 folds)  folds=[0.33, 0.36, 0.32, 0.34, 0.28]
+               spearman 0.055 (CV mean)
+
+              precision    recall  f1-score   support
+
+         low       0.38      0.16      0.23       417
+         med       0.29      0.71      0.41       306
+        high       0.23      0.07      0.11       311
+
+    accuracy                           0.30      1034
+   macro avg       0.30      0.31      0.25      1034
+weighted avg       0.31      0.30      0.25      1034
+
+Confusion matrix (rows=true, cols=pred), order [low, med, high]:
+[[ 67 305  45]
+ [ 59 217  30]
+ [ 52 236  23]]
+
+Top 15 features by mean |SHAP|:
+  hashtag_count            0.1245
+  thumb_brightness         0.0809
+  title_emb_pca_3          0.0752
+  publish_hour             0.0534
+  thumb_clip_pca_7         0.0504
+  thumb_contrast           0.0467
+  thumb_clip_pca_5         0.0435
+  thumb_clip_pca_4         0.0398
+  audio_loudness_mean      0.0397
+  tl_cuts_per_10s          0.0383
+  title_emoji_count        0.0382
+  description_char_count   0.0365
+  transcript_word_count    0.0346
+  thumb_saturation         0.0341
+  title_emb_pca_2          0.0333
+
+==================================================================
+scheme=log_views_per_sub_v1  task=classification  features=all (57)
+==================================================================
+Dataset      : 5167 videos  (4133 train / 1034 test)
+Single split : acc 0.498   (random 0.333)
+Time-series CV: acc 0.454 +/- 0.048   (5 folds)  folds=[0.43, 0.39, 0.43, 0.52, 0.5]
+
+              precision    recall  f1-score   support
+
+         low       0.49      0.76      0.59       378
+         med       0.52      0.34      0.41       390
+        high       0.50      0.36      0.42       266
+
+    accuracy                           0.50      1034
+   macro avg       0.50      0.49      0.48      1034
+weighted avg       0.50      0.50      0.48      1034
+
+Confusion matrix (rows=true, cols=pred), order [low, med, high]:
+[[286  64  28]
+ [190 132  68]
+ [111  58  97]]
+
+Top 15 features by mean |SHAP|:
+  title_sim_winner         0.1279
+  thumb_sim_winner         0.0976
+  hashtag_count            0.0926
+  audio_voice_ratio        0.0832
+  publish_hour             0.0692
+  thumb_contrast           0.0644
+  thumb_brightness         0.0612
+  description_char_count   0.0602
+  thumb_clip_pca_2         0.0598
+  thumb_clip_pca_7         0.0576
+  thumb_clip_pca_5         0.0552
+  thumb_clip_pca_0         0.0498
+  thumb_clip_pca_1         0.0488
+  tl_cuts_per_10s          0.0413
+  thumb_clip_pca_3         0.0399
+
+==================================================================
+scheme=log_views_per_sub_v1  task=classification  features=intrinsic (48)
+==================================================================
+Dataset      : 5167 videos  (4133 train / 1034 test)
+Single split : acc 0.471   (random 0.333)
+Time-series CV: acc 0.455 +/- 0.044   (5 folds)  folds=[0.44, 0.4, 0.42, 0.52, 0.5]
+
+              precision    recall  f1-score   support
+
+         low       0.46      0.72      0.56       378
+         med       0.48      0.31      0.37       390
+        high       0.48      0.36      0.41       266
+
+    accuracy                           0.47      1034
+   macro avg       0.47      0.46      0.45      1034
+weighted avg       0.47      0.47      0.45      1034
+
+Confusion matrix (rows=true, cols=pred), order [low, med, high]:
+[[272  72  34]
+ [201 119  70]
+ [112  58  96]]
+
+Top 15 features by mean |SHAP|:
+  thumb_clip_pca_0         0.0954
+  audio_voice_ratio        0.0911
+  hashtag_count            0.0880
+  publish_hour             0.0793
+  thumb_clip_pca_2         0.0726
+  title_emb_pca_3          0.0694
+  thumb_brightness         0.0668
+  description_char_count   0.0667
+  thumb_contrast           0.0603
+  thumb_clip_pca_5         0.0545
+  thumb_clip_pca_7         0.0531
+  title_emb_pca_4          0.0526
+  thumb_clip_pca_1         0.0502
+  tl_cuts_per_10s          0.0481
+  title_emb_pca_5          0.0445
+
+==================================================================
+scheme=log_views_per_sub_v1  task=regression  features=all (57)
+==================================================================
+Dataset      : 5167 videos  (4133 train / 1034 test)
+Single split : acc 0.438   (random 0.333)
+               spearman 0.287   MAE 0.999
+Time-series CV: acc 0.393 +/- 0.042   (5 folds)  folds=[0.33, 0.36, 0.41, 0.42, 0.44]
+               spearman 0.235 (CV mean)
+
+              precision    recall  f1-score   support
+
+         low       0.45      0.49      0.47       378
+         med       0.41      0.62      0.49       390
+        high       0.76      0.10      0.17       266
+
+    accuracy                           0.44      1034
+   macro avg       0.54      0.40      0.38      1034
+weighted avg       0.52      0.44      0.40      1034
+
+Confusion matrix (rows=true, cols=pred), order [low, med, high]:
+[[187 189   2]
+ [144 240   6]
+ [ 80 160  26]]
+
+Top 15 features by mean |SHAP|:
+  hashtag_count            0.1501
+  audio_loudness_mean      0.1414
+  title_sim_winner         0.1313
+  publish_hour             0.0957
+  title_emoji_count        0.0907
+  thumb_clip_pca_7         0.0880
+  thumb_sim_winner         0.0867
+  first3s_motion_intensity 0.0862
+  thumb_clip_pca_1         0.0776
+  audio_voice_ratio        0.0721
+  audio_loudness_max       0.0656
+  thumb_saturation         0.0653
+  thumb_clip_pca_5         0.0632
+  dev_max                  0.0611
+  title_all_caps_ratio     0.0570
+
+==================================================================
+scheme=log_views_per_sub_v1  task=regression  features=intrinsic (48)
+==================================================================
+Dataset      : 5167 videos  (4133 train / 1034 test)
+Single split : acc 0.428   (random 0.333)
+               spearman 0.274   MAE 1.012
+Time-series CV: acc 0.389 +/- 0.050   (5 folds)  folds=[0.32, 0.34, 0.42, 0.42, 0.45]
+               spearman 0.238 (CV mean)
+
+              precision    recall  f1-score   support
+
+         low       0.46      0.49      0.48       378
+         med       0.40      0.62      0.48       390
+        high       0.62      0.07      0.12       266
+
+    accuracy                           0.43      1034
+   macro avg       0.49      0.39      0.36      1034
+weighted avg       0.48      0.43      0.39      1034
+
+Confusion matrix (rows=true, cols=pred), order [low, med, high]:
+[[185 190   3]
+ [142 240   8]
+ [ 73 175  18]]
+
+Top 15 features by mean |SHAP|:
+  hashtag_count            0.1748
+  audio_loudness_mean      0.1258
+  title_emoji_count        0.1123
+  publish_hour             0.1063
+  thumb_clip_pca_7         0.1053
+  first3s_motion_intensity 0.0962
+  thumb_clip_pca_1         0.0857
+  audio_voice_ratio        0.0846
+  thumb_saturation         0.0763
+  tl_first_cut_second      0.0673
+  thumb_clip_pca_5         0.0658
+  thumb_clip_pca_2         0.0641
+  audio_loudness_max       0.0607
+  thumb_dominant_face_area 0.0575
+  thumb_brightness         0.0569
+
+==================================================================
+scheme=views_per_sub_aged_v1  task=classification  features=all (57)
+==================================================================
+Dataset      : 1649 videos  (1319 train / 330 test)
+Single split : acc 0.606   (random 0.333)
+Time-series CV: acc 0.525 +/- 0.043   (5 folds)  folds=[0.45, 0.53, 0.52, 0.54, 0.58]
+
+              precision    recall  f1-score   support
+
+         low       0.64      0.62      0.63       103
+         med       0.46      0.53      0.49        97
+        high       0.71      0.65      0.68       130
+
+    accuracy                           0.61       330
+   macro avg       0.60      0.60      0.60       330
+weighted avg       0.62      0.61      0.61       330
+
+Confusion matrix (rows=true, cols=pred), order [low, med, high]:
+[[64 27 12]
+ [23 51 23]
+ [13 32 85]]
+
+Top 15 features by mean |SHAP|:
+  thumb_clip_pca_4         0.1446
+  thumb_sim_winner         0.1367
+  thumb_contrast           0.1224
+  audio_voice_ratio        0.1136
+  thumb_clip_pca_3         0.1094
+  hashtag_count            0.1092
+  thumb_brightness         0.0916
+  thumb_clip_pca_6         0.0865
+  thumb_clip_pca_5         0.0828
+  thumb_clip_pca_1         0.0814
+  dev_hook_mean            0.0716
+  thumb_clip_pca_2         0.0704
+  thumb_clip_pca_0         0.0630
+  publish_hour             0.0628
+  title_all_caps_ratio     0.0567
+
+==================================================================
+scheme=views_per_sub_aged_v1  task=classification  features=intrinsic (48)
+==================================================================
+Dataset      : 1649 videos  (1319 train / 330 test)
+Single split : acc 0.585   (random 0.333)
+Time-series CV: acc 0.532 +/- 0.029   (5 folds)  folds=[0.49, 0.55, 0.52, 0.53, 0.57]
+
+              precision    recall  f1-score   support
+
+         low       0.64      0.59      0.62       103
+         med       0.41      0.47      0.44        97
+        high       0.69      0.66      0.68       130
+
+    accuracy                           0.58       330
+   macro avg       0.58      0.58      0.58       330
+weighted avg       0.60      0.58      0.59       330
+
+Confusion matrix (rows=true, cols=pred), order [low, med, high]:
+[[61 32 10]
+ [23 46 28]
+ [11 33 86]]
+
+Top 15 features by mean |SHAP|:
+  thumb_contrast           0.1514
+  thumb_clip_pca_4         0.1412
+  thumb_clip_pca_3         0.1364
+  audio_voice_ratio        0.1223
+  hashtag_count            0.1222
+  thumb_clip_pca_0         0.1127
+  thumb_brightness         0.0976
+  thumb_clip_pca_6         0.0908
+  thumb_clip_pca_5         0.0882
+  thumb_clip_pca_2         0.0837
+  thumb_clip_pca_1         0.0800
+  thumb_saturation         0.0673
+  publish_hour             0.0626
+  thumb_clip_pca_7         0.0609
+  description_char_count   0.0584
+
+==================================================================
+scheme=views_per_sub_aged_v1  task=regression  features=all (57)
+==================================================================
+Dataset      : 1649 videos  (1319 train / 330 test)
+Single split : acc 0.533   (random 0.333)
+               spearman 0.621   MAE 0.877
+Time-series CV: acc 0.483 +/- 0.042   (5 folds)  folds=[0.44, 0.48, 0.47, 0.47, 0.56]
+               spearman 0.485 (CV mean)
+
+              precision    recall  f1-score   support
+
+         low       0.72      0.52      0.61       103
+         med       0.36      0.63      0.46        97
+        high       0.70      0.47      0.56       130
+
+    accuracy                           0.53       330
+   macro avg       0.59      0.54      0.54       330
+weighted avg       0.61      0.53      0.55       330
+
+Confusion matrix (rows=true, cols=pred), order [low, med, high]:
+[[54 44  5]
+ [15 61 21]
+ [ 6 63 61]]
+
+Top 15 features by mean |SHAP|:
+  thumb_sim_winner         0.1409
+  hashtag_count            0.1327
+  thumb_brightness         0.1138
+  thumb_clip_pca_0         0.1058
+  audio_voice_ratio        0.0923
+  thumb_clip_pca_2         0.0868
+  title_all_caps_ratio     0.0867
+  thumb_clip_pca_1         0.0806
+  thumb_clip_pca_6         0.0743
+  thumb_contrast           0.0723
+  publish_hour             0.0687
+  thumb_clip_pca_4         0.0599
+  thumb_saturation         0.0590
+  audio_loudness_mean      0.0449
+  duration_seconds         0.0443
+
+==================================================================
+scheme=views_per_sub_aged_v1  task=regression  features=intrinsic (48)
+==================================================================
+Dataset      : 1649 videos  (1319 train / 330 test)
+Single split : acc 0.564   (random 0.333)
+               spearman 0.636   MAE 0.869
+Time-series CV: acc 0.489 +/- 0.057   (5 folds)  folds=[0.43, 0.47, 0.44, 0.54, 0.57]
+               spearman 0.484 (CV mean)
+
+              precision    recall  f1-score   support
+
+         low       0.75      0.56      0.64       103
+         med       0.39      0.64      0.48        97
+        high       0.72      0.51      0.59       130
+
+    accuracy                           0.56       330
+   macro avg       0.62      0.57      0.57       330
+weighted avg       0.63      0.56      0.58       330
+
+Confusion matrix (rows=true, cols=pred), order [low, med, high]:
+[[58 39  6]
+ [15 62 20]
+ [ 4 60 66]]
+
+Top 15 features by mean |SHAP|:
+  thumb_clip_pca_0         0.1579
+  thumb_brightness         0.1257
+  thumb_clip_pca_2         0.1096
+  hashtag_count            0.1083
+  audio_voice_ratio        0.0978
+  thumb_contrast           0.0978
+  thumb_clip_pca_1         0.0842
+  title_all_caps_ratio     0.0812
+  publish_hour             0.0748
+  thumb_clip_pca_6         0.0684
+  thumb_saturation         0.0651
+  thumb_text_char_count    0.0573
+  thumb_clip_pca_4         0.0562
+  audio_loudness_mean      0.0467
+  thumb_clip_pca_5         0.0465
+
+==================================================================
+scheme=within_channel_aged_v1  task=classification  features=all (57)
+==================================================================
+Dataset      : 1644 videos  (1315 train / 329 test)
+Single split : acc 0.380   (random 0.333)
+Time-series CV: acc 0.380 +/- 0.034   (5 folds)  folds=[0.4, 0.39, 0.32, 0.42, 0.37]
+
+              precision    recall  f1-score   support
+
+         low       0.38      0.33      0.35       123
+         med       0.42      0.35      0.38       105
+        high       0.36      0.47      0.41       101
+
+    accuracy                           0.38       329
+   macro avg       0.38      0.38      0.38       329
+weighted avg       0.38      0.38      0.38       329
+
+Confusion matrix (rows=true, cols=pred), order [low, med, high]:
+[[41 36 46]
+ [30 37 38]
+ [38 16 47]]
+
+Top 15 features by mean |SHAP|:
+  description_char_count   0.1019
+  title_emoji_count        0.0838
+  thumb_clip_pca_0         0.0772
+  thumb_clip_pca_1         0.0680
+  thumb_clip_pca_4         0.0675
+  first3s_motion_intensity 0.0643
+  thumb_clip_pca_7         0.0619
+  audio_loudness_mean      0.0586
+  title_char_count         0.0579
+  thumb_clip_pca_2         0.0573
+  thumb_contrast           0.0540
+  thumb_brightness         0.0508
+  avg_shot_length          0.0493
+  audio_loudness_max       0.0491
+  dev_front_back           0.0487
+
+==================================================================
+scheme=within_channel_aged_v1  task=classification  features=intrinsic (48)
+==================================================================
+Dataset      : 1644 videos  (1315 train / 329 test)
+Single split : acc 0.371   (random 0.333)
+Time-series CV: acc 0.364 +/- 0.025   (5 folds)  folds=[0.36, 0.36, 0.33, 0.41, 0.35]
+
+              precision    recall  f1-score   support
+
+         low       0.41      0.36      0.38       123
+         med       0.37      0.30      0.33       105
+        high       0.34      0.47      0.39       101
+
+    accuracy                           0.37       329
+   macro avg       0.37      0.37      0.37       329
+weighted avg       0.38      0.37      0.37       329
+
+Confusion matrix (rows=true, cols=pred), order [low, med, high]:
+[[44 31 48]
+ [31 31 43]
+ [33 21 47]]
+
+Top 15 features by mean |SHAP|:
+  description_char_count   0.1017
+  thumb_clip_pca_0         0.0826
+  title_emoji_count        0.0817
+  audio_loudness_mean      0.0772
+  first3s_motion_intensity 0.0749
+  thumb_clip_pca_2         0.0748
+  thumb_clip_pca_4         0.0740
+  thumb_clip_pca_1         0.0695
+  thumb_clip_pca_7         0.0647
+  thumb_brightness         0.0645
+  thumb_saturation         0.0601
+  thumb_contrast           0.0592
+  thumb_clip_pca_6         0.0571
+  title_char_count         0.0534
+  avg_shot_length          0.0488
+
+==================================================================
+scheme=within_channel_aged_v1  task=regression  features=all (57)
+==================================================================
+Dataset      : 1644 videos  (1315 train / 329 test)
+Single split : acc 0.283   (random 0.333)
+               spearman 0.025   MAE 0.729
+Time-series CV: acc 0.343 +/- 0.037   (5 folds)  folds=[0.36, 0.37, 0.29, 0.39, 0.31]
+               spearman 0.045 (CV mean)
+
+              precision    recall  f1-score   support
+
+         low       0.28      0.13      0.18       123
+         med       0.26      0.50      0.35       105
+        high       0.34      0.24      0.28       101
+
+    accuracy                           0.28       329
+   macro avg       0.30      0.29      0.27       329
+weighted avg       0.29      0.28      0.26       329
+
+Confusion matrix (rows=true, cols=pred), order [low, med, high]:
+[[16 93 14]
+ [20 53 32]
+ [21 56 24]]
+
+Top 15 features by mean |SHAP|:
+  thumb_clip_pca_0         0.0805
+  audio_loudness_max       0.0552
+  thumb_clip_pca_2         0.0493
+  transcript_word_count    0.0473
+  thumb_clip_pca_4         0.0472
+  thumb_clip_pca_1         0.0424
+  thumb_clip_pca_5         0.0415
+  thumb_saturation         0.0388
+  dev_front_back           0.0377
+  thumb_clip_pca_6         0.0368
+  audio_loudness_mean      0.0353
+  thumb_text_char_count    0.0337
+  audio_voice_ratio        0.0330
+  publish_dow              0.0293
+  title_char_count         0.0287
+
+==================================================================
+scheme=within_channel_aged_v1  task=regression  features=intrinsic (48)
+==================================================================
+Dataset      : 1644 videos  (1315 train / 329 test)
+Single split : acc 0.295   (random 0.333)
+               spearman 0.026   MAE 0.726
+Time-series CV: acc 0.326 +/- 0.030   (5 folds)  folds=[0.33, 0.34, 0.29, 0.37, 0.3]
+               spearman 0.043 (CV mean)
+
+              precision    recall  f1-score   support
+
+         low       0.32      0.15      0.20       123
+         med       0.29      0.53      0.37       105
+        high       0.29      0.23      0.26       101
+
+    accuracy                           0.29       329
+   macro avg       0.30      0.30      0.28       329
+weighted avg       0.30      0.29      0.27       329
+
+Confusion matrix (rows=true, cols=pred), order [low, med, high]:
+[[18 82 23]
+ [17 56 32]
+ [22 56 23]]
+
+Top 15 features by mean |SHAP|:
+  thumb_clip_pca_0         0.0799
+  audio_loudness_max       0.0552
+  transcript_word_count    0.0498
+  thumb_clip_pca_6         0.0484
+  thumb_clip_pca_5         0.0469
+  thumb_clip_pca_4         0.0462
+  thumb_clip_pca_2         0.0446
+  thumb_clip_pca_1         0.0437
+  audio_loudness_mean      0.0430
+  thumb_text_char_count    0.0385
+  thumb_saturation         0.0367
+  title_char_count         0.0358
+  audio_voice_ratio        0.0343
+  publish_hour             0.0329
+  thumb_brightness         0.0316

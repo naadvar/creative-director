@@ -1,0 +1,12 @@
+rows=1649 features=124  seeds=8
+  seed 0: 0.5388
+  seed 1: 0.5276
+  seed 2: 0.5286
+  seed 3: 0.5388
+  seed 4: 0.5257
+  seed 5: 0.5340
+  seed 6: 0.5292
+  seed 7: 0.5507
+
+MEAN Spearman across 8 seeds: 0.5342 +/- 0.0078
+  range [0.5257, 0.5507]

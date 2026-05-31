@@ -1,0 +1,51 @@
+# Slim dependency set for the SERVE-ONLY backend (Phase 1 deploy).
+#
+# Excludes the heavy GPU/extraction stack (torch, open-clip, faster-whisper,
+# librosa, scenedetect, shap, sentence-transformers, streamlit) — those are
+# imported lazily INSIDE the ingest handler, which the serve-only deploy disables
+# via ENABLE_INGEST=false. The full requirements.txt is used for the Phase-2
+# worker that does on-demand scrape + extraction.
+#
+# NOTE: opencv, Pillow, yt-dlp and the google YouTube client below are pulled in
+# eagerly by the serve path today ("import bleed" from the ingestion/feature
+# modules). They keep the image at ~medium size (no torch). Making those imports
+# lazy is a later optimization to slim the image further.
+
+# Web
+fastapi>=0.115.0
+uvicorn[standard]>=0.30.0
+python-multipart>=0.0.9    # FastAPI form/file endpoints
+itsdangerous>=2.0          # starlette SessionMiddleware (signed-cookie auth)
+email-validator>=2.0       # pydantic EmailStr schemas
+
+# DB + ORM
+SQLAlchemy>=2.0.0
+
+# Config / IO
+pydantic>=2.5.0
+pydantic-settings>=2.1.0
+python-dotenv>=1.0.0
+PyYAML>=6.0
+httpx>=0.27.0
+tenacity>=8.2.0
+loguru>=0.7.0
+
+# Data / benchmark math + lightweight category classifier
+pandas>=2.1.0
+numpy>=1.26.0
+scikit-learn>=1.3.0
+
+# Imaging (eagerly imported by serve path)
+Pillow>=10.0.0
+opencv-python-headless>=4.9.0   # headless = no libGL needed in the container
+
+# YouTube metadata client + transient download (eagerly imported by serve path)
+google-api-python-client>=2.100.0
+google-auth-httplib2>=0.1.1
+yt-dlp>=2024.10.0
+
+# LLM advice narration
+anthropic>=0.69.0
+
+# Cloudflare R2 (S3-compatible) — media serving + DB fetch at startup
+boto3>=1.34.0

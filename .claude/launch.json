@@ -1,0 +1,23 @@
+{
+ "version": "0.0.1",
+ "configurations": [
+  {
+   "name": "api",
+   "runtimeExecutable": ".venv/Scripts/python.exe",
+   "runtimeArgs": ["-m", "api"],
+   "port": 8000
+  },
+  {
+   "name": "frontend",
+   "runtimeExecutable": "npm",
+   "runtimeArgs": ["run", "dev", "--prefix", "frontend"],
+   "port": 5173
+  },
+  {
+   "name": "app",
+   "runtimeExecutable": ".venv/Scripts/python.exe",
+   "runtimeArgs": ["-m", "streamlit", "run", "app.py", "--server.headless", "true", "--server.port", "8501"],
+   "port": 8501
+  }
+ ]
+}

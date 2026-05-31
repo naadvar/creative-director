@@ -1,0 +1,66 @@
+# Instagram TRAVEL creators — niche tag: ig_travel.
+#
+# ⚠️ CANDIDATE LIST — anchor accounts only (verify with --profiles-only first;
+# handles/tiers are from memory). The small/mid tier is intentionally thin —
+# fill it with the hashtag discovery pass, which surfaces rising creators that
+# name-recall lists miss.
+#
+#   python -m scripts.ingest_instagram_apify --niche ig_travel \
+#       --seed-file seed_channels/instagram_travel.yaml --profiles-only
+#   python -m scripts.discover_ig_creators --niche ig_travel \
+#       --hashtags travelreels,traveltips,hiddengems,traveldiaries,weekendgetaway,citytravel \
+#       --seed-file seed_channels/instagram_travel.yaml
+#   python -m scripts.ingest_instagram_apify --niche ig_travel \
+#       --seed-file seed_channels/instagram_travel.yaml --max-reels 60 --max-cost-usd 10
+
+accounts:
+  # Verified 2026-05-29 via --profiles-only. Dropped @doyoutravel (2.8k/0,
+  # squatter) and @kristenbor (99/private).
+  #
+  # --- LARGE (1M+) ---
+  - "@beautifuldestinations"  # 24.3M - travel media brand
+  - "@chrisburkard"           #  3.8M - adventure / landscape photographer
+  - "@thebucketlistfamily"    #  3.2M - family travel
+  - "@muradosmann"            #  3.1M - #followmeto
+  - "@gypsea_lust"            #  1.9M - Lauren Bullen
+
+  # --- MID (100k-1M) ---
+  - "@theblondeabroad"        #  502K - Kiersten Rich
+  - "@nomadicmatt"            #  162K - budget travel
+  - "@expertvagabond"         #  128K - Matthew Karsten
+  - "@hey_ciara"              #  125K - solo travel
+
+  # --- SMALL (<100k) - from discover_ig_creators 2026-05-29 (9 travel hashtags,
+  #     53 candidates), curated to individual creators (dropped travel
+  #     agencies/booking brands: cozmotravel*, fluege.de, fasttracktaxi,
+  #     easybook.my, *tours/*agency, and off-niche wine/food/DIY) ---
+  - "@facesandplaces_h"      #  69.9K - verified
+  - "@crete.secrets"         #  64.7K
+  - "@andromorphosa"         #  49.8K
+  - "@bigskynationph"        #  47.1K
+  - "@cameloutdoorus"        #  38.1K
+  - "@dhaval_chaudhary_023"  #  37.4K
+  - "@beestonp_travels"      #  35.2K
+  - "@gtgabroad"             #  32.8K - verified
+  - "@cheshtagarwal"         #  30.4K
+  - "@anishqx_"              #  28.0K
+  - "@dr_manas_rd"           #  22.1K
+  - "@alpsnbanks"            #  20.9K
+  - "@annemariehagerty"      #  19.1K - verified
+  - "@bohobetravels"         #  18.4K
+  - "@iambornfabulous"       #  15.7K
+  - "@aurawithp"             #  14.8K
+  - "@flygirlkelley"         #  11.6K
+  - "@fotosiasten"           #  11.4K
+  - "@abbyjanath"            #  11.1K
+  - "@flapsadventures"       #  11.1K - verified
+  - "@abhikefilms"           #  10.4K
+  - "@eccyabla"              #   9.6K
+  - "@echo_hills_07"         #   9.0K
+  - "@happytravelthoughts"   #   8.8K
+  - "@aksharaniksh"          #   8.4K
+  - "@__trishaaaaa_"         #   7.3K
+  - "@_smita_khandelwal_"    #   6.1K
+  - "@go_hobbo"              #   5.2K
+  - "@bluesea_odyssey"       #   5.1K
+  - "@gustavodefilpo"        #   5.0K

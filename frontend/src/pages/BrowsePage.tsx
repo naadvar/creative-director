@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { api } from '../api/client'
 import type { CategoryCount, CorpusVideo, NicheInfo } from '../api/types'
 import Spinner from '../components/Spinner'
+import HandleAnalyzer from '../components/HandleAnalyzer'
 import UrlAnalyzer from '../components/UrlAnalyzer'
 import VideoCard from '../components/VideoCard'
 
@@ -138,6 +139,7 @@ export default function BrowsePage() {
 
   return (
     <div className="space-y-5">
+      <HandleAnalyzer />
       <UrlAnalyzer />
 
       {/* Niche switcher — the top-level selector */}

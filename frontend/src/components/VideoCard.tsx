@@ -11,12 +11,15 @@ export default function VideoCard({ v }: { v: CorpusVideo }) {
     >
       <div className="relative aspect-video bg-ink">
         <img
-          src={v.thumbnail_url ?? thumbnailUrl(v.video_id)}
+          src={thumbnailUrl(v.video_id)}
           alt=""
           loading="lazy"
           onError={(e) => {
+            // The proxy serves local-or-R2. If it still fails (e.g. a niche whose
+            // thumbnails aren't in R2 yet), hide the broken-image icon and keep the
+            // dark placeholder instead of retrying the expired Instagram CDN URL.
             e.currentTarget.onerror = null
-            e.currentTarget.src = thumbnailUrl(v.video_id)
+            e.currentTarget.style.visibility = 'hidden'
           }}
           className="h-full w-full object-cover opacity-90 transition-opacity group-hover:opacity-100"
         />

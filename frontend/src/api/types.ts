@@ -267,3 +267,14 @@ export interface MyReels {
   count: number
   reels: ReelCard[]
 }
+
+// --- paste-handle analysis job (POST /analyze-handle, poll GET /analyze-handle/{id}) ---
+export interface AnalyzeHandleJob {
+  job_id: string
+  status: 'running' | 'done' | 'error' | string
+  message: string
+  handle: string
+  niche: string
+  video_ids: string[]
+  error: string | null
+}

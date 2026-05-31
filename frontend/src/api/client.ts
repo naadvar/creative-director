@@ -1,4 +1,5 @@
 import type {
+  AnalyzeHandleJob,
   AuthUser,
   AutoCut,
   CategoryInfo,
@@ -148,6 +149,20 @@ export const api = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ url, force }),
     })
+  },
+
+  /** Start scraping + featurising a creator's recent reels (background job). */
+  analyzeHandle(handle: string, niche: string, maxReels = 6): Promise<AnalyzeHandleJob> {
+    return request<AnalyzeHandleJob>('/analyze-handle', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ handle, niche, max_reels: maxReels }),
+    })
+  },
+
+  /** Poll a paste-handle job until status === 'done'. */
+  analyzeHandleStatus(jobId: string): Promise<AnalyzeHandleJob> {
+    return request<AnalyzeHandleJob>(`/analyze-handle/${encodeURIComponent(jobId)}`)
   },
 
   // --- auth + creator ---

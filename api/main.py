@@ -28,7 +28,7 @@ from loguru import logger
 from starlette.middleware.sessions import SessionMiddleware
 
 from api.config import api_settings
-from api.routers import auth, corpus, health, ingest, instagram, me, videos
+from api.routers import analyze_handle, auth, corpus, health, ingest, instagram, me, videos
 from creative_director.storage.db import init_db
 
 
@@ -97,6 +97,7 @@ def create_app() -> FastAPI:
 
     if os.getenv("ENABLE_INGEST", "true").lower() != "false":
         app.include_router(ingest.router)
+        app.include_router(analyze_handle.router)
     return app
 
 

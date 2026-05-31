@@ -32,22 +32,19 @@ function Tile({
 }
 
 export default function Scorecard({ b }: { b: VideoBreakdown }) {
-  const total = b.findings.length
-  const aligned = b.findings.filter((f) => !f.off_benchmark).length
-  const hasData = total > 0
-  const matchPct = hasData ? (aligned / total) * 100 : 0
+  // The honest "matches winners" score: the niche's data-derived predictive
+  // features (NOT the old generic all-findings match%, which was noise vs
+  // actual performance).
+  const pm = b.pattern_match
+  const hasData = pm != null && pm.total > 0
+  const aligned = pm?.aligned ?? 0
+  const total = pm?.total ?? 0
+  const matchPct = hasData ? pm!.pct : 0
   const ringColor =
     matchPct >= 67 ? RING.good : matchPct >= 34 ? RING.mid : RING.bad
 
   const tier = b.tier
   const arch = archetypeName(b.archetype).toLowerCase()
-  // Phrase the comparison so the creator knows WHO they're being compared to.
-  // "tier" scope: same size, same format. "pooled" scope: same format only,
-  // sizes mixed (their bucket was too thin to stand alone) — flag honestly.
-  const comparedTo =
-    b.benchmark_scope === 'tier' && tier
-      ? `${tierLabel(tier).toLowerCase()}-tier ${arch} winners`
-      : `${arch} winners (all sizes)`
 
   return (
     <div className="rounded-2xl border border-border bg-surface p-5 sm:p-6">
@@ -67,18 +64,15 @@ export default function Scorecard({ b }: { b: VideoBreakdown }) {
           <p className="mt-1.5 text-lg leading-snug">
             {hasData ? (
               <>
-                This video matches{' '}
-                <span className="font-semibold">{comparedTo}</span> on{' '}
+                This reel matches{' '}
                 <span className="font-semibold" style={{ color: ringColor }}>
                   {aligned} of {total}
                 </span>{' '}
-                measured features.
+                of the factors that actually predict performance in this niche.
               </>
             ) : (
               <>
-                There is no winner benchmark for the{' '}
-                <span className="font-semibold">{archetypeName(b.archetype)}</span>{' '}
-                format yet — not enough comparable videos.
+                Not enough data yet to grade this niche&apos;s winning patterns.
               </>
             )}
           </p>

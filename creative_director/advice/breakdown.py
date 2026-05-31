@@ -10,8 +10,11 @@ narrative layer can stay honest about levers vs proxies.
 """
 from __future__ import annotations
 
+import json
 import math
 from dataclasses import dataclass, field
+from functools import lru_cache
+from pathlib import Path
 from typing import Optional
 
 from creative_director.advice.benchmark import (
@@ -33,6 +36,54 @@ from creative_director.storage.models import Video, VideoLabel
 # non-tier-stratified pooled benchmark. Five is a soft floor for medians;
 # tighter than that and the per-tier comparison is noisier than the pool.
 _MIN_TIER_WINNERS = 5
+
+
+@lru_cache(maxsize=1)
+def _predictive_map() -> dict:
+    """Per-niche map of features that actually predict performance, from
+    scripts.compute_predictive_features -> {niche: {feature: {rho, niche_median, source}}}."""
+    path = Path(__file__).with_name("predictive_features.json")
+    try:
+        with open(path, encoding="utf-8") as fh:
+            return json.load(fh).get("niches", {})
+    except (OSError, ValueError):
+        return {}
+
+
+def predictive_pattern_match(video, niche: Optional[str]) -> Optional[dict]:
+    """How well a video matches what actually WINS in its niche.
+
+    Uses the data-derived predictive features (not the generic REPORTABLE set):
+    the |rho|-weighted fraction sitting on the winner-favorable side of the niche
+    median. Returns {aligned, total, pct} or None when the niche has no
+    predictive map yet / the video lacks features.
+    """
+    feats = _predictive_map().get(niche or "")
+    if not feats or video.features is None:
+        return None
+    tot_w = al_w = 0.0
+    total = aligned = 0
+    for feat, meta in feats.items():
+        rho = meta.get("rho") or 0.0
+        med = meta.get("niche_median")
+        if med is None or rho == 0:
+            continue
+        val = (
+            video.duration_seconds
+            if meta.get("source") == "video"
+            else getattr(video.features, feat, None)
+        )
+        if val is None:
+            continue
+        w = abs(rho)
+        tot_w += w
+        total += 1
+        if (float(val) - med) * rho > 0:  # on the side that correlates with winning
+            al_w += w
+            aligned += 1
+    if tot_w == 0:
+        return None
+    return {"aligned": aligned, "total": total, "pct": round(100 * al_w / tot_w)}
 
 
 @dataclass
@@ -76,6 +127,10 @@ class VideoBreakdown:
     # Whether the benchmark used was tier-stratified or pooled fallback.
     benchmark_scope: str = "pooled"  # "tier" | "pooled"
     findings: list[Finding] = field(default_factory=list)
+    # Data-derived "matches winners" score over the niche's predictive features
+    # ({aligned, total, pct}). The honest Scorecard headline, vs the old generic
+    # all-findings match%. None when the niche has no predictive map.
+    pattern_match: Optional[dict] = None
 
 
 def _gap_score(gap_ratio: float) -> float:
@@ -221,6 +276,12 @@ def analyze_video(
                     trajectory=trajectory,
                 )
             )
+
+        # How well this reel matches what actually predicts performance in its
+        # niche (data-derived winner-patterns) — the honest "matches winners" %.
+        breakdown.pattern_match = predictive_pattern_match(
+            video, video.channel.niche if video.channel else None
+        )
 
     # Off-benchmark findings first (by rank_score desc); aligned at the tail.
     conf_rank = {"strong": 0, "moderate": 1}

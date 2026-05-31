@@ -22,6 +22,12 @@ export interface Finding {
   trajectory: Trajectory | null
 }
 
+export interface PatternMatch {
+  aligned: number
+  total: number
+  pct: number
+}
+
 export interface VideoBreakdown {
   video_id: string
   title: string
@@ -35,6 +41,7 @@ export interface VideoBreakdown {
   tier: Tier | null
   benchmark_scope: BenchmarkScope
   findings: Finding[]
+  pattern_match: PatternMatch | null
 }
 
 export interface Suggestion {

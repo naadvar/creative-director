@@ -36,6 +36,15 @@ class Finding(_FromAttrs):
     trajectory: Optional[str] = None  # "improving" | "stable" | "declining" | None
 
 
+class PatternMatch(_FromAttrs):
+    """How many of the niche's performance-predictive features the reel matches
+    (|rho|-weighted pct). The honest, data-derived 'matches winners' score."""
+
+    aligned: int
+    total: int
+    pct: int
+
+
 class VideoBreakdown(_FromAttrs):
     video_id: str
     title: str
@@ -49,6 +58,7 @@ class VideoBreakdown(_FromAttrs):
     tier: Optional[str] = None  # "small" | "mid" | "large" | None
     benchmark_scope: str = "pooled"  # "tier" | "pooled"
     findings: list[Finding]
+    pattern_match: Optional[PatternMatch] = None
 
 
 # --- plain-English summary: PlainSummary ------------------------------------

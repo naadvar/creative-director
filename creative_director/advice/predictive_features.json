@@ -1,0 +1,437 @@
+{
+  "scheme": "views_per_sub_aged_v1",
+  "rho_min": 0.08,
+  "p_max": 0.05,
+  "niches": {
+    "ig_fitness": {
+      "thumb_contrast": {
+        "rho": -0.3091,
+        "niche_median": 0.2316,
+        "winner_median": 0.2141,
+        "source": "features"
+      },
+      "audio_voice_ratio": {
+        "rho": 0.255,
+        "niche_median": 0.6555,
+        "winner_median": 0.7107,
+        "source": "features"
+      },
+      "hook_word_count": {
+        "rho": -0.2244,
+        "niche_median": 8.0,
+        "winner_median": 3.0,
+        "source": "features"
+      },
+      "audio_loudness_mean": {
+        "rho": 0.2202,
+        "niche_median": -19.7535,
+        "winner_median": -19.1611,
+        "source": "features"
+      },
+      "transcript_word_count": {
+        "rho": -0.1698,
+        "niche_median": 33.0,
+        "winner_median": 10.0,
+        "source": "features"
+      },
+      "thumb_dominant_face_area": {
+        "rho": -0.1641,
+        "niche_median": 0.0045,
+        "winner_median": 0.0,
+        "source": "features"
+      },
+      "thumb_brightness": {
+        "rho": -0.1563,
+        "niche_median": 0.4363,
+        "winner_median": 0.4181,
+        "source": "features"
+      },
+      "title_char_count": {
+        "rho": -0.1457,
+        "niche_median": 61.0,
+        "winner_median": 53.0,
+        "source": "features"
+      },
+      "thumb_text_char_count": {
+        "rho": -0.1453,
+        "niche_median": 0.0,
+        "winner_median": 0.0,
+        "source": "features"
+      },
+      "hook_uses_you": {
+        "rho": -0.1257,
+        "niche_median": 0.0,
+        "winner_median": 0.0,
+        "source": "features"
+      },
+      "thumb_text_present": {
+        "rho": -0.1217,
+        "niche_median": 0.0,
+        "winner_median": 0.0,
+        "source": "features"
+      },
+      "title_word_count": {
+        "rho": -0.1196,
+        "niche_median": 11.0,
+        "winner_median": 10.0,
+        "source": "features"
+      },
+      "thumb_face_count": {
+        "rho": -0.1155,
+        "niche_median": 1.0,
+        "winner_median": 0.0,
+        "source": "features"
+      },
+      "title_all_caps_ratio": {
+        "rho": -0.1119,
+        "niche_median": 0.0,
+        "winner_median": 0.0,
+        "source": "features"
+      },
+      "hook_uses_number": {
+        "rho": -0.1096,
+        "niche_median": 0.0,
+        "winner_median": 0.0,
+        "source": "features"
+      },
+      "music_audio_id_corpus_uses": {
+        "rho": -0.1058,
+        "niche_median": 1.0,
+        "winner_median": 1.0,
+        "source": "features"
+      },
+      "first3s_face_present": {
+        "rho": -0.1039,
+        "niche_median": 1.0,
+        "winner_median": 1.0,
+        "source": "features"
+      },
+      "thumb_saturation": {
+        "rho": -0.087,
+        "niche_median": 0.2583,
+        "winner_median": 0.2461,
+        "source": "features"
+      },
+      "duration_seconds": {
+        "rho": -0.0854,
+        "niche_median": 26.0,
+        "winner_median": 23.0,
+        "source": "video"
+      },
+      "title_has_number": {
+        "rho": -0.0833,
+        "niche_median": 0.0,
+        "winner_median": 0.0,
+        "source": "features"
+      }
+    },
+    "ig_travel": {
+      "duration_seconds": {
+        "rho": 0.1927,
+        "niche_median": 16.0,
+        "winner_median": 19.0,
+        "source": "video"
+      },
+      "hashtag_count": {
+        "rho": 0.19,
+        "niche_median": 4.0,
+        "winner_median": 5.0,
+        "source": "features"
+      },
+      "transcript_word_count": {
+        "rho": 0.1826,
+        "niche_median": 5.0,
+        "winner_median": 11.0,
+        "source": "features"
+      },
+      "avg_shot_length": {
+        "rho": 0.1725,
+        "niche_median": 14.2667,
+        "winner_median": 15.3333,
+        "source": "features"
+      },
+      "first3s_face_present": {
+        "rho": 0.1582,
+        "niche_median": 1.0,
+        "winner_median": 1.0,
+        "source": "features"
+      },
+      "first3s_motion_intensity": {
+        "rho": 0.1201,
+        "niche_median": 0.0396,
+        "winner_median": 0.0423,
+        "source": "features"
+      },
+      "audio_voice_ratio": {
+        "rho": -0.0962,
+        "niche_median": 0.7225,
+        "winner_median": 0.7005,
+        "source": "features"
+      },
+      "audio_loudness_max": {
+        "rho": 0.0828,
+        "niche_median": -10.4723,
+        "winner_median": -10.1181,
+        "source": "features"
+      },
+      "first3s_text_present": {
+        "rho": 0.0805,
+        "niche_median": 1.0,
+        "winner_median": 1.0,
+        "source": "features"
+      }
+    },
+    "ig_food": {
+      "title_emoji_count": {
+        "rho": 0.3534,
+        "niche_median": 0.0,
+        "winner_median": 1.0,
+        "source": "features"
+      },
+      "avg_shot_length": {
+        "rho": 0.2925,
+        "niche_median": 27.3,
+        "winner_median": 31.4333,
+        "source": "features"
+      },
+      "description_char_count": {
+        "rho": -0.268,
+        "niche_median": 229.5,
+        "winner_median": 133.0,
+        "source": "features"
+      },
+      "title_word_count": {
+        "rho": -0.2419,
+        "niche_median": 13.0,
+        "winner_median": 9.0,
+        "source": "features"
+      },
+      "duration_seconds": {
+        "rho": 0.1878,
+        "niche_median": 31.0,
+        "winner_median": 33.0,
+        "source": "video"
+      },
+      "first3s_motion_intensity": {
+        "rho": -0.18,
+        "niche_median": 0.0499,
+        "winner_median": 0.0386,
+        "source": "features"
+      },
+      "title_char_count": {
+        "rho": -0.1727,
+        "niche_median": 92.5,
+        "winner_median": 59.0,
+        "source": "features"
+      },
+      "total_cut_count": {
+        "rho": -0.1552,
+        "niche_median": 0.0,
+        "winner_median": 0.0,
+        "source": "features"
+      },
+      "first3s_cut_count": {
+        "rho": -0.144,
+        "niche_median": 0.0,
+        "winner_median": 0.0,
+        "source": "features"
+      },
+      "title_question_mark": {
+        "rho": -0.1061,
+        "niche_median": 0.0,
+        "winner_median": 0.0,
+        "source": "features"
+      },
+      "first3s_text_present": {
+        "rho": -0.0966,
+        "niche_median": 0.0,
+        "winner_median": 0.0,
+        "source": "features"
+      },
+      "title_all_caps_ratio": {
+        "rho": -0.0868,
+        "niche_median": 0.0,
+        "winner_median": 0.0,
+        "source": "features"
+      },
+      "transcript_word_count": {
+        "rho": 0.082,
+        "niche_median": 40.0,
+        "winner_median": 23.0,
+        "source": "features"
+      }
+    },
+    "ig_fashion": {
+      "hashtag_count": {
+        "rho": 0.201,
+        "niche_median": 5.0,
+        "winner_median": 5.0,
+        "source": "features"
+      },
+      "duration_seconds": {
+        "rho": 0.1751,
+        "niche_median": 15.0,
+        "winner_median": 20.0,
+        "source": "video"
+      },
+      "audio_voice_ratio": {
+        "rho": -0.1521,
+        "niche_median": 0.7372,
+        "winner_median": 0.7055,
+        "source": "features"
+      },
+      "avg_shot_length": {
+        "rho": 0.143,
+        "niche_median": 14.5333,
+        "winner_median": 17.45,
+        "source": "features"
+      },
+      "title_question_mark": {
+        "rho": 0.1386,
+        "niche_median": 0.0,
+        "winner_median": 0.0,
+        "source": "features"
+      },
+      "first3s_face_present": {
+        "rho": 0.136,
+        "niche_median": 1.0,
+        "winner_median": 1.0,
+        "source": "features"
+      },
+      "title_char_count": {
+        "rho": -0.1114,
+        "niche_median": 39.0,
+        "winner_median": 39.0,
+        "source": "features"
+      },
+      "transcript_word_count": {
+        "rho": 0.1101,
+        "niche_median": 6.0,
+        "winner_median": 10.0,
+        "source": "features"
+      },
+      "audio_loudness_mean": {
+        "rho": 0.0815,
+        "niche_median": -18.6907,
+        "winner_median": -18.7253,
+        "source": "features"
+      }
+    },
+    "fitness": {
+      "audio_voice_ratio": {
+        "rho": 0.4568,
+        "niche_median": 0.5972,
+        "winner_median": 0.6563,
+        "source": "features"
+      },
+      "duration_seconds": {
+        "rho": -0.3778,
+        "niche_median": 27.0,
+        "winner_median": 23.0,
+        "source": "video"
+      },
+      "title_emoji_count": {
+        "rho": 0.3295,
+        "niche_median": 0.0,
+        "winner_median": 1.0,
+        "source": "features"
+      },
+      "audio_loudness_mean": {
+        "rho": 0.3241,
+        "niche_median": -27.1687,
+        "winner_median": -21.4564,
+        "source": "features"
+      },
+      "avg_shot_length": {
+        "rho": -0.3127,
+        "niche_median": 24.6333,
+        "winner_median": 21.5,
+        "source": "features"
+      },
+      "transcript_word_count": {
+        "rho": -0.291,
+        "niche_median": 55.0,
+        "winner_median": 14.0,
+        "source": "features"
+      },
+      "title_word_count": {
+        "rho": 0.2631,
+        "niche_median": 7.0,
+        "winner_median": 9.0,
+        "source": "features"
+      },
+      "title_char_count": {
+        "rho": 0.2356,
+        "niche_median": 44.0,
+        "winner_median": 56.0,
+        "source": "features"
+      },
+      "engagement_has_tag_prompt": {
+        "rho": 0.2026,
+        "niche_median": 0.0,
+        "winner_median": 0.0,
+        "source": "features"
+      },
+      "audio_loudness_max": {
+        "rho": 0.1995,
+        "niche_median": -13.3082,
+        "winner_median": -11.154,
+        "source": "features"
+      },
+      "hook_word_count": {
+        "rho": -0.1431,
+        "niche_median": 12.0,
+        "winner_median": 6.0,
+        "source": "features"
+      },
+      "thumb_saturation": {
+        "rho": 0.1286,
+        "niche_median": 0.2399,
+        "winner_median": 0.2681,
+        "source": "features"
+      },
+      "thumb_contrast": {
+        "rho": -0.1242,
+        "niche_median": 0.2335,
+        "winner_median": 0.2254,
+        "source": "features"
+      },
+      "thumb_dominant_face_area": {
+        "rho": -0.1199,
+        "niche_median": 0.004,
+        "winner_median": 0.0035,
+        "source": "features"
+      },
+      "first3s_text_present": {
+        "rho": -0.1154,
+        "niche_median": 1.0,
+        "winner_median": 1.0,
+        "source": "features"
+      },
+      "total_cut_count": {
+        "rho": -0.1153,
+        "niche_median": 0.0,
+        "winner_median": 0.0,
+        "source": "features"
+      },
+      "engagement_has_comment_prompt": {
+        "rho": -0.1081,
+        "niche_median": 0.0,
+        "winner_median": 0.0,
+        "source": "features"
+      },
+      "description_char_count": {
+        "rho": 0.0958,
+        "niche_median": 0.0,
+        "winner_median": 0.0,
+        "source": "features"
+      },
+      "title_all_caps_ratio": {
+        "rho": -0.0852,
+        "niche_median": 0.0,
+        "winner_median": 0.0,
+        "source": "features"
+      }
+    }
+  }
+}

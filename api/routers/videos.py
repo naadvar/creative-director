@@ -99,7 +99,7 @@ def summary(video_id: str) -> schemas.PlainSummary:
     except ValueError as exc:
         raise HTTPException(status_code=404, detail=str(exc))
     timeline_bm, _ = pick_for_tier(benchmarks.timeline(niche), tier, archetype)
-    plain = build_summary(breakdown, timeline_bm)
+    plain = build_summary(breakdown, timeline_bm, niche)
     return schemas.PlainSummary.model_validate(plain)
 
 

@@ -16,14 +16,27 @@ from typing import Optional
 from sqlalchemy import select
 
 from creative_director.advice.breakdown import VideoBreakdown
+from creative_director.advice.categories import _base as _niche_base
 from creative_director.advice.timeline_benchmark import summarize_timeline
 from creative_director.storage.db import session_scope
 from creative_director.storage.models import VideoTimeline
 
+# How to describe the *subject* video's format (niche-neutral).
 ARCHETYPE_PLAIN = {
     "talking": "talking-to-camera video",
-    "demo": "silent exercise demo",
+    "demo": "silent, no-voiceover video",
 }
+
+
+def _cohort(niche: Optional[str], video_id: str) -> str:
+    """How to refer to the winning set in prose — niche- and platform-aware.
+
+    e.g. ``ig_food`` -> "food Reels", a YouTube fitness id -> "fitness Shorts",
+    an unknown niche -> just "Reels"/"Shorts".
+    """
+    platform = "Reels" if (video_id or "").startswith("ig_") else "Shorts"
+    word = _niche_base(niche)  # 'food' | 'travel' | 'fashion' | 'fitness' | None
+    return f"{word} {platform}" if word else platform
 
 _VIBE_PLAIN = {
     "talking_head": "a person talking to camera",
@@ -58,8 +71,7 @@ class PlainSummary:
     strengths: list[str] = field(default_factory=list)
 
 
-def _aggregate_suggestions(b: VideoBreakdown) -> list[Suggestion]:
-    arch = ARCHETYPE_PLAIN.get(b.archetype, "video")
+def _aggregate_suggestions(b: VideoBreakdown, cohort: str) -> list[Suggestion]:
     out: list[Suggestion] = []
     for f in b.findings:
         if not f.off_benchmark:
@@ -91,7 +103,7 @@ def _aggregate_suggestions(b: VideoBreakdown) -> list[Suggestion]:
         feat = f.feature
         if feat == "duration_seconds":
             text = (
-                f"Tighten the length — yours runs {yv:.0f}s; winning {arch}s "
+                f"Tighten the length — yours runs {yv:.0f}s; winning {cohort} "
                 f"average about {bv:.0f}s."
                 if hi
                 else f"It runs short at {yv:.0f}s vs about {bv:.0f}s for winners."
@@ -133,7 +145,9 @@ def _aggregate_suggestions(b: VideoBreakdown) -> list[Suggestion]:
     return out
 
 
-def _frame_suggestions(b: VideoBreakdown, frame_benchmark: dict) -> list[Suggestion]:
+def _frame_suggestions(
+    b: VideoBreakdown, frame_benchmark: dict, cohort: str
+) -> list[Suggestion]:
     bm = (frame_benchmark.get("archetypes") or {}).get(b.archetype)
     if not bm:
         return []
@@ -146,7 +160,6 @@ def _frame_suggestions(b: VideoBreakdown, frame_benchmark: dict) -> list[Suggest
     summ = summarize_timeline(rows)
     if not summ:
         return []
-    arch = ARCHETYPE_PLAIN.get(b.archetype, "video")
     out: list[Suggestion] = []
 
     yf, bf = summ.get("hook_face_frac"), bm.get("hook_face_pct")
@@ -154,7 +167,7 @@ def _frame_suggestions(b: VideoBreakdown, frame_benchmark: dict) -> list[Suggest
         out.append(
             Suggestion(
                 text=(
-                    f"Get a face on screen sooner — winning {arch}s show a face "
+                    f"Get a face on screen sooner — winning {cohort} show a face "
                     f"{bf * 100:.0f}% of the first 3 seconds; yours {yf * 100:.0f}%."
                 ),
                 clause=(
@@ -175,7 +188,7 @@ def _frame_suggestions(b: VideoBreakdown, frame_benchmark: dict) -> list[Suggest
                 Suggestion(
                     text=(
                         f"Open on {_plain_vibe(top_vibe)} — that's how "
-                        f"{top_share * 100:.0f}% of winning {arch}s start; yours "
+                        f"{top_share * 100:.0f}% of winning {cohort} start; yours "
                         f"opens on {_plain_vibe(your_vibe)}."
                     ),
                     clause=(
@@ -188,11 +201,14 @@ def _frame_suggestions(b: VideoBreakdown, frame_benchmark: dict) -> list[Suggest
     return out
 
 
-def build_summary(breakdown: VideoBreakdown, frame_benchmark: dict) -> PlainSummary:
+def build_summary(
+    breakdown: VideoBreakdown, frame_benchmark: dict, niche: Optional[str] = None
+) -> PlainSummary:
     """Synthesise the structured breakdowns into a plain-English read."""
     arch_plain = ARCHETYPE_PLAIN.get(breakdown.archetype, "video")
-    suggestions = _aggregate_suggestions(breakdown) + _frame_suggestions(
-        breakdown, frame_benchmark
+    cohort = _cohort(niche, breakdown.video_id)
+    suggestions = _aggregate_suggestions(breakdown, cohort) + _frame_suggestions(
+        breakdown, frame_benchmark, cohort
     )
     suggestions.sort(key=lambda s: -s.gap)
     worth = [s for s in suggestions if s.gap >= 0.1][:3]
@@ -203,12 +219,12 @@ def build_summary(breakdown: VideoBreakdown, frame_benchmark: dict) -> PlainSumm
         clauses = [s.clause for s in worth[:2]]
         gaps = clauses[0] if len(clauses) == 1 else f"{clauses[0]}, and {clauses[1]}"
         read = (
-            f"This is a {dur_txt}{arch_plain}. Compared with winning fitness Shorts "
+            f"This is a {dur_txt}{arch_plain}. Compared with winning {cohort} "
             f"of the same format, {gaps}."
         )
     else:
         read = (
-            f"This {dur_txt}{arch_plain} tracks winning fitness Shorts closely on "
+            f"This {dur_txt}{arch_plain} tracks winning {cohort} closely on "
             f"every feature measured — no clear gaps stand out."
         )
 

@@ -45,6 +45,17 @@ class PatternMatch(_FromAttrs):
     pct: int
 
 
+class Recommendation(_FromAttrs):
+    """A 'do what winners do' move derived from the niche's predictive features."""
+
+    feature: str
+    label: str
+    advice: str
+    your_value: float
+    winner_value: Optional[float] = None
+    weight: float
+
+
 class VideoBreakdown(_FromAttrs):
     video_id: str
     title: str
@@ -59,6 +70,7 @@ class VideoBreakdown(_FromAttrs):
     benchmark_scope: str = "pooled"  # "tier" | "pooled"
     findings: list[Finding]
     pattern_match: Optional[PatternMatch] = None
+    recommendations: list[Recommendation] = Field(default_factory=list)
 
 
 # --- plain-English summary: PlainSummary ------------------------------------

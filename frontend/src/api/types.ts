@@ -28,6 +28,15 @@ export interface PatternMatch {
   pct: number
 }
 
+export interface Recommendation {
+  feature: string
+  label: string
+  advice: string
+  your_value: number
+  winner_value: number | null
+  weight: number
+}
+
 export interface VideoBreakdown {
   video_id: string
   title: string
@@ -42,6 +51,7 @@ export interface VideoBreakdown {
   benchmark_scope: BenchmarkScope
   findings: Finding[]
   pattern_match: PatternMatch | null
+  recommendations: Recommendation[]
 }
 
 export interface Suggestion {

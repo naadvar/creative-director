@@ -86,6 +86,89 @@ def predictive_pattern_match(video, niche: Optional[str]) -> Optional[dict]:
     return {"aligned": aligned, "total": total, "pct": round(100 * al_w / tot_w)}
 
 
+# (label, directive when winners have a HIGHER value, directive when LOWER).
+# Drives the "do what winners do" recommendations from the predictive features.
+_FEATURE_META: dict[str, tuple[str, str, str]] = {
+    "duration_seconds": ("length", "Make it longer", "Make it shorter / tighter"),
+    "avg_shot_length": ("shot pacing", "Hold shots longer", "Cut faster"),
+    "total_cut_count": ("cuts", "Add more cuts", "Use fewer cuts"),
+    "first3s_cut_count": ("opening cuts", "Cut more in the first 3s", "Cut less in the first 3s"),
+    "first3s_motion_intensity": ("opening motion", "More motion in the first 3s", "Calmer opening"),
+    "first3s_face_present": ("a face up front", "Show a face in the first 3s", "Skip the face up front"),
+    "first3s_text_present": ("opening text", "Put on-screen text in the first 3s", "Drop the opening text"),
+    "audio_voice_ratio": ("voiceover", "Add more voiceover / talking", "Talk less — let visuals lead"),
+    "audio_loudness_mean": ("loudness", "Mix it louder", "Mix it quieter"),
+    "audio_loudness_max": ("peak loudness", "Punchier audio peaks", "Softer audio peaks"),
+    "transcript_word_count": ("spoken words", "Say more", "Say less"),
+    "hook_word_count": ("hook length", "A longer spoken hook", "A shorter spoken hook"),
+    "hook_uses_you": ("“you” in the hook", "Address the viewer (“you…”) in the hook", "Drop “you” from the hook"),
+    "title_emoji_count": ("title emojis", "Add emojis to the title", "Use fewer title emojis"),
+    "title_char_count": ("title length", "A longer title", "A shorter title"),
+    "title_word_count": ("title words", "More words in the title", "Fewer words in the title"),
+    "title_question_mark": ("a title question", "Ask a question in the title", "Drop the title question"),
+    "title_all_caps_ratio": ("ALL-CAPS", "More ALL-CAPS in the title", "Less ALL-CAPS in the title"),
+    "hashtag_count": ("hashtags", "Add more hashtags", "Use fewer hashtags"),
+    "description_char_count": ("caption length", "A longer caption", "A shorter caption"),
+    "description_word_count": ("caption length", "A longer caption", "A shorter caption"),
+    "thumb_contrast": ("thumbnail contrast", "A higher-contrast thumbnail", "A softer / lower-contrast thumbnail"),
+    "thumb_brightness": ("thumbnail brightness", "A brighter thumbnail", "A darker thumbnail"),
+    "thumb_saturation": ("thumbnail color", "More vivid thumbnail color", "More muted thumbnail color"),
+    "thumb_dominant_face_area": ("face size in thumbnail", "A bigger face in the thumbnail", "A smaller face in the thumbnail"),
+    "thumb_text_present": ("thumbnail text", "Add text to the thumbnail", "Drop the thumbnail text"),
+    "thumb_text_char_count": ("thumbnail text", "More text on the thumbnail", "Less text on the thumbnail"),
+    "engagement_has_tag_prompt": ("a tag-a-friend prompt", "Add a “tag a friend” prompt", "Drop the tag prompt"),
+    "engagement_prompt_count": ("calls-to-action", "Add a clear call-to-action", "Fewer calls-to-action"),
+}
+
+
+def winner_recommendations(video, niche: Optional[str], limit: int = 6) -> list[dict]:
+    """Top data-derived 'do what winners do' moves.
+
+    The predictive features (for this niche) where the reel is on the WRONG side
+    of the winner-favorable direction, phrased as directives and ranked by |rho|
+    (how strongly the feature predicts performance). This is the moat: specific,
+    category-tuned advice grounded in what actually correlates with winning.
+    """
+    feats = _predictive_map().get(niche or "")
+    if not feats or video.features is None:
+        return []
+    recs: list[dict] = []
+    for feat, meta in feats.items():
+        rho = meta.get("rho") or 0.0
+        med = meta.get("niche_median")
+        if med is None or rho == 0:
+            continue
+        val = (
+            video.duration_seconds
+            if meta.get("source") == "video"
+            else getattr(video.features, feat, None)
+        )
+        if val is None:
+            continue
+        wm = meta.get("winner_median")
+        if wm is None or round(float(val), 2) == round(float(wm), 2):
+            continue  # no winner target, or no visible gap to act on
+        # Recommend only when the reel is on the WORSE side of the winner median,
+        # so the directive ("do more/less") and the target we show stay consistent.
+        if (float(wm) - float(val)) * rho <= 0:
+            continue
+        pretty = feat.replace("_", " ")
+        label, hi_dir, lo_dir = _FEATURE_META.get(
+            feat, (pretty, f"More {pretty}", f"Less {pretty}")
+        )
+        wm = meta.get("winner_median")
+        recs.append({
+            "feature": feat,
+            "label": label,
+            "advice": hi_dir if rho > 0 else lo_dir,
+            "your_value": round(float(val), 2),
+            "winner_value": round(float(wm), 2) if wm is not None else None,
+            "weight": round(abs(rho), 3),
+        })
+    recs.sort(key=lambda r: -r["weight"])
+    return recs[:limit]
+
+
 @dataclass
 class Finding:
     feature: str
@@ -131,6 +214,9 @@ class VideoBreakdown:
     # ({aligned, total, pct}). The honest Scorecard headline, vs the old generic
     # all-findings match%. None when the niche has no predictive map.
     pattern_match: Optional[dict] = None
+    # Top "do what winners do" moves: predictive features the reel is on the
+    # wrong side of, phrased as directives, ranked by predictive importance.
+    recommendations: list[dict] = field(default_factory=list)
 
 
 def _gap_score(gap_ratio: float) -> float:
@@ -278,10 +364,11 @@ def analyze_video(
             )
 
         # How well this reel matches what actually predicts performance in its
-        # niche (data-derived winner-patterns) — the honest "matches winners" %.
-        breakdown.pattern_match = predictive_pattern_match(
-            video, video.channel.niche if video.channel else None
-        )
+        # niche (data-derived winner-patterns) — the honest "matches winners" %,
+        # plus the specific moves to close the gap.
+        _niche = video.channel.niche if video.channel else None
+        breakdown.pattern_match = predictive_pattern_match(video, _niche)
+        breakdown.recommendations = winner_recommendations(video, _niche)
 
     # Off-benchmark findings first (by rank_score desc); aligned at the tail.
     conf_rank = {"strong": 0, "moderate": 1}

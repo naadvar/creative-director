@@ -16,6 +16,7 @@ import TercileBadge from '../components/TercileBadge'
 import TheRead from '../components/TheRead'
 import TimelineStrip from '../components/TimelineStrip'
 import VideoPlayer from '../components/VideoPlayer'
+import WinnerMoves from '../components/WinnerMoves'
 
 function BackLink() {
   return (
@@ -154,6 +155,8 @@ export default function VideoPage() {
           />
 
           <Scorecard b={b} />
+
+          <WinnerMoves b={b} />
 
           {summary.loading ? (
             <div className="rounded-2xl border border-border bg-surface p-6">

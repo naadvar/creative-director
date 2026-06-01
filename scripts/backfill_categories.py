@@ -34,13 +34,13 @@ def main() -> None:
 
     with session_scope() as s:
         rows = s.execute(
-            select(Video.id, Video.title, Video.description)
+            select(Video.id, Video.title, Video.description, Channel.niche)
             .join(Channel, Channel.id == Video.channel_id)
-            .where(Channel.niche == "ig_fitness")
         ).all()
         counts: Counter = Counter()
-        for vid, title, desc in rows:
-            best, _ranked = classify(f"{title or ''} {desc or ''}")
+        for vid, title, desc, niche in rows:
+            # Classify against the *video's own niche* taxonomy.
+            best, _ranked = classify(f"{title or ''} {desc or ''}", niche)
             v = s.get(Video, vid)
             # Don't clobber a creator-confirmed category if one exists.
             if v.category_confirmed:
@@ -51,7 +51,7 @@ def main() -> None:
             counts[best or "uncategorized"] += 1
 
     total = sum(counts.values())
-    print(f"\nBackfilled categories for {total} ig_fitness reels:")
+    print(f"\nBackfilled categories for {total} reels (all niches):")
     for k, n in counts.most_common():
         print(f"  {label_for(k) if k != 'uncategorized' else 'Uncategorized':<28} {n:>5}  ({100*n/max(1,total):4.1f}%)")
 

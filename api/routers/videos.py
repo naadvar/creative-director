@@ -343,13 +343,14 @@ def get_category(video_id: str) -> schemas.CategoryInfo:
         current = video.category
         confirmed = bool(video.category_confirmed)
         text = f"{video.title or ''} {video.description or ''}"
+        niche = video.channel.niche if video.channel else None
 
-    guess, ranked = classify(text)
+    guess, ranked = classify(text, niche)
     # Sort the dropdown by classifier likelihood (keys with keyword hits first,
     # in rank order; the rest keep their declared order).
     rank_index = {key: i for i, (key, _hits) in enumerate(ranked)}
     options = sorted(
-        dropdown_options(), key=lambda o: rank_index.get(o["key"], len(rank_index))
+        dropdown_options(niche), key=lambda o: rank_index.get(o["key"], len(rank_index))
     )
     return schemas.CategoryInfo(
         video_id=video_id,
@@ -378,11 +379,12 @@ def set_category(video_id: str, body: schemas.CategoryUpdate) -> schemas.Categor
             raise HTTPException(status_code=404, detail=f"unknown video {video_id}")
         video.category = key
         video.category_confirmed = 1
-        guess, ranked = classify(f"{video.title or ''} {video.description or ''}")
+        niche = video.channel.niche if video.channel else None
+        guess, ranked = classify(f"{video.title or ''} {video.description or ''}", niche)
 
     rank_index = {k: i for i, (k, _h) in enumerate(ranked)}
     options = sorted(
-        dropdown_options(), key=lambda o: rank_index.get(o["key"], len(rank_index))
+        dropdown_options(niche), key=lambda o: rank_index.get(o["key"], len(rank_index))
     )
     return schemas.CategoryInfo(
         video_id=video_id,

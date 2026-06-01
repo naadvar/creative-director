@@ -106,8 +106,8 @@ export function tercileStyle(tercile: number | null): TercileStyle {
 }
 
 const ARCHETYPE_NAME: Record<string, string> = {
-  talking: 'Talking to camera',
-  demo: 'Silent exercise demo',
+  talking: 'Voiceover / talking',
+  demo: 'Silent / visual demo',
 }
 
 export function archetypeName(archetype: string): string {

@@ -18,7 +18,7 @@ from typing import Optional
 import httpx
 import typer
 from loguru import logger
-from sqlalchemy import select, func
+from sqlalchemy import select, func, delete
 
 from creative_director.config import settings
 from creative_director.features.timeline import extract_timeline
@@ -121,29 +121,25 @@ def main(
         use_niche = niche or vniche  # explicit override, else the video's own niche
         try:
             timeline = extract_timeline(path, niche=use_niche)
-        except Exception as e:
-            logger.warning(f"{video_id}: timeline extraction failed: {e}")
-            if fetched:
-                path.unlink(missing_ok=True)
-            continue
-
-        with session_scope() as s:
-            if force:
-                for old in (
+            with session_scope() as s:
+                if force:
+                    # Delete-then-insert in one txn: flush the deletes FIRST so the
+                    # new rows can't collide with the old ones on (video_id, second).
                     s.execute(
-                        select(VideoTimeline).where(
+                        delete(VideoTimeline).where(
                             VideoTimeline.video_id == video_id
                         )
                     )
-                    .scalars()
-                    .all()
-                ):
-                    s.delete(old)
-            for row in timeline:
-                s.add(VideoTimeline(video_id=video_id, **row))
+                    s.flush()
+                for row in timeline:
+                    s.add(VideoTimeline(video_id=video_id, **row))
+        except Exception as e:  # noqa: BLE001 — never let one reel abort a long run
+            logger.warning(f"{video_id}: failed: {e}")
+            continue
+        finally:
+            if fetched:
+                path.unlink(missing_ok=True)  # keep pod disk low
 
-        if fetched:
-            path.unlink(missing_ok=True)  # keep pod disk low
         done += 1
         logger.info(f"[{done}/{len(targets)}] {video_id}: {len(timeline)} seconds")
 

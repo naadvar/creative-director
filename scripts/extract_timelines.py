@@ -15,12 +15,14 @@ rows. Resumable — re-run after an interruption and it skips done videos.
 from pathlib import Path
 from typing import Optional
 
+import httpx
 import typer
 from loguru import logger
 from sqlalchemy import select, func
 
 from creative_director.config import settings
 from creative_director.features.timeline import extract_timeline
+from creative_director.storage import media
 from creative_director.storage.db import init_db, session_scope
 from creative_director.storage.models import Channel, Video, VideoTimeline
 
@@ -31,7 +33,12 @@ app = typer.Typer(add_completion=False)
 @app.command()
 def main(
     limit: int = typer.Option(0, help="Max videos to process (0 = all)"),
-    niche: str = typer.Option("fitness", help="Niche for CLIP prompt set"),
+    niche: Optional[str] = typer.Option(
+        None,
+        "--niche",
+        help="Override the CLIP prompt set for ALL videos. Default (None): use "
+        "each video's own channel niche, so a mixed run stays correct.",
+    ),
     scope_niche: Optional[str] = typer.Option(
         None,
         "--scope-niche",
@@ -40,6 +47,12 @@ def main(
     force: bool = typer.Option(False, help="Re-extract videos that already have a timeline"),
     shard: str = typer.Option(
         "", help="Process only shard i/n of the targets, e.g. 0/6 (for parallel runs)"
+    ),
+    fetch_missing: bool = typer.Option(
+        True,
+        "--fetch-missing/--no-fetch-missing",
+        help="If the local mp4 is absent, pull it from R2 just for this run and "
+        "delete it afterwards (keeps pod disk low). --no-fetch-missing = local only.",
     ),
 ):
     init_db()  # creates the video_timeline table if missing
@@ -50,17 +63,17 @@ def main(
     archive = settings.video_archive_dir or Path("data/videos")
 
     with session_scope() as s:
-        q = select(Video)
+        # Always carry each video's channel niche so we can pick the right CLIP
+        # prompt set per video (the niche option only overrides this).
+        q = select(Video, Channel.niche).join(Channel, Channel.id == Video.channel_id)
         if scope_niche:
-            q = q.join(Channel, Channel.id == Video.channel_id).where(
-                Channel.niche == scope_niche
-            )
-        videos = s.execute(q).scalars().all()
+            q = q.where(Channel.niche == scope_niche)
+        rows = s.execute(q).all()
         targets = []
-        for v in videos:
+        for v, vniche in rows:
             path = archive / f"{v.id}.mp4"
-            if not path.exists():
-                continue
+            if not fetch_missing and not path.exists():
+                continue  # local-only mode: nothing on disk to extract
             has_tl = (
                 s.scalar(
                     select(func.count(VideoTimeline.id)).where(
@@ -71,9 +84,9 @@ def main(
             )
             if has_tl and not force:
                 continue
-            targets.append((v.id, str(path)))
+            targets.append((v.id, str(path), vniche))
 
-    targets.sort()  # stable order so parallel shards stay disjoint
+    targets.sort(key=lambda t: t[0])  # stable order so parallel shards stay disjoint
     if shard:
         i, n = (int(x) for x in shard.split("/"))
         targets = targets[i::n]
@@ -84,15 +97,34 @@ def main(
     logger.info(f"{len(targets)} videos to process")
 
     done = 0
-    for video_id, file_path in targets:
+    for video_id, file_path, vniche in targets:
         path = Path(file_path)
+        fetched = False
         if not path.exists():
-            logger.warning(f"{video_id}: file missing at {path}, skipping")
-            continue
+            if not fetch_missing:
+                logger.warning(f"{video_id}: file missing at {path}, skipping")
+                continue
+            url = media.video_url(video_id)
+            if not url:
+                logger.warning(f"{video_id}: not in R2 (no url), skipping")
+                continue
+            try:
+                with httpx.Client(timeout=180, follow_redirects=True) as c:
+                    r = c.get(url)
+                    r.raise_for_status()
+                    path.parent.mkdir(parents=True, exist_ok=True)
+                    path.write_bytes(r.content)
+                fetched = True
+            except Exception as e:  # noqa: BLE001
+                logger.warning(f"{video_id}: R2 fetch failed: {e}")
+                continue
+        use_niche = niche or vniche  # explicit override, else the video's own niche
         try:
-            timeline = extract_timeline(path, niche=niche)
+            timeline = extract_timeline(path, niche=use_niche)
         except Exception as e:
             logger.warning(f"{video_id}: timeline extraction failed: {e}")
+            if fetched:
+                path.unlink(missing_ok=True)
             continue
 
         with session_scope() as s:
@@ -110,6 +142,8 @@ def main(
             for row in timeline:
                 s.add(VideoTimeline(video_id=video_id, **row))
 
+        if fetched:
+            path.unlink(missing_ok=True)  # keep pod disk low
         done += 1
         logger.info(f"[{done}/{len(targets)}] {video_id}: {len(timeline)} seconds")
 

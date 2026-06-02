@@ -38,14 +38,40 @@ def _cohort(niche: Optional[str], video_id: str) -> str:
     word = _niche_base(niche)  # 'food' | 'travel' | 'fashion' | 'fitness' | None
     return f"{word} {platform}" if word else platform
 
+# Display strings for the CLIP vibe keys (see advice/clip_prompts.py). Keys not
+# listed here fall back to a generic "a <key>" in _plain_vibe.
 _VIBE_PLAIN = {
+    # shared
     "talking_head": "a person talking to camera",
+    "text_overlay": "an on-screen text card",
+    # fitness
     "exercise_demo": "an exercise demo",
     "muscle_closeup": "a muscle close-up",
-    "gym_wide": "a wide gym shot",
-    "text_card": "an on-screen text card",
-    "food_shot": "a food shot",
-    "outdoor": "an outdoor shot",
+    "gym_setting": "a gym shot",
+    "physique_reveal": "a physique reveal",
+    "food_or_meal": "a food shot",
+    "action_movement": "fast, dynamic movement",
+    # food
+    "plated_dish": "a plated dish",
+    "ingredients": "raw ingredients laid out",
+    "cooking_action": "food being cooked",
+    "hands_prep": "a close-up of food prep",
+    "eating": "someone tasting the food",
+    "restaurant": "a restaurant interior",
+    # travel
+    "landscape": "a scenic landscape",
+    "landmark": "a landmark",
+    "cityscape": "a city street",
+    "beach_water": "a beach or water shot",
+    "hotel_resort": "a hotel or resort shot",
+    "person_scenic": "a person in front of scenery",
+    # fashion
+    "full_outfit": "a full-body outfit shot",
+    "mirror_selfie": "a mirror outfit clip",
+    "clothing_closeup": "a clothing close-up",
+    "getting_dressed": "a getting-dressed shot",
+    "accessories": "an accessories close-up",
+    "makeup_hair": "a hair or makeup shot",
 }
 
 

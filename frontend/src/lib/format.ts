@@ -165,6 +165,11 @@ export function externalUrl(videoId: string): string {
   return `https://www.youtube.com/shorts/${videoId}`
 }
 
+/** What the source platform calls short-form video: "Reels" (IG) vs "Shorts" (YouTube). */
+export function platformNoun(videoId: string): string {
+  return videoId.startsWith('ig_') ? 'Reels' : 'Shorts'
+}
+
 /** @deprecated — kept for callers still using the YouTube-only name. */
 export function youtubeUrl(videoId: string): string {
   return externalUrl(videoId)

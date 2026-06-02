@@ -1,5 +1,5 @@
 import type { Timeline, TimelineSecond } from '../api/types'
-import { deviationColor, timestamp } from '../lib/format'
+import { deviationColor, platformNoun, timestamp } from '../lib/format'
 
 interface Cluster {
   start: number
@@ -56,6 +56,7 @@ export default function TimelineStrip({
 }: TimelineStripProps) {
   const secs = timeline.seconds
   const hasData = secs.some((d) => d.deviation != null)
+  const platform = platformNoun(timeline.video_id)
 
   if (!hasData) {
     return (
@@ -73,7 +74,7 @@ export default function TimelineStrip({
   return (
     <div>
       <p className="mb-3 text-xs leading-relaxed text-muted">
-        Where this video diverges from winning Shorts of its archetype, second by
+        Where this video diverges from winning {platform} of its archetype, second by
         second — greener tracks winners, redder diverges.{' '}
         {interactive ? (
           <span className="text-text/80">
@@ -177,7 +178,7 @@ export default function TimelineStrip({
         ) : (
           <p className="text-sm text-good">
             No stretch crosses the weak-spot threshold — framing and pacing track
-            winning Shorts throughout.
+            winning {platform} throughout.
           </p>
         )}
       </div>

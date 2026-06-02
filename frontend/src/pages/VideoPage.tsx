@@ -3,11 +3,10 @@ import { Link, useParams } from 'react-router-dom'
 import { api, videoFileUrl } from '../api/client'
 import type { CutSegment } from '../api/types'
 import { useAsync } from '../hooks/useAsync'
-import { archetypeName, externalUrl, formatDuration, thumbnailUrl } from '../lib/format'
+import { archetypeName, externalUrl, formatDuration, platformNoun, thumbnailUrl } from '../lib/format'
 import CategoryPicker from '../components/CategoryPicker'
 import Collapsible from '../components/Collapsible'
 import CutPlanPanel from '../components/CutPlanPanel'
-import Disclaimer from '../components/Disclaimer'
 import FindingsTable from '../components/FindingsTable'
 import FrameFindings from '../components/FrameFindings'
 import Scorecard from '../components/Scorecard'
@@ -171,7 +170,7 @@ export default function VideoPage() {
           <div className="space-y-2.5">
             <Collapsible
               title="Feature comparison"
-              subtitle="this video vs winning Shorts"
+              subtitle={`this video vs winning ${platformNoun(b.video_id)}`}
             >
               <FindingsTable videoId={b.video_id} findings={b.findings} />
             </Collapsible>
@@ -186,8 +185,6 @@ export default function VideoPage() {
               ) : null}
             </Collapsible>
           </div>
-
-          <Disclaimer className="pt-1" />
         </>
       ) : null}
     </div>

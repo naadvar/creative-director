@@ -5,7 +5,7 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://announced-criteria-pastor-sectors.trycloudflare.com/:path*"
+      "destination": "https://threatened-ronald-hall-farms.trycloudflare.com/:path*"
     },
     { "source": "/(.*)", "destination": "/index.html" }
   ]

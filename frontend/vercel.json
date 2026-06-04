@@ -5,7 +5,7 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://threatened-ronald-hall-farms.trycloudflare.com/:path*"
+      "destination": "https://grow-brands-barely-dame.trycloudflare.com/:path*"
     },
     { "source": "/(.*)", "destination": "/index.html" }
   ]

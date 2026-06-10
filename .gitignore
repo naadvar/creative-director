@@ -34,3 +34,9 @@ frontend/dist/
 
 # Scratch outputs / logs
 *.out
+cloudflared.exe
+.demo-gh-token
+backend.out.log
+backend.err.log
+tunnel.log
+tunnel.out.log

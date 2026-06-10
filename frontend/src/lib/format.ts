@@ -157,17 +157,19 @@ export function thumbnailUrl(videoId: string): string {
   return `/api/videos/${encodeURIComponent(videoId)}/thumbnail`
 }
 
-/** External viewing URL — IG reels use the shortcode after the `ig_` prefix. */
+/** External viewing URL — IG reels use the shortcode after the `ig_` prefix.
+ * Uploaded reels (`up_`) have no external page; callers should hide the link. */
 export function externalUrl(videoId: string): string {
+  if (videoId.startsWith('up_')) return ''
   if (videoId.startsWith('ig_')) {
     return `https://www.instagram.com/reel/${videoId.slice(3)}/`
   }
   return `https://www.youtube.com/shorts/${videoId}`
 }
 
-/** What the source platform calls short-form video: "Reels" (IG) vs "Shorts" (YouTube). */
+/** What the source platform calls short-form video: "Reels" (IG + uploads) vs "Shorts". */
 export function platformNoun(videoId: string): string {
-  return videoId.startsWith('ig_') ? 'Reels' : 'Shorts'
+  return videoId.startsWith('ig_') || videoId.startsWith('up_') ? 'Reels' : 'Shorts'
 }
 
 /** @deprecated — kept for callers still using the YouTube-only name. */

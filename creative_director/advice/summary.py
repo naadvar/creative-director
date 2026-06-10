@@ -32,9 +32,10 @@ def _cohort(niche: Optional[str], video_id: str) -> str:
     """How to refer to the winning set in prose — niche- and platform-aware.
 
     e.g. ``ig_food`` -> "food Reels", a YouTube fitness id -> "fitness Shorts",
-    an unknown niche -> just "Reels"/"Shorts".
+    an unknown niche -> just "Reels"/"Shorts". Uploaded reels (``up_`` ids)
+    are short-form verticals benchmarked against IG niches -> "Reels".
     """
-    platform = "Reels" if (video_id or "").startswith("ig_") else "Shorts"
+    platform = "Reels" if (video_id or "").startswith(("ig_", "up_")) else "Shorts"
     word = _niche_base(niche)  # 'food' | 'travel' | 'fashion' | 'fitness' | None
     return f"{word} {platform}" if word else platform
 

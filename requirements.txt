@@ -51,6 +51,9 @@ shap>=0.44.0
 scenedetect>=0.6.4
 anthropic>=0.69.0
 
+# Per-second timeline decode (features/timeline.py) + upload duration probe
+av>=12.0.0
+
 # Frontend
 streamlit>=1.40.0
 instaloader

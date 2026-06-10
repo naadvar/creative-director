@@ -54,11 +54,14 @@ def browse_corpus(
     q_clean = (q or "").strip()
 
     with session_scope() as s:
+        # Private uploads (synthetic upch_* channels) never appear in the browse.
+        not_upload = Channel.id.notlike("upch_%")
         count_q = (
             select(func.count())
             .select_from(Video)
             .join(Channel, Channel.id == Video.channel_id)
             .join(VideoFeatures, VideoFeatures.video_id == Video.id)
+            .where(not_upload)
         )
         rows_q = (
             select(Video, Channel.title, VideoLabel.tercile, VideoLabel.score)
@@ -69,6 +72,7 @@ def browse_corpus(
                 (VideoLabel.video_id == Video.id)
                 & (VideoLabel.label_scheme == scheme),
             )
+            .where(not_upload)
         )
         if niche:
             count_q = count_q.where(Channel.niche == niche)
@@ -130,17 +134,19 @@ def corpus_categories(
     """Category chips for the browse UI: every category present among analyzable
     videos (in the given niche), with its count, most-common first."""
     with session_scope() as s:
+        not_upload = Channel.id.notlike("upch_%")
         total_q = (
             select(func.count())
             .select_from(Video)
             .join(Channel, Channel.id == Video.channel_id)
             .join(VideoFeatures, VideoFeatures.video_id == Video.id)
+            .where(not_upload)
         )
         rows_q = (
             select(Video.category, func.count())
             .join(Channel, Channel.id == Video.channel_id)
             .join(VideoFeatures, VideoFeatures.video_id == Video.id)
-            .where(Video.category.is_not(None))
+            .where(Video.category.is_not(None), not_upload)
             .group_by(Video.category)
             .order_by(func.count().desc())
         )
@@ -169,7 +175,7 @@ def list_niches() -> schemas.NicheList:
             .select_from(Video)
             .join(Channel, Channel.id == Video.channel_id)
             .join(VideoFeatures, VideoFeatures.video_id == Video.id)
-            .where(Channel.niche.is_not(None))
+            .where(Channel.niche.is_not(None), Channel.id.notlike("upch_%"))
             .group_by(Channel.niche)
             .order_by(func.count().desc())
         ).all()

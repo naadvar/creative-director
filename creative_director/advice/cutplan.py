@@ -18,7 +18,11 @@ from typing import Optional
 
 from sqlalchemy import select
 
-from creative_director.advice.benchmark import classify_archetype, is_voiceover_led
+from creative_director.advice.benchmark import (
+    classify_archetype,
+    face_advice_applies,
+    is_voiceover_led,
+)
 from creative_director.storage.db import session_scope
 from creative_director.storage.models import Video, VideoTimeline
 
@@ -55,6 +59,8 @@ def _load(video_id: str):
             # Face-timing checks and dead-air trims are unsafe here — the
             # "no face + low motion" seconds usually carry the narration.
             "voiceover_led": is_voiceover_led(arch, face_frac),
+            # No-presenter formats (incl. faceless demos) never get face checks.
+            "face_advice": face_advice_applies(arch, face_frac),
         }
 
 
@@ -174,9 +180,9 @@ def recompute_for_trim(video_id: str, benchmark: dict, trim_start: int) -> dict:
 
     checks = []
     # Only assert face-related checks for archetypes/categories where winners
-    # actually show a face in the hook — and never for voiceover-led reels
-    # (no presenter on screen; there is no face to deploy).
-    if winner_hook_face >= 0.4 and not data["voiceover_led"]:
+    # actually show a face in the hook — and never for no-presenter formats
+    # (voiceover-over-animation, faceless b-roll; no face to deploy).
+    if winner_hook_face >= 0.4 and data["face_advice"]:
         checks.append({"label": f"Face on screen by 1s (winners {winner_hook_face*100:.0f}%)", "pass": bool(face_by_1s)})
     checks.append({"label": "Opens on movement, not a static hold", "pass": bool(movement_open)})
     checks.append({"label": f"First cut within ~{winner_first_cut:.0f}s of the open", "pass": bool(cut_in_window)})
@@ -251,10 +257,12 @@ def build_auto_cut(video_id: str, benchmark: dict) -> Optional[dict]:
         j -= 1
     dead_tail_start = j + 1
     tail_end = duration
+    # Tail trims are DEMO-only: a talking reel's closing seconds can carry a
+    # spoken CTA over a static end frame, which we can't hear per-second.
     if (
         duration - dead_tail_start >= _DEAD_TAIL_MIN
         and dead_tail_start > trim_start + 1
-        and not voiceover_led
+        and arch == "demo"
     ):
         removed.append(
             {

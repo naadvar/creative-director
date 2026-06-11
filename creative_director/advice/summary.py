@@ -15,17 +15,19 @@ from typing import Optional
 
 from sqlalchemy import select
 
-from creative_director.advice.benchmark import is_voiceover_led
+from creative_director.advice.benchmark import face_advice_applies, is_voiceover_led
 from creative_director.advice.breakdown import VideoBreakdown
 from creative_director.advice.categories import _base as _niche_base
 from creative_director.advice.timeline_benchmark import summarize_timeline
 from creative_director.storage.db import session_scope
 from creative_director.storage.models import VideoTimeline
 
-# How to describe the *subject* video's format (niche-neutral).
+# How to describe the *subject* video's format (niche-neutral). The demo
+# phrase avoids claiming "silent" — demo just means little-to-no talking, and
+# a read that says "silent ... packs 19 spoken words" contradicts itself.
 ARCHETYPE_PLAIN = {
     "talking": "talking-to-camera video",
-    "demo": "silent, no-voiceover video",
+    "demo": "visual-led video (little to no talking)",
 }
 
 
@@ -142,6 +144,10 @@ def _aggregate_suggestions(b: VideoBreakdown, cohort: str) -> list[Suggestion]:
                 else f"it is shorter than winners ({yv:.0f}s vs ~{bv:.0f}s)"
             )
         elif feat == "transcript_word_count":
+            # Word counts need a real gap — "3 spoken words vs about 1" or
+            # "0 vs ~1" is noise, not advice.
+            if yv is None or abs(yv - bv) < 15:
+                continue
             text = (
                 f"Trim the script — {yv:.0f} spoken words vs about {bv:.0f} for winners."
                 if hi
@@ -197,12 +203,12 @@ def _frame_suggestions(
     if not summ:
         return [], face_frac
     out: list[Suggestion] = []
-    voiceover_led = is_voiceover_led(b.archetype, face_frac)
+    presenter_ok = face_advice_applies(b.archetype, face_frac)
 
     yf, bf = summ.get("hook_face_frac"), bm.get("hook_face_pct")
     # "Get a face on screen" only when the format HAS a presenter to deploy —
-    # for voiceover-over-animation reels the advice is unactionable.
-    if yf is not None and bf is not None and yf < bf - 0.2 and not voiceover_led:
+    # never for voiceover-over-animation reels or faceless b-roll demos.
+    if yf is not None and bf is not None and yf < bf - 0.2 and presenter_ok:
         out.append(
             Suggestion(
                 text=(
@@ -220,7 +226,15 @@ def _frame_suggestions(
     your_vibe = summ.get("hook_vibe")
     vibe_dist = bm.get("hook_vibe_dist") or {}
     if your_vibe and vibe_dist:
-        top_vibe, top_share = next(iter(vibe_dist.items()))
+        # For no-presenter formats, never suggest opening on a person — pick
+        # the most common winning opener they can actually shoot instead.
+        if presenter_ok:
+            top_vibe, top_share = next(iter(vibe_dist.items()))
+        else:
+            non_face = [(k, v) for k, v in vibe_dist.items() if k != "talking_head"]
+            if not non_face:
+                return out, face_frac
+            top_vibe, top_share = non_face[0]
         your_share = vibe_dist.get(your_vibe, 0.0)
         if your_vibe != top_vibe and your_share < 0.15:
             out.append(

@@ -22,7 +22,11 @@ from typing import Optional
 import numpy as np
 from sqlalchemy import select
 
-from creative_director.advice.benchmark import classify_archetype, is_voiceover_led
+from creative_director.advice.benchmark import (
+    classify_archetype,
+    face_advice_applies,
+    is_voiceover_led,
+)
 from creative_director.advice.tier import tier_for_count
 from creative_director.storage.db import session_scope
 from creative_director.storage.models import (
@@ -192,6 +196,11 @@ def analyze_timeline(video_id: str, benchmark: Optional[dict] = None) -> FrameBr
             "FORMAT: voiceover-led — narration with no presenter on screen "
             "(animation / b-roll). Face-timing benchmarks don't apply to this format."
         )
+    elif not face_advice_applies(arch, face_frac):
+        fb.findings.append(
+            "FORMAT: no presenter on screen (b-roll / product format) — "
+            "face-timing benchmarks don't apply to this format."
+        )
     elif summ["hook_face_frac"] is not None and bm["hook_face_pct"] is not None:
         yours = summ["hook_face_frac"]
         winners = bm["hook_face_pct"]
@@ -231,6 +240,11 @@ def analyze_timeline(video_id: str, benchmark: Optional[dict] = None) -> FrameBr
             f"SHOT VARIETY: your video shows {yours_vibes} distinct on-screen "
             f"'vibes'; winning {arch} {noun} show ~{bm_vibes:.0f}. More visual "
             f"variety (different shots/angles/framing) may help hold attention."
+        )
+    elif yours_vibes > bm_vibes + 1:
+        fb.findings.append(
+            f"SHOT VARIETY: {yours_vibes} distinct on-screen vibes — more "
+            f"variety than typical winners (~{bm_vibes:.0f}). No gap here."
         )
     else:
         fb.findings.append(

@@ -97,6 +97,27 @@ def is_voiceover_led(archetype: str, face_frac: Optional[float]) -> bool:
     )
 
 
+# Below this overall face fraction a DEMO reel is b-roll/product format with no
+# presenter at all (food plating, scenery, outfit close-ups shot from the neck
+# down). Stricter than the talking threshold: a demo with occasional faces can
+# still act on face-timing advice; one with none cannot.
+NO_PRESENTER_FACE_FRAC = 0.10
+
+
+def face_advice_applies(archetype: str, face_frac: Optional[float]) -> bool:
+    """Should we give 'get a face on screen' style advice at all?
+
+    False for voiceover-led talking reels (narration over animation/b-roll)
+    and for demos with essentially no face anywhere — both are formats where
+    'show a face sooner' prescribes a different format, not a tweak.
+    """
+    if is_voiceover_led(archetype, face_frac):
+        return False
+    if face_frac is not None and face_frac < NO_PRESENTER_FACE_FRAC:
+        return False
+    return True
+
+
 def _profile_for(high_df, low_df) -> dict:
     profile: dict[str, dict] = {}
     for feat in REPORTABLE:

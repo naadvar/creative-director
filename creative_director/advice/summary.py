@@ -15,6 +15,7 @@ from typing import Optional
 
 from sqlalchemy import select
 
+from creative_director.advice.benchmark import is_voiceover_led
 from creative_director.advice.breakdown import VideoBreakdown
 from creative_director.advice.categories import _base as _niche_base
 from creative_director.advice.timeline_benchmark import summarize_timeline
@@ -159,6 +160,10 @@ def _aggregate_suggestions(b: VideoBreakdown, cohort: str) -> list[Suggestion]:
             )
             clause = f"its title runs {'longer' if hi else 'shorter'} than winners'"
         elif feat == "title_emoji_count":
+            # Emoji counts are tiny integers — a 1-vs-0 "gap" is noise, and
+            # surfacing it as advice reads as pedantic. Require a real delta.
+            if yv is None or abs(yv - bv) < 2:
+                continue
             text = (
                 f"Ease off the title emoji — {yv:.0f} vs about {bv:.0f} for winners."
                 if hi
@@ -174,23 +179,30 @@ def _aggregate_suggestions(b: VideoBreakdown, cohort: str) -> list[Suggestion]:
 
 def _frame_suggestions(
     b: VideoBreakdown, frame_benchmark: dict, cohort: str
-) -> list[Suggestion]:
+) -> tuple[list[Suggestion], Optional[float]]:
+    """Returns (suggestions, overall_face_frac) — the face fraction lets the
+    caller reword the read for voiceover-led reels."""
     bm = (frame_benchmark.get("archetypes") or {}).get(b.archetype)
-    if not bm:
-        return []
     with session_scope() as s:
         rows = (
             s.execute(select(VideoTimeline).where(VideoTimeline.video_id == b.video_id))
             .scalars()
             .all()
         )
+    faces = [r.has_face for r in rows if r.has_face is not None]
+    face_frac = (sum(faces) / len(faces)) if faces else None
+    if not bm:
+        return [], face_frac
     summ = summarize_timeline(rows)
     if not summ:
-        return []
+        return [], face_frac
     out: list[Suggestion] = []
+    voiceover_led = is_voiceover_led(b.archetype, face_frac)
 
     yf, bf = summ.get("hook_face_frac"), bm.get("hook_face_pct")
-    if yf is not None and bf is not None and yf < bf - 0.2:
+    # "Get a face on screen" only when the format HAS a presenter to deploy —
+    # for voiceover-over-animation reels the advice is unactionable.
+    if yf is not None and bf is not None and yf < bf - 0.2 and not voiceover_led:
         out.append(
             Suggestion(
                 text=(
@@ -225,18 +237,22 @@ def _frame_suggestions(
                     gap=0.45,
                 )
             )
-    return out
+    return out, face_frac
 
 
 def build_summary(
     breakdown: VideoBreakdown, frame_benchmark: dict, niche: Optional[str] = None
 ) -> PlainSummary:
     """Synthesise the structured breakdowns into a plain-English read."""
-    arch_plain = ARCHETYPE_PLAIN.get(breakdown.archetype, "video")
     cohort = _cohort(niche, breakdown.video_id)
-    suggestions = _aggregate_suggestions(breakdown, cohort) + _frame_suggestions(
-        breakdown, frame_benchmark, cohort
-    )
+    frame_sugs, face_frac = _frame_suggestions(breakdown, frame_benchmark, cohort)
+    # A transcript-heavy reel with (almost) no presenter is voiceover-led
+    # (animation / b-roll) — calling it "talking-to-camera" reads as wrong.
+    if is_voiceover_led(breakdown.archetype, face_frac):
+        arch_plain = "voiceover-led video (no presenter on screen)"
+    else:
+        arch_plain = ARCHETYPE_PLAIN.get(breakdown.archetype, "video")
+    suggestions = _aggregate_suggestions(breakdown, cohort) + frame_sugs
     suggestions.sort(key=lambda s: -s.gap)
     worth = [s for s in suggestions if s.gap >= 0.1][:3]
 

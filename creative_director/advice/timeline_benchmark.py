@@ -22,7 +22,7 @@ from typing import Optional
 import numpy as np
 from sqlalchemy import select
 
-from creative_director.advice.benchmark import classify_archetype
+from creative_director.advice.benchmark import classify_archetype, is_voiceover_led
 from creative_director.advice.tier import tier_for_count
 from creative_director.storage.db import session_scope
 from creative_director.storage.models import (
@@ -181,14 +181,24 @@ def analyze_timeline(video_id: str, benchmark: Optional[dict] = None) -> FrameBr
         fb.findings.append(f"No winner benchmark available for archetype '{arch}'.")
         return fb
 
+    noun = "Reels" if video_id.startswith(("ig_", "up_")) else "Shorts"
+    faces = [r.has_face for r in tl if r.has_face is not None]
+    face_frac = (sum(faces) / len(faces)) if faces else None
+    voiceover_led = is_voiceover_led(arch, face_frac)
+
     # --- Hook: face presence ---
-    if summ["hook_face_frac"] is not None and bm["hook_face_pct"] is not None:
+    if voiceover_led:
+        fb.findings.append(
+            "FORMAT: voiceover-led — narration with no presenter on screen "
+            "(animation / b-roll). Face-timing benchmarks don't apply to this format."
+        )
+    elif summ["hook_face_frac"] is not None and bm["hook_face_pct"] is not None:
         yours = summ["hook_face_frac"]
         winners = bm["hook_face_pct"]
         if yours < winners - 0.25:
             fb.findings.append(
                 f"HOOK FACE: your first 3s show a face {yours*100:.0f}% of the time; "
-                f"winning {arch} Shorts average {winners*100:.0f}%. "
+                f"winning {arch} {noun} average {winners*100:.0f}%. "
                 f"Consider getting a face on screen sooner."
             )
         else:
@@ -219,7 +229,7 @@ def analyze_timeline(video_id: str, benchmark: Optional[dict] = None) -> FrameBr
     if yours_vibes < bm_vibes - 1:
         fb.findings.append(
             f"SHOT VARIETY: your video shows {yours_vibes} distinct on-screen "
-            f"'vibes'; winning {arch} Shorts show ~{bm_vibes:.0f}. More visual "
+            f"'vibes'; winning {arch} {noun} show ~{bm_vibes:.0f}. More visual "
             f"variety (different shots/angles/framing) may help hold attention."
         )
     else:
@@ -240,13 +250,13 @@ def analyze_timeline(video_id: str, benchmark: Optional[dict] = None) -> FrameBr
         if fc is None:
             fb.findings.append(
                 f"PACING: your video holds one shot the whole way through; "
-                f"winning {arch} Shorts cut by ~second {bm_fc:.0f} "
+                f"winning {arch} {noun} cut by ~second {bm_fc:.0f} "
                 f"({bm['pct_with_cut_in_hook']*100:.0f}% cut within the first 3s). "
                 f"A static hold tends to lose viewers in this archetype."
             )
         elif bm_fc is not None and fc > bm_fc + 2:
             fb.findings.append(
-                f"PACING: your first cut is at second {fc}; winning {arch} Shorts "
+                f"PACING: your first cut is at second {fc}; winning {arch} {noun} "
                 f"cut by ~second {bm_fc:.0f}. The opening shot may hold too long."
             )
         else:
@@ -260,7 +270,7 @@ def analyze_timeline(video_id: str, benchmark: Optional[dict] = None) -> FrameBr
         if yours_rate < bm_rate * 0.5:
             fb.findings.append(
                 f"CUT RHYTHM: {yours_rate:.1f} cuts/10s vs winners ~{bm_rate:.1f}. "
-                f"Your video is cut noticeably slower than winning {arch} Shorts."
+                f"Your video is cut noticeably slower than winning {arch} {noun}."
             )
         elif yours_rate > bm_rate * 2.0:
             fb.findings.append(
@@ -276,7 +286,7 @@ def analyze_timeline(video_id: str, benchmark: Optional[dict] = None) -> FrameBr
     else:
         fb.findings.append(
             f"CUTS: {summ['cut_count']} hard cut(s) detected. Winning {arch} "
-            f"Shorts of this archetype are mostly single-shot, so this is in line "
+            f"{noun} of this archetype are mostly single-shot, so this is in line "
             f"with what works."
         )
 

@@ -120,6 +120,22 @@ _FEATURE_META: dict[str, tuple[str, str, str]] = {
     "engagement_prompt_count": ("calls-to-action", "Add a clear call-to-action", "Fewer calls-to-action"),
 }
 
+# Minimum |your_value - winner_median| before a recommendation is worth showing.
+# Tiny-integer / ratio features otherwise produce "1 emoji vs ~0"-grade nags.
+_MIN_ACTIONABLE_DELTA: dict[str, float] = {
+    "title_emoji_count": 2,
+    "description_emoji_count": 2,
+    "hashtag_count": 2,
+    "title_word_count": 3,
+    "title_char_count": 12,
+    "title_all_caps_ratio": 0.2,
+    "engagement_prompt_count": 1,
+    "hook_word_count": 3,
+    "transcript_word_count": 15,
+    "description_char_count": 40,
+    "description_word_count": 10,
+}
+
 
 def winner_recommendations(video, niche: Optional[str], limit: int = 6) -> list[dict]:
     """Top data-derived 'do what winners do' moves.
@@ -151,6 +167,10 @@ def winner_recommendations(video, niche: Optional[str], limit: int = 6) -> list[
         # Recommend only when the reel is on the WORSE side of the winner median,
         # so the directive ("do more/less") and the target we show stay consistent.
         if (float(wm) - float(val)) * rho <= 0:
+            continue
+        # Tiny-magnitude features need a REAL absolute delta — "1 emoji vs ~0"
+        # or "0.06 ALL-CAPS vs 0" read as pedantic noise, not advice.
+        if abs(float(val) - float(wm)) < _MIN_ACTIONABLE_DELTA.get(feat, 0.0):
             continue
         pretty = feat.replace("_", " ")
         label, hi_dir, lo_dir = _FEATURE_META.get(

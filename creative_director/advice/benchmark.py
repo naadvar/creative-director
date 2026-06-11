@@ -79,6 +79,24 @@ def classify_archetype(transcript_word_count: Optional[float]) -> str:
     )
 
 
+# Below this fraction of seconds-with-a-face, a "talking" video is treated as
+# VOICEOVER-LED (narration over animation/b-roll, no presenter) rather than
+# face-to-camera. Median face fraction for true talking reels is ~0.6; the
+# voiceover-over-animation failure case sits well under 0.3. Face-timing advice
+# and dead-air trims are unsafe for this subformat: there is no face to deploy,
+# and its "no face + low motion" seconds usually CARRY the narration.
+VOICEOVER_FACE_FRAC = 0.30
+
+
+def is_voiceover_led(archetype: str, face_frac: Optional[float]) -> bool:
+    """True when a transcript-heavy video has (almost) no presenter on screen."""
+    return (
+        archetype == ARCHETYPE_TALKING
+        and face_frac is not None
+        and face_frac < VOICEOVER_FACE_FRAC
+    )
+
+
 def _profile_for(high_df, low_df) -> dict:
     profile: dict[str, dict] = {}
     for feat in REPORTABLE:

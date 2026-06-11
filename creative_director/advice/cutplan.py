@@ -18,7 +18,7 @@ from typing import Optional
 
 from sqlalchemy import select
 
-from creative_director.advice.benchmark import classify_archetype
+from creative_director.advice.benchmark import classify_archetype, is_voiceover_led
 from creative_director.storage.db import session_scope
 from creative_director.storage.models import Video, VideoTimeline
 
@@ -46,7 +46,16 @@ def _load(video_id: str):
             }
             for r in sorted(rows, key=lambda r: r.second)
         ]
-        return {"archetype": arch, "duration": v.duration_seconds or len(tl), "tl": tl}
+        face_frac = (sum(1 for r in tl if r["has_face"]) / len(tl)) if tl else None
+        return {
+            "archetype": arch,
+            "duration": v.duration_seconds or len(tl),
+            "tl": tl,
+            # Voiceover-led: narration with no presenter (animation/b-roll).
+            # Face-timing checks and dead-air trims are unsafe here — the
+            # "no face + low motion" seconds usually carry the narration.
+            "voiceover_led": is_voiceover_led(arch, face_frac),
+        }
 
 
 def _shot_segments(cuts: list[int], duration: int) -> list[tuple[int, int]]:
@@ -107,13 +116,14 @@ def build_cut_plan(video_id: str, benchmark: dict) -> Optional[dict]:
         })
 
     # Suggested intro trim: if the opening is slow (late first cut, OR static +
-    # faceless first 2s), trim to the first 'engaging' second.
+    # faceless first 2s), trim to the first 'engaging' second. NEVER for
+    # voiceover-led reels — their narration starts at 0 and a trim would cut it.
     suggested_trim_start = None
     static_open = all(r["motion"] < _MOTION_FLOOR for r in tl[:2]) and not any(
         r["has_face"] for r in tl[:2]
     )
     late_open = winner_first_cut is not None and your_first_cut is not None and your_first_cut > winner_first_cut + 2
-    if static_open or late_open:
+    if (static_open or late_open) and not data["voiceover_led"]:
         engaging = next(
             (r["second"] for r in tl if r["has_face"] or r["motion"] >= _MOTION_FLOOR),
             None,
@@ -164,8 +174,9 @@ def recompute_for_trim(video_id: str, benchmark: dict, trim_start: int) -> dict:
 
     checks = []
     # Only assert face-related checks for archetypes/categories where winners
-    # actually show a face in the hook.
-    if winner_hook_face >= 0.4:
+    # actually show a face in the hook — and never for voiceover-led reels
+    # (no presenter on screen; there is no face to deploy).
+    if winner_hook_face >= 0.4 and not data["voiceover_led"]:
         checks.append({"label": f"Face on screen by 1s (winners {winner_hook_face*100:.0f}%)", "pass": bool(face_by_1s)})
     checks.append({"label": "Opens on movement, not a static hold", "pass": bool(movement_open)})
     checks.append({"label": f"First cut within ~{winner_first_cut:.0f}s of the open", "pass": bool(cut_in_window)})
@@ -219,9 +230,13 @@ def build_auto_cut(video_id: str, benchmark: dict) -> Optional[dict]:
 
     removed: list[dict] = []
 
+    # Voiceover-led reels: "dead" (faceless + static) seconds usually carry the
+    # narration, which we can't hear per-second — so we never auto-trim them.
+    voiceover_led = data["voiceover_led"]
+
     # --- 1. Slow open: drop a leading run of dead seconds. ------------------
     first_engaging = next((r["second"] for r in tl if not _is_dead(r)), n)
-    trim_start = first_engaging if (2 <= first_engaging < n) else 0
+    trim_start = first_engaging if (2 <= first_engaging < n and not voiceover_led) else 0
     if trim_start > 0:
         reason = (
             f"slow open — winning {arch} reels are moving by ~{winner_first_cut:.0f}s"
@@ -236,7 +251,11 @@ def build_auto_cut(video_id: str, benchmark: dict) -> Optional[dict]:
         j -= 1
     dead_tail_start = j + 1
     tail_end = duration
-    if duration - dead_tail_start >= _DEAD_TAIL_MIN and dead_tail_start > trim_start + 1:
+    if (
+        duration - dead_tail_start >= _DEAD_TAIL_MIN
+        and dead_tail_start > trim_start + 1
+        and not voiceover_led
+    ):
         removed.append(
             {
                 "start": dead_tail_start,

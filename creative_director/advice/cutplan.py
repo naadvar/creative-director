@@ -30,6 +30,21 @@ HOOK_SECONDS = 3
 _MOTION_FLOOR = 0.10  # per-second motion above this = "something is moving"
 
 
+def _dead_floor(tl: list[dict]) -> float:
+    """Motion threshold below which a second counts as 'nothing is moving' —
+    RELATIVE to this video's own motion distribution.
+
+    A fixed-camera, controlled-movement demo (a stretch, a slow lift) can run
+    0.01-0.04 for its entire duration — every second is below the absolute
+    floor, and treating it as dead air deletes the actual content. A frozen
+    title/end card still sits far below the same video's median, so half the
+    median separates 'static frame' from 'slow but alive' on any camera.
+    """
+    motions = sorted(r["motion"] for r in tl)
+    med = motions[len(motions) // 2] if motions else 0.0
+    return min(_MOTION_FLOOR, max(0.4 * med, 0.008))
+
+
 def _load(video_id: str):
     with session_scope() as s:
         v = s.get(Video, video_id)
@@ -55,6 +70,7 @@ def _load(video_id: str):
             "archetype": arch,
             "duration": v.duration_seconds or len(tl),
             "tl": tl,
+            "dead_floor": _dead_floor(tl),
             # Voiceover-led: narration with no presenter (animation/b-roll).
             # Face-timing checks and dead-air trims are unsafe here — the
             # "no face + low motion" seconds usually carry the narration.
@@ -128,19 +144,21 @@ def build_cut_plan(video_id: str, benchmark: dict) -> Optional[dict]:
     # Suggested intro trim: if the opening is slow (late first cut, OR static +
     # faceless first 2s), trim to the first 'engaging' second. NEVER for
     # voiceover-led reels — their narration starts at 0 and a trim would cut it.
+    # The trim-handle PRESET only comes from a genuinely dead open (static and
+    # faceless). A late-but-alive first shot (e.g. exercise 1 of a montage) gets
+    # the pacing *suggestion* above, never a preset that would delete content.
     suggested_trim_start = None
-    static_open = all(r["motion"] < _MOTION_FLOOR for r in tl[:2]) and not any(
+    floor = data["dead_floor"]
+    static_open = all(r["motion"] < floor for r in tl[:2]) and not any(
         r["has_face"] for r in tl[:2]
     )
-    late_open = winner_first_cut is not None and your_first_cut is not None and your_first_cut > winner_first_cut + 2
-    if (static_open or late_open) and not data["voiceover_led"]:
+    if static_open and not data["voiceover_led"]:
         engaging = next(
-            (r["second"] for r in tl if r["has_face"] or r["motion"] >= _MOTION_FLOOR),
+            (r["second"] for r in tl if r["has_face"] or r["motion"] >= floor),
             None,
         )
-        candidate = your_first_cut if late_open else engaging
-        if candidate and 0 < candidate <= max(1, len(tl) // 3):
-            suggested_trim_start = int(candidate)
+        if engaging and 0 < engaging <= max(1, len(tl) // 3):
+            suggested_trim_start = int(engaging)
 
     return {
         "video_id": video_id,
@@ -177,7 +195,7 @@ def recompute_for_trim(video_id: str, benchmark: dict, trim_start: int) -> dict:
     open_win = after[:2]
 
     face_by_1s = any(r["has_face"] for r in after[:2])
-    movement_open = any(r["motion"] >= _MOTION_FLOOR for r in open_win)
+    movement_open = any(r["motion"] >= data["dead_floor"] for r in open_win)
     # first cut within winner median of the NEW start
     rel_cuts = [r["second"] - trim_start for r in after if r["is_cut"]]
     cut_in_window = any(0 < c <= winner_first_cut + 1 for c in rel_cuts)
@@ -214,9 +232,10 @@ _DEAD_TAIL_MIN = 3   # trailing dead seconds worth dropping
 _DEAD_MID_MIN = 8    # interior dead run worth dropping (hard-gated; rarely fires)
 
 
-def _is_dead(r: dict) -> bool:
-    """A second with no face and no real motion — dead air."""
-    return (not r["has_face"]) and r["motion"] < _MOTION_FLOOR
+def _is_dead(r: dict, floor: float) -> bool:
+    """A second with no face and no real motion (vs THIS video's own motion
+    distribution) — dead air."""
+    return (not r["has_face"]) and r["motion"] < floor
 
 
 def build_auto_cut(video_id: str, benchmark: dict) -> Optional[dict]:
@@ -239,13 +258,14 @@ def build_auto_cut(video_id: str, benchmark: dict) -> Optional[dict]:
     winner_avg_shot = (10.0 / winner_cuts_per_10s) if winner_cuts_per_10s else None
 
     removed: list[dict] = []
+    floor = data["dead_floor"]
 
     # Voiceover-led reels: "dead" (faceless + static) seconds usually carry the
     # narration, which we can't hear per-second — so we never auto-trim them.
     voiceover_led = data["voiceover_led"]
 
     # --- 1. Slow open: drop a leading run of dead seconds. ------------------
-    first_engaging = next((r["second"] for r in tl if not _is_dead(r)), n)
+    first_engaging = next((r["second"] for r in tl if not _is_dead(r, floor)), n)
     trim_start = first_engaging if (2 <= first_engaging < n and not voiceover_led) else 0
     if trim_start > 0:
         reason = (
@@ -257,7 +277,7 @@ def build_auto_cut(video_id: str, benchmark: dict) -> Optional[dict]:
 
     # --- 2. Dead tail: drop a trailing run of dead seconds. -----------------
     j = n - 1
-    while j >= 0 and _is_dead(tl[j]):
+    while j >= 0 and _is_dead(tl[j], floor):
         j -= 1
     dead_tail_start = j + 1
     tail_end = duration
@@ -293,7 +313,7 @@ def build_auto_cut(video_id: str, benchmark: dict) -> Optional[dict]:
         body = [r for r in tl if trim_start <= r["second"] < tail_end]
         run_start: Optional[int] = None
         for r in body:
-            if _is_dead(r):
+            if _is_dead(r, floor):
                 if run_start is None:
                     run_start = r["second"]
             else:
@@ -316,6 +336,13 @@ def build_auto_cut(video_id: str, benchmark: dict) -> Optional[dict]:
     if tail_end > pos:
         segments.append({"start": pos, "end": tail_end})
     if not segments:  # safety — never return an empty edit
+        segments = [{"start": 0, "end": duration}]
+        removed = []
+
+    # Sanity cap: an "edit" that deletes most of the reel isn't a cut, it's a
+    # sign the dead-air heuristic misread this video's format. Back off whole.
+    kept = sum(s["end"] - s["start"] for s in segments)
+    if duration and (duration - kept) > 0.4 * duration:
         segments = [{"start": 0, "end": duration}]
         removed = []
 

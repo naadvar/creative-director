@@ -1,6 +1,7 @@
 import type {
   AnalyzeHandleJob,
   AuthUser,
+  UploadJobStatus,
   AutoCut,
   CategoryInfo,
   CorpusFacets,
@@ -141,6 +142,28 @@ export const api = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ category }),
     })
+  },
+
+  /** Upload your own reel for analysis (multipart). Poll uploadStatus until done. */
+  upload(
+    file: File,
+    niche: string,
+    caption: string,
+    followers?: number,
+  ): Promise<UploadJobStatus> {
+    const form = new FormData()
+    form.append('file', file)
+    form.append('niche', niche)
+    form.append('caption', caption)
+    if (followers != null && !Number.isNaN(followers)) {
+      form.append('followers', String(followers))
+    }
+    // No Content-Type header — the browser sets the multipart boundary itself.
+    return request<UploadJobStatus>('/upload', { method: 'POST', body: form })
+  },
+
+  uploadStatus(jobId: string): Promise<UploadJobStatus> {
+    return request<UploadJobStatus>(`/upload/${encodeURIComponent(jobId)}`)
   },
 
   analyzeUrl(url: string, force = false): Promise<IngestResponse> {

@@ -87,18 +87,26 @@ export default function VideoPage() {
       {b ? (
         <>
           <div className="flex gap-4">
-            <a
-              href={externalUrl(b.video_id)}
-              target="_blank"
-              rel="noreferrer"
-              className="hidden shrink-0 sm:block"
-            >
+            {externalUrl(b.video_id) ? (
+              <a
+                href={externalUrl(b.video_id)}
+                target="_blank"
+                rel="noreferrer"
+                className="hidden shrink-0 sm:block"
+              >
+                <img
+                  src={thumbnailUrl(b.video_id)}
+                  alt=""
+                  className="h-[68px] w-[120px] rounded-lg object-cover"
+                />
+              </a>
+            ) : (
               <img
                 src={thumbnailUrl(b.video_id)}
                 alt=""
-                className="h-[68px] w-[120px] rounded-lg object-cover"
+                className="hidden h-[68px] w-[120px] shrink-0 rounded-lg object-cover sm:block"
               />
-            </a>
+            )}
             <div className="min-w-0">
               <h1 className="text-xl font-semibold leading-tight">{b.title}</h1>
               <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted">

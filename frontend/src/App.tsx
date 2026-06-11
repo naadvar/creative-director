@@ -1,7 +1,7 @@
 import { Link, NavLink, Route, Routes } from 'react-router-dom'
 import BrowsePage from './pages/BrowsePage'
 import VideoPage from './pages/VideoPage'
-import MyReelsPage from './pages/MyReelsPage'
+import UploadPage from './pages/UploadPage'
 import LandingPage from './pages/LandingPage'
 import Disclaimer from './components/Disclaimer'
 import Spinner from './components/Spinner'
@@ -33,10 +33,10 @@ function Header() {
         </Link>
         <nav className="flex items-center gap-4">
           <NavLink to="/" end className={navClass}>
-            Your Reels
+            Analyze
           </NavLink>
           <NavLink to="/browse" className={navClass}>
-            Explore
+            Corpus
           </NavLink>
         </nav>
         <div className="ml-auto flex items-center gap-3 text-sm">
@@ -60,7 +60,7 @@ function AuthedApp() {
       <Header />
       <main className="mx-auto w-full max-w-6xl flex-1 px-5 py-7">
         <Routes>
-          <Route path="/" element={<MyReelsPage />} />
+          <Route path="/" element={<UploadPage />} />
           <Route path="/browse" element={<BrowsePage />} />
           <Route path="/video/:videoId" element={<VideoPage />} />
           <Route
@@ -69,7 +69,7 @@ function AuthedApp() {
               <div className="text-sm text-muted">
                 Page not found.{' '}
                 <Link to="/" className="text-accent hover:underline">
-                  Your Reels
+                  Analyze a reel
                 </Link>
               </div>
             }

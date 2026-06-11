@@ -285,6 +285,16 @@ export interface MyReels {
   reels: ReelCard[]
 }
 
+// --- upload-your-reel analysis job (POST /upload, poll GET /upload/{id}) ---
+export interface UploadJobStatus {
+  job_id: string
+  status: 'running' | 'done' | 'error' | string
+  message: string
+  video_id: string
+  niche: string
+  error: string | null
+}
+
 // --- paste-handle analysis job (POST /analyze-handle, poll GET /analyze-handle/{id}) ---
 export interface AnalyzeHandleJob {
   job_id: string

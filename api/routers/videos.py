@@ -247,7 +247,10 @@ def timeline(video_id: str) -> schemas.Timeline:
 # Minimum same-category winners (for this archetype) before we trust a
 # category-specific pacing benchmark over the broader tier benchmark. Mirrors
 # benchmarks._MIN_TIER_WINNERS so the fallback logic is consistent across routes.
-_MIN_CATEGORY_WINNERS = 5
+# Below this many winners, a category cohort's medians are noise (a first-cut
+# median from 6 videos can swing seconds on one outlier) — fall back to the
+# much thicker tier x archetype benchmark instead.
+_MIN_CATEGORY_WINNERS = 12
 
 
 def _cutplan_benchmark(niche: str, tier: Optional[str], archetype: Optional[str], category: Optional[str]) -> dict:

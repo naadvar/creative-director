@@ -29,7 +29,7 @@ from creative_director.advice.trajectory import (
     trajectory_weight,
 )
 from creative_director.storage.db import session_scope
-from creative_director.storage.models import Video, VideoLabel
+from creative_director.storage.models import Video, VideoLabel, VideoTimeline
 
 
 # Minimum (tier x archetype) winner count below which we fall back to the
@@ -134,7 +134,43 @@ _MIN_ACTIONABLE_DELTA: dict[str, float] = {
     "transcript_word_count": 15,
     "description_char_count": 40,
     "description_word_count": 10,
+    # Continuous features where small deltas are perceptually meaningless:
+    "thumb_contrast": 0.1,
+    "thumb_brightness": 0.1,
+    "thumb_saturation": 0.1,
+    "audio_loudness_mean": 4,   # dB — under ~4dB nobody can act on "mix it louder"
+    "audio_loudness_max": 4,
+    "audio_voice_ratio": 0.15,
+    "first3s_motion_intensity": 0.02,
+    "avg_shot_length": 3,
 }
+
+
+# Speech-tuning advice ("say more", "add voiceover") only makes sense for
+# reels that already lead with speech; telling a silent demo channel to add a
+# voiceover prescribes a different format, not a tweak.
+_SPEECH_FEATS = {
+    "transcript_word_count",
+    "hook_word_count",
+    "hook_uses_you",
+    "audio_voice_ratio",
+}
+_FACE_FEATS = {"first3s_face_present"}
+
+
+def _overall_face_frac(video) -> Optional[float]:
+    """Whole-video face fraction from the timeline (None if no rows/session)."""
+    from sqlalchemy import select
+    from sqlalchemy.orm import object_session
+
+    s = object_session(video)
+    if s is None:
+        return None
+    rows = s.execute(
+        select(VideoTimeline.has_face).where(VideoTimeline.video_id == video.id)
+    ).all()
+    vals = [r[0] for r in rows if r[0] is not None]
+    return (sum(vals) / len(vals)) if vals else None
 
 
 def winner_recommendations(video, niche: Optional[str], limit: int = 6) -> list[dict]:
@@ -145,11 +181,24 @@ def winner_recommendations(video, niche: Optional[str], limit: int = 6) -> list[
     (how strongly the feature predicts performance). This is the moat: specific,
     category-tuned advice grounded in what actually correlates with winning.
     """
+    from creative_director.advice.benchmark import classify_archetype, face_advice_applies
+
     feats = _predictive_map().get(niche or "")
     if not feats or video.features is None:
         return []
+    archetype = classify_archetype(video.features.transcript_word_count)
+    face_frac = _overall_face_frac(video)
     recs: list[dict] = []
     for feat, meta in feats.items():
+        # The read owns length advice (tier+archetype cohort); carrying duration
+        # here too lets two benchmarks argue on one page ("runs short" vs
+        # "make it shorter").
+        if meta.get("source") == "video":
+            continue
+        if feat in _SPEECH_FEATS and archetype != "talking":
+            continue
+        if feat in _FACE_FEATS and not face_advice_applies(archetype, face_frac):
+            continue
         rho = meta.get("rho") or 0.0
         med = meta.get("niche_median")
         if med is None or rho == 0:
@@ -171,6 +220,16 @@ def winner_recommendations(video, niche: Optional[str], limit: int = 6) -> list[
         # Tiny-magnitude features need a REAL absolute delta — "1 emoji vs ~0"
         # or "0.06 ALL-CAPS vs 0" read as pedantic noise, not advice.
         if abs(float(val) - float(wm)) < _MIN_ACTIONABLE_DELTA.get(feat, 0.0):
+            continue
+        # "Hold shots longer (≈15s)" on a 4s reel: the target can't exceed the
+        # reel itself. Skip shot-length advice when the winner target doesn't
+        # comfortably fit inside the video.
+        if (
+            feat == "avg_shot_length"
+            and rho > 0
+            and video.duration_seconds
+            and float(wm) > 0.8 * float(video.duration_seconds)
+        ):
             continue
         pretty = feat.replace("_", " ")
         label, hi_dir, lo_dir = _FEATURE_META.get(

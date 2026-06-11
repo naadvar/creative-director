@@ -225,6 +225,13 @@ def analyze_timeline(video_id: str, benchmark: Optional[dict] = None) -> FrameBr
                 f"HOOK OPENING: you open on '{yours}', the most common winning "
                 f"opener ({top_share*100:.0f}% of {arch} winners). Aligned."
             )
+        elif your_share >= 0.15:
+            # Your opener is itself a common winning opener — nagging someone
+            # to switch from a 27%-of-winners open to a 30% one is noise.
+            fb.findings.append(
+                f"HOOK OPENING: you open on '{yours}' — a common winning opener "
+                f"({your_share*100:.0f}% of {arch} winners). Aligned."
+            )
         else:
             fb.findings.append(
                 f"HOOK OPENING: you open on '{yours}' "

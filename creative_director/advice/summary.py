@@ -103,6 +103,9 @@ class PlainSummary:
 
 def _aggregate_suggestions(b: VideoBreakdown, cohort: str) -> list[Suggestion]:
     out: list[Suggestion] = []
+    # IG/uploads have captions, not titles — the title features there are the
+    # caption's opening line, and creators read "title" as a YouTube-ism.
+    t_word = "caption opening" if b.video_id.startswith(("ig_", "up_")) else "title"
     for f in b.findings:
         if not f.off_benchmark:
             continue
@@ -159,23 +162,26 @@ def _aggregate_suggestions(b: VideoBreakdown, cohort: str) -> list[Suggestion]:
                 else f"it uses fewer spoken words than winners ({yv:.0f} vs ~{bv:.0f})"
             )
         elif feat == "title_char_count":
+            # Needs a real gap — "43 chars vs about 33" is noise.
+            if yv is None or abs(yv - bv) < 12:
+                continue
             text = (
-                f"Shorten the title — {yv:.0f} characters vs about {bv:.0f} for winners."
+                f"Shorten the {t_word} — {yv:.0f} characters vs about {bv:.0f} for winners."
                 if hi
-                else f"Your title is brief ({yv:.0f} chars); winners write about {bv:.0f}."
+                else f"Your {t_word} is brief ({yv:.0f} chars); winners write about {bv:.0f}."
             )
-            clause = f"its title runs {'longer' if hi else 'shorter'} than winners'"
+            clause = f"its {t_word} runs {'longer' if hi else 'shorter'} than winners'"
         elif feat == "title_emoji_count":
             # Emoji counts are tiny integers — a 1-vs-0 "gap" is noise, and
             # surfacing it as advice reads as pedantic. Require a real delta.
             if yv is None or abs(yv - bv) < 2:
                 continue
             text = (
-                f"Ease off the title emoji — {yv:.0f} vs about {bv:.0f} for winners."
+                f"Ease off the {t_word} emoji — {yv:.0f} vs about {bv:.0f} for winners."
                 if hi
-                else f"Winners use slightly more title emoji (~{bv:.0f} vs your {yv:.0f})."
+                else f"Winners use slightly more {t_word} emoji (~{bv:.0f} vs your {yv:.0f})."
             )
-            clause = "its title emoji use differs from winners"
+            clause = f"its {t_word} emoji use differs from winners"
         else:
             text = f"{f.label}: yours {yv:.0f}{f.unit}, winners about {bv:.0f}{f.unit}."
             clause = f"its {f.label.lower()} differs from winners"
@@ -226,9 +232,11 @@ def _frame_suggestions(
     your_vibe = summ.get("hook_vibe")
     vibe_dist = bm.get("hook_vibe_dist") or {}
     if your_vibe and vibe_dist:
-        # For no-presenter formats, never suggest opening on a person — pick
-        # the most common winning opener they can actually shoot instead.
-        if presenter_ok:
+        # Never suggest "open on a person talking to camera" to formats that
+        # can't act on it: no-presenter reels (nobody to film) and silent demos
+        # (opening on someone talking prescribes adding speech). Pick the most
+        # common winning opener they can actually shoot instead.
+        if presenter_ok and b.archetype != "demo":
             top_vibe, top_share = next(iter(vibe_dist.items()))
         else:
             non_face = [(k, v) for k, v in vibe_dist.items() if k != "talking_head"]
@@ -268,7 +276,10 @@ def build_summary(
         arch_plain = ARCHETYPE_PLAIN.get(breakdown.archetype, "video")
     suggestions = _aggregate_suggestions(breakdown, cohort) + frame_sugs
     suggestions.sort(key=lambda s: -s.gap)
-    worth = [s for s in suggestions if s.gap >= 0.1][:3]
+    # Proxy findings self-describe as "not a lever — don't act on this"; they
+    # have no business occupying a "Worth trying" slot. (They stay visible in
+    # the findings table with their honest framing.)
+    worth = [s for s in suggestions if s.gap >= 0.1 and not s.is_proxy][:3]
 
     dur = breakdown.duration_seconds
     dur_txt = f"{dur}s " if dur else ""

@@ -113,13 +113,17 @@ def build_cut_plan(video_id: str, benchmark: dict) -> Optional[dict]:
                 "type": "first_cut",
                 "message": f"Your first cut is at {your_first_cut}s; winners cut by ~{winner_first_cut:.0f}s. The opening shot holds too long.",
             })
-    # 2. Over-long holds.
-    for seg in over_long[:3]:
-        suggestions.append({
-            "second": seg["start"],
-            "type": "long_hold",
-            "message": f"{seg['start']}-{seg['end']}s is one {seg['length']}s shot; winners' shots average ~{winner_avg_shot:.0f}s. Break it up.",
-        })
+    # 2. Over-long holds — only when this cohort's winners actually cut
+    # (winner_avg_shot is None when winners are mostly single-shot; telling
+    # someone to "break it up" would contradict the benchmark there, and the
+    # message can't be formatted without a target anyway).
+    if winner_avg_shot is not None:
+        for seg in over_long[:3]:
+            suggestions.append({
+                "second": seg["start"],
+                "type": "long_hold",
+                "message": f"{seg['start']}-{seg['end']}s is one {seg['length']}s shot; winners' shots average ~{winner_avg_shot:.0f}s. Break it up.",
+            })
 
     # Suggested intro trim: if the opening is slow (late first cut, OR static +
     # faceless first 2s), trim to the first 'engaging' second. NEVER for

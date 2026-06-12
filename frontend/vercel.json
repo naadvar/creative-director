@@ -5,7 +5,7 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://individually-educators-round-coral.trycloudflare.com/:path*"
+      "destination": "https://interactive-extreme-vendors-balloon.trycloudflare.com/:path*"
     },
     { "source": "/(.*)", "destination": "/index.html" }
   ]

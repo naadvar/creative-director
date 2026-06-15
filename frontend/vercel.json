@@ -5,7 +5,7 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://election-due-somehow-perception.trycloudflare.com/:path*"
+      "destination": "https://loc-congratulations-episode-footage.trycloudflare.com/:path*"
     },
     { "source": "/(.*)", "destination": "/index.html" }
   ]

@@ -108,11 +108,15 @@ def vlm_has_presenter(video_features) -> Optional[bool]:
     """The full-video VLM's read on whether a human presenter is on camera —
     a more reliable presenter signal than the scalar face fraction (which a
     food/product/animation reel can fool). Returns True / False / None
-    (None = no VLM run, or the VLM was not confident -> defer to the scalar)."""
+    (None = no VLM run, or the VLM itself returned no determination).
+
+    Confidence is intentionally NOT filtered here: only a False is ever acted on
+    (it suppresses face advice), and the harm is asymmetric — wrongly suppressing
+    one suggestion on a presenter reel is far cheaper than telling a faceless
+    food/product reel to 'show a face.' So we trust a False even at low
+    confidence; a True is a no-op for the gate anyway."""
     vp = getattr(video_features, "vlm_perception", None) if video_features else None
     if not isinstance(vp, dict):
-        return None
-    if vp.get("confidence") == "low":
         return None
     hp = vp.get("has_presenter")
     return hp if isinstance(hp, bool) else None

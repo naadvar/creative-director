@@ -5,7 +5,7 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://loc-congratulations-episode-footage.trycloudflare.com/:path*"
+      "destination": "https://hit-special-highlight-presently.trycloudflare.com/:path*"
     },
     { "source": "/(.*)", "destination": "/index.html" }
   ]

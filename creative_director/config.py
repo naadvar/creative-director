@@ -69,9 +69,13 @@ class Settings(BaseSettings):
     cooldown_every_n_videos: int = 0
     cooldown_seconds: int = 60
 
-    # Anthropic API — used by the advice narration layer (advice/narrate.py).
+    # Anthropic API — used by the advice narration layer (advice/narrate.py) and
+    # the full-video VLM perception layer (features/vlm_perception.py).
     anthropic_api_key: Optional[str] = None
     narrator_model: str = "claude-opus-4-7"
+    # Run the VLM perception pass in the upload job (one Claude call / upload,
+    # ~$0.05-0.10). Off by default so corpus/no-key paths fall back to scalar.
+    enable_vlm_perception: bool = False
 
     # Apify — public-data Instagram ingestion path (training-corpus bootstrap
     # only; not the permanent product foundation per the project kill-criterion).

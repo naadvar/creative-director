@@ -1,0 +1,228 @@
+"""Full-video VLM perception — the grounded "WHAT is this reel" layer.
+
+One Claude call over dense, timestamp-stamped frames spanning the WHOLE clip
+returns a structured perception dict (canonical contract below). It is RELIABLE
+at structural facts (genre / format / has_presenter / on-screen text) and is
+held to CITED-ONLY craft observations; it is NOT trusted for causal "why it
+performed" claims (those live in `hypothesis[]` and are gated downstream).
+
+The single load-bearing field is ``has_presenter`` — the existing scalar advice
+machinery already keys off presenter-state (see benchmark.py
+face_advice_applies / _FACE_FEATS), so a bool maps cleanly onto the gate that
+corrects the word-count archetype's one failure mode (mislabeling presenter
+state — the genre miscategorizations that poison downstream advice).
+
+Returns ``None`` on any failure / no API key, so callers fall back to the
+scalar system with zero regression.
+"""
+from __future__ import annotations
+
+import base64
+import json
+import tempfile
+from pathlib import Path
+from typing import Optional
+
+from loguru import logger
+
+from creative_director.config import settings
+
+SCHEMA_VERSION = 1
+
+# Canonical contract — forced via tool-use so the model cannot return prose.
+_PERCEPTION_TOOL = {
+    "name": "report_perception",
+    "description": "Report the structured perception of the reel's opening/whole clip.",
+    "input_schema": {
+        "type": "object",
+        "additionalProperties": False,
+        "required": [
+            "genre", "format", "has_presenter", "on_screen_text",
+            "opening_shot", "observed", "hypothesis", "confidence",
+        ],
+        "properties": {
+            "genre": {
+                "type": ["string", "null"],
+                "description": "Grounded archetype from the FRAMES, not a guess: one of "
+                "talking_head, voiceover_animation, b_roll_demo, product_demo, "
+                "faceless_montage, lifestyle_vlog, educational_tutorial, other. null if unclear.",
+            },
+            "format": {
+                "type": ["string", "null"],
+                "description": "Production style: single_take, montage, voiceover_with_text, "
+                "talking_head, animation_heavy. null if unclear.",
+            },
+            "has_presenter": {
+                "type": ["boolean", "null"],
+                "description": "Is a human presenter on camera for a meaningful share of the clip? "
+                "null only if genuinely uncertain. THIS DRIVES THE ADVICE GATE.",
+            },
+            "on_screen_text": {
+                "type": ["string", "null"],
+                "description": "Text visible in the first ~3s as one string (e.g. 'recipe title + "
+                "ingredient list'). null if none.",
+            },
+            "opening_shot": {
+                "type": ["string", "null"],
+                "description": "1-2 sentences on the very first frame: framing, subject present?, "
+                "dominant colors, anything wasted (e.g. a black frame).",
+            },
+            "observed": {
+                "type": "array",
+                "description": "CITED-ONLY perceptible facts. Each MUST cite a frame_ts that is one "
+                "of the timestamps shown stamped on the frames. No causal/outcome language.",
+                "items": {
+                    "type": "object",
+                    "additionalProperties": False,
+                    "required": ["text", "frame_ts"],
+                    "properties": {
+                        "text": {"type": "string"},
+                        "frame_ts": {"type": "number", "description": "a stamped timestamp in seconds"},
+                    },
+                },
+            },
+            "hypothesis": {
+                "type": "array",
+                "description": "Craft patterns / risks (e.g. 'the hook promises a payoff the visual "
+                "never shows'). May discuss craft, but NO guaranteed-outcome claims.",
+                "items": {
+                    "type": "object",
+                    "additionalProperties": False,
+                    "required": ["text"],
+                    "properties": {"text": {"type": "string"}},
+                },
+            },
+            "confidence": {
+                "type": ["string", "null"],
+                "enum": ["high", "medium", "low", None],
+                "description": "Your confidence in genre + has_presenter.",
+            },
+        },
+    },
+}
+
+_SYSTEM = """You are a short-form video strategist reading a creator's Instagram Reel \
+from frames sampled across its whole timeline. Each frame is stamped with its \
+timestamp in seconds (top-left). Report ONLY what you can actually see.
+
+Hard rules:
+- has_presenter, genre, format, on_screen_text, opening_shot are STRUCTURAL FACTS \
+from the frames — be decisive; set null only if genuinely indeterminate.
+- Every 'observed' item MUST cite a frame_ts equal to one of the stamped timestamps. \
+Do not invent motion or events between frames you cannot see.
+- 'hypothesis' is for craft patterns and risks. Never state a causal/outcome claim \
+('this is why it flopped', 'this will get views') as fact — those are hypotheses at most.
+- You are reliable about WHAT the reel is; you are NOT a performance predictor."""
+
+
+def _strip_from_frames(frames, out_path: Path) -> None:
+    import cv2
+    cv2.imwrite(str(out_path), cv2.hconcat(frames))
+
+
+def sample_strips(mp4_path: str, out_dir: Path, n_frames: int = 12) -> tuple[list[str], list[float]]:
+    """Sample n_frames evenly across the WHOLE clip, timestamp-stamp them, and
+    write them as ceil(n/4) horizontal strips of 4. Returns (strip_paths, timestamps)."""
+    import cv2
+
+    cap = cv2.VideoCapture(str(mp4_path))
+    fps = cap.get(cv2.CAP_PROP_FPS) or 30
+    nframes = cap.get(cv2.CAP_PROP_FRAME_COUNT) or 0
+    dur = (nframes / fps) if nframes else 12.0
+    ts = [round(dur * i / (n_frames - 1), 2) for i in range(n_frames)]
+    frames = []
+    for t in ts:
+        cap.set(cv2.CAP_PROP_POS_FRAMES, int(min(t, dur - 0.05) * fps))
+        ok, fr = cap.read()
+        if not ok:
+            continue
+        h = 360
+        w = int(fr.shape[1] * h / fr.shape[0])
+        fr = cv2.resize(fr, (w, h))
+        cv2.putText(fr, f"{t:.1f}s", (8, 28), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 0), 4)
+        cv2.putText(fr, f"{t:.1f}s", (8, 28), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 255), 2)
+        frames.append(fr)
+    cap.release()
+    out_dir.mkdir(parents=True, exist_ok=True)
+    paths = []
+    for i in range(0, len(frames), 4):
+        chunk = frames[i:i + 4]
+        p = out_dir / f"strip_{i // 4}.jpg"
+        _strip_from_frames(chunk, p)
+        paths.append(str(p))
+    return paths, [t for t in ts][: len(frames)]
+
+
+def _img_block(path: str) -> dict:
+    data = base64.standard_b64encode(Path(path).read_bytes()).decode("ascii")
+    return {"type": "image", "source": {"type": "base64", "media_type": "image/jpeg", "data": data}}
+
+
+def perceive_from_strips(
+    strip_paths: list[str],
+    *,
+    niche: Optional[str] = None,
+    caption: Optional[str] = None,
+    duration_s: Optional[int] = None,
+    timestamps: Optional[list[float]] = None,
+) -> Optional[dict]:
+    """The Claude call. Given pre-rendered timestamped frame strips, return the
+    canonical perception dict (or None on any failure)."""
+    api_key = settings.anthropic_api_key
+    if not api_key or not strip_paths:
+        return None
+    import anthropic
+
+    ctx = (
+        f"Context: niche={niche or 'unknown'}, duration={duration_s or '?'}s. "
+        f"Caption opening: {json.dumps(caption or '')[:200]}. "
+        f"The frames below span the whole clip; stamped timestamps"
+        + (f" are among: {timestamps}." if timestamps else ".")
+    )
+    content = [{"type": "text", "text": ctx}] + [_img_block(p) for p in strip_paths]
+    try:
+        client = anthropic.Anthropic(api_key=api_key)
+        resp = client.messages.create(
+            model=settings.narrator_model,
+            max_tokens=1500,
+            system=_SYSTEM,
+            tools=[_PERCEPTION_TOOL],
+            tool_choice={"type": "tool", "name": "report_perception"},
+            messages=[{"role": "user", "content": content}],
+        )
+        for block in resp.content:
+            if block.type == "tool_use" and block.name == "report_perception":
+                out = dict(block.input)
+                out["schema_version"] = SCHEMA_VERSION
+                return _validate(out, timestamps)
+        logger.warning("vlm_perception: no tool_use block in response")
+        return None
+    except Exception as e:  # noqa: BLE001 — never let perception break the upload job
+        logger.warning(f"vlm_perception call failed: {type(e).__name__}: {str(e)[:160]}")
+        return None
+
+
+def _validate(out: dict, timestamps: Optional[list[float]]) -> dict:
+    """Drop observed items whose frame_ts isn't a real sampled timestamp (the
+    anti-temporal-hallucination rule). The full note verifier comes later."""
+    if timestamps:
+        allowed = {round(t, 1) for t in timestamps}
+        kept = [o for o in (out.get("observed") or []) if round(float(o.get("frame_ts", -1)), 1) in allowed]
+        out["observed_dropped"] = len(out.get("observed") or []) - len(kept)
+        out["observed"] = kept
+    return out
+
+
+def extract_vlm_perception(
+    mp4_path: str, *, niche: Optional[str] = None, caption: Optional[str] = None,
+    duration_s: Optional[int] = None,
+) -> Optional[dict]:
+    """Pipeline entrypoint: sample frames from the mp4, run the VLM, return the
+    canonical perception dict (None on failure). Stored on VideoFeatures.vlm_perception."""
+    if not settings.anthropic_api_key:
+        return None
+    with tempfile.TemporaryDirectory() as td:
+        strips, ts = sample_strips(mp4_path, Path(td))
+        return perceive_from_strips(
+            strips, niche=niche, caption=caption, duration_s=duration_s, timestamps=ts
+        )

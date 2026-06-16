@@ -158,6 +158,78 @@ def _img_block(path: str) -> dict:
     return {"type": "image", "source": {"type": "base64", "media_type": "image/jpeg", "data": data}}
 
 
+def _context_text(niche, caption, duration_s, timestamps) -> str:
+    return (
+        f"Context: niche={niche or 'unknown'}, duration={duration_s or '?'}s. "
+        f"Caption opening: {json.dumps(caption or '')[:200]}. "
+        f"The frames below span the whole clip; stamped timestamps"
+        + (f" are among: {timestamps}." if timestamps else ".")
+    )
+
+
+def _perceive_anthropic(strip_paths, ctx, timestamps) -> Optional[dict]:
+    api_key = settings.anthropic_api_key
+    if not api_key:
+        return None
+    import anthropic
+
+    content = [{"type": "text", "text": ctx}] + [_img_block(p) for p in strip_paths]
+    client = anthropic.Anthropic(api_key=api_key)
+    resp = client.messages.create(
+        model=settings.vlm_model or settings.narrator_model,
+        max_tokens=1500,
+        system=_SYSTEM,
+        tools=[_PERCEPTION_TOOL],
+        tool_choice={"type": "tool", "name": "report_perception"},
+        messages=[{"role": "user", "content": content}],
+    )
+    for block in resp.content:
+        if block.type == "tool_use" and block.name == "report_perception":
+            out = dict(block.input)
+            out["schema_version"] = SCHEMA_VERSION
+            return out
+    logger.warning("vlm_perception: no tool_use block in response")
+    return None
+
+
+def _perceive_openai_compatible(strip_paths, ctx, timestamps) -> Optional[dict]:
+    """Call a self-hosted vLLM (e.g. RunPod serving Qwen3-VL) or any OpenAI-style
+    endpoint, forcing the canonical schema via guided-JSON response_format."""
+    import httpx
+
+    base = (settings.vlm_base_url or "").rstrip("/")
+    model = settings.vlm_model
+    if not base or not model:
+        logger.warning("vlm_perception: openai_compatible needs vlm_base_url + vlm_model")
+        return None
+
+    def data_uri(p):
+        return "data:image/jpeg;base64," + base64.standard_b64encode(Path(p).read_bytes()).decode("ascii")
+
+    content = [{"type": "text", "text": ctx}] + [
+        {"type": "image_url", "image_url": {"url": data_uri(p)}} for p in strip_paths
+    ]
+    body = {
+        "model": model,
+        "max_tokens": 1500,
+        "temperature": 0,
+        "messages": [
+            {"role": "system", "content": _SYSTEM},
+            {"role": "user", "content": content},
+        ],
+        "response_format": {
+            "type": "json_schema",
+            "json_schema": {"name": "report_perception", "schema": _PERCEPTION_TOOL["input_schema"], "strict": True},
+        },
+    }
+    headers = {"Authorization": f"Bearer {settings.vlm_api_key or 'EMPTY'}"}
+    r = httpx.post(f"{base}/chat/completions", json=body, headers=headers, timeout=120)
+    r.raise_for_status()
+    out = json.loads(r.json()["choices"][0]["message"]["content"])
+    out["schema_version"] = SCHEMA_VERSION
+    return out
+
+
 def perceive_from_strips(
     strip_paths: list[str],
     *,
@@ -166,37 +238,18 @@ def perceive_from_strips(
     duration_s: Optional[int] = None,
     timestamps: Optional[list[float]] = None,
 ) -> Optional[dict]:
-    """The Claude call. Given pre-rendered timestamped frame strips, return the
-    canonical perception dict (or None on any failure)."""
-    api_key = settings.anthropic_api_key
-    if not api_key or not strip_paths:
+    """One VLM call over pre-rendered timestamped frame strips -> canonical
+    perception dict (or None on any failure). Routes to the configured provider
+    (Claude tool-use, or an OpenAI-compatible vLLM endpoint with guided JSON)."""
+    if not strip_paths:
         return None
-    import anthropic
-
-    ctx = (
-        f"Context: niche={niche or 'unknown'}, duration={duration_s or '?'}s. "
-        f"Caption opening: {json.dumps(caption or '')[:200]}. "
-        f"The frames below span the whole clip; stamped timestamps"
-        + (f" are among: {timestamps}." if timestamps else ".")
-    )
-    content = [{"type": "text", "text": ctx}] + [_img_block(p) for p in strip_paths]
+    ctx = _context_text(niche, caption, duration_s, timestamps)
     try:
-        client = anthropic.Anthropic(api_key=api_key)
-        resp = client.messages.create(
-            model=settings.narrator_model,
-            max_tokens=1500,
-            system=_SYSTEM,
-            tools=[_PERCEPTION_TOOL],
-            tool_choice={"type": "tool", "name": "report_perception"},
-            messages=[{"role": "user", "content": content}],
-        )
-        for block in resp.content:
-            if block.type == "tool_use" and block.name == "report_perception":
-                out = dict(block.input)
-                out["schema_version"] = SCHEMA_VERSION
-                return _validate(out, timestamps)
-        logger.warning("vlm_perception: no tool_use block in response")
-        return None
+        if settings.vlm_provider == "openai_compatible":
+            out = _perceive_openai_compatible(strip_paths, ctx, timestamps)
+        else:
+            out = _perceive_anthropic(strip_paths, ctx, timestamps)
+        return _validate(out, timestamps) if out else None
     except Exception as e:  # noqa: BLE001 — never let perception break the upload job
         logger.warning(f"vlm_perception call failed: {type(e).__name__}: {str(e)[:160]}")
         return None

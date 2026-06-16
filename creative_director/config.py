@@ -73,9 +73,16 @@ class Settings(BaseSettings):
     # the full-video VLM perception layer (features/vlm_perception.py).
     anthropic_api_key: Optional[str] = None
     narrator_model: str = "claude-opus-4-7"
-    # Run the VLM perception pass in the upload job (one Claude call / upload,
-    # ~$0.05-0.10). Off by default so corpus/no-key paths fall back to scalar.
+    # Run the VLM perception pass in the upload job (one VLM call / upload).
+    # Off by default so corpus/no-key paths fall back to scalar.
     enable_vlm_perception: bool = False
+    # VLM provider: "anthropic" (Claude, uses anthropic_api_key + narrator_model)
+    # or "openai_compatible" (a self-hosted vLLM / serverless OpenAI-style endpoint
+    # such as a RunPod pod serving Qwen3-VL, or OpenRouter/DeepInfra).
+    vlm_provider: str = "anthropic"
+    vlm_base_url: Optional[str] = None      # e.g. https://<pod-id>-8000.proxy.runpod.net/v1
+    vlm_model: Optional[str] = None         # e.g. Qwen/Qwen3-VL-32B-Instruct
+    vlm_api_key: Optional[str] = None       # serverless key; a vLLM pod accepts any/none
 
     # Apify — public-data Instagram ingestion path (training-corpus bootstrap
     # only; not the permanent product foundation per the project kill-criterion).

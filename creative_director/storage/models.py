@@ -196,6 +196,10 @@ class VideoFeatures(Base):
     hook_emotion_neutral: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
     hook_clip_image_embedding: Mapped[Optional[list]] = mapped_column(JSON, nullable=True)
 
+    # Full-video VLM perception (features/vlm_perception.py). null = no VLM run
+    # (corpus videos pre-backfill, or no key) -> advice falls back to scalar.
+    vlm_perception: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
+
     extracted_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
     video: Mapped[Video] = relationship(back_populates="features")

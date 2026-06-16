@@ -1,0 +1,12 @@
+# Slim deps for running the VLM-perception backfill ON the RunPod pod.
+# The pod already has torch/vLLM from the serving template; this adds only what
+# backfill_perception.py needs (NO torch/CLIP/whisper — inference is via the
+# local vLLM HTTP endpoint). Install on the pod after `git clone`:
+#     pip install -r requirements-pod.txt
+opencv-python-headless
+httpx
+boto3
+typer
+loguru
+pydantic-settings
+sqlalchemy

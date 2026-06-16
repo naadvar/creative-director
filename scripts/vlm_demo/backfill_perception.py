@@ -23,13 +23,10 @@ from pathlib import Path
 
 import typer
 from loguru import logger
-from sqlalchemy import select
 
 from creative_director.config import settings
 from creative_director.features import vlm_perception as vp
 from creative_director.storage import media
-from creative_director.storage.db import session_scope
-from creative_director.storage.models import Channel, Video, VideoFeatures
 
 app = typer.Typer(add_completion=False)
 OUT = Path("data/tmp/vlm_perception_backfill.jsonl")
@@ -42,16 +39,28 @@ def _done_ids() -> set[str]:
     return {json.loads(l)["video_id"] for l in OUT.read_text(encoding="utf-8").splitlines() if l.strip()}
 
 
-def _targets(niches, limit):
+def _targets_from_manifest(path, limit):
+    rows = []
+    for line in Path(path).read_text(encoding="utf-8").splitlines():
+        if line.strip():
+            r = json.loads(line)
+            rows.append((r["video_id"], r.get("niche"), r.get("duration_seconds"), r.get("title")))
+    return rows[:limit] if limit else rows
+
+
+def _targets_from_db(niches, limit):
+    # lazy import: the pod (manifest mode) never needs the DB
+    from sqlalchemy import select
+    from creative_director.storage.db import session_scope
+    from creative_director.storage.models import Channel, Video, VideoFeatures
+
     with session_scope() as s:
-        q = (
+        rows = s.execute(
             select(Video.id, Channel.niche, Video.duration_seconds, Video.title)
             .join(Channel, Channel.id == Video.channel_id)
             .join(VideoFeatures, VideoFeatures.video_id == Video.id)
-            .where(Channel.niche.in_(niches))
-            .order_by(Video.id)
-        )
-        rows = s.execute(q).all()
+            .where(Channel.niche.in_(niches)).order_by(Video.id)
+        ).all()
     return rows[:limit] if limit else rows
 
 
@@ -74,6 +83,7 @@ def _process(vid, niche, dur, title) -> dict:
 
 @app.command()
 def main(
+    manifest: str = typer.Option(None, help="pod mode: read the work-list from this JSONL (no DB needed)"),
     niche: str = typer.Option(None, help="single niche, e.g. ig_fitness"),
     all: bool = typer.Option(False, "--all", help="all 4 IG niches"),
     limit: int = typer.Option(0, help="cap (0=all)"),
@@ -82,8 +92,11 @@ def main(
     if settings.vlm_provider != "openai_compatible" or not settings.vlm_base_url:
         logger.warning("Set vlm_provider=openai_compatible + vlm_base_url in .env (the RunPod vLLM endpoint) first.")
         raise typer.Exit(1)
-    niches = IG_NICHES if all else [niche] if niche else IG_NICHES
-    rows = _targets(niches, limit)
+    if manifest:
+        rows = _targets_from_manifest(manifest, limit)
+    else:
+        niches = IG_NICHES if all else [niche] if niche else IG_NICHES
+        rows = _targets_from_db(niches, limit)
     done = _done_ids()
     todo = [r for r in rows if r[0] not in done]
     logger.info(f"backfill: {len(rows)} reels in scope, {len(done)} already done, {len(todo)} to do "

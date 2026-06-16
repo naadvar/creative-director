@@ -23,6 +23,9 @@ REELS = [
 CACHE = Path("data/tmp/vlm_frames_dense")
 
 
+WORK = Path("data/tmp/vlm_smoke")
+
+
 def strips_for(vid):
     cached = [CACHE / f"{vid}_{x}.jpg" for x in ("a", "b", "c")]
     if all(p.exists() for p in cached):
@@ -31,8 +34,9 @@ def strips_for(vid):
     with tempfile.NamedTemporaryFile(suffix=".mp4", delete=False) as tf:
         mp4 = tf.name
     media._client().download_file(settings.r2_bucket, media.video_key(vid), mp4)
-    with tempfile.TemporaryDirectory() as td:
-        return vp.sample_strips(mp4, Path(td))
+    # persistent dir (NOT a TemporaryDirectory — the strips must outlive this call)
+    out = WORK / vid
+    return vp.sample_strips(mp4, out)
 
 
 if not settings.anthropic_api_key:

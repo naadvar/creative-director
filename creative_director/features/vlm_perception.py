@@ -177,7 +177,7 @@ def _perceive_anthropic(strip_paths, ctx, timestamps) -> Optional[dict]:
     client = anthropic.Anthropic(api_key=api_key)
     resp = client.messages.create(
         model=settings.vlm_model or settings.narrator_model,
-        max_tokens=1500,
+        max_tokens=2500,
         system=_SYSTEM,
         tools=[_PERCEPTION_TOOL],
         tool_choice={"type": "tool", "name": "report_perception"},
@@ -211,7 +211,7 @@ def _perceive_openai_compatible(strip_paths, ctx, timestamps) -> Optional[dict]:
     ]
     body = {
         "model": model,
-        "max_tokens": 1500,
+        "max_tokens": 2500,
         "temperature": 0,
         "messages": [
             {"role": "system", "content": _SYSTEM},

@@ -88,13 +88,24 @@ def classify_archetype(transcript_word_count: Optional[float]) -> str:
 VOICEOVER_FACE_FRAC = 0.30
 
 
-def is_voiceover_led(archetype: str, face_frac: Optional[float]) -> bool:
-    """True when a transcript-heavy video has (almost) no presenter on screen."""
-    return (
-        archetype == ARCHETYPE_TALKING
-        and face_frac is not None
-        and face_frac < VOICEOVER_FACE_FRAC
-    )
+def is_voiceover_led(
+    archetype: str, face_frac: Optional[float], has_presenter: Optional[bool] = None
+) -> bool:
+    """True when a transcript-heavy video has no presenter on screen (narration
+    over animation / b-roll), so it should read and be benchmarked as voiceover-
+    led, not talking-to-camera.
+
+    ``has_presenter`` is the VLM override: a confident False on a word-heavy reel
+    makes it voiceover-led regardless of the scalar face fraction (which a reel
+    cut between a few face frames and lots of b-roll can push above the
+    threshold). This is the broad re-cohort lever — it reframes the read and the
+    cohort, not just face advice.
+    """
+    if archetype != ARCHETYPE_TALKING:
+        return False
+    if has_presenter is False:
+        return True
+    return face_frac is not None and face_frac < VOICEOVER_FACE_FRAC
 
 
 # Below this overall face fraction a DEMO reel is b-roll/product format with no

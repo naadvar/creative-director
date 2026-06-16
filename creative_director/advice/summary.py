@@ -267,15 +267,59 @@ def _frame_suggestions(
     return out, face_frac
 
 
+# Core genre terms per niche. A reel whose VLM-read genre matches ANOTHER
+# niche's core (and not its own) is a content mismatch — the niche's winner
+# benchmarks are a rough fit, so we hedge. Deliberately tight: ambiguous tail
+# genres (vlog/educational/motivational/tutorial/beauty/nature) never trigger it.
+_NICHE_CORE: dict[str, set[str]] = {
+    "ig_fitness": {"fitness", "workout", "exercise", "gym", "training", "calisthen", "bodybuild"},
+    "ig_food": {"food", "culinary", "cook", "recipe", "baking", "dessert", "meal"},
+    "ig_travel": {"travel", "tourism", "destination", "adventure"},
+    "ig_fashion": {"fashion", "outfit", "styling", "clothing", "apparel"},
+}
+_NICHE_LABEL = {"ig_fitness": "fitness", "ig_food": "food", "ig_travel": "travel", "ig_fashion": "fashion"}
+
+
+def _fetch_vlm(video_id: str) -> Optional[dict]:
+    with session_scope() as s:
+        vf = s.get(VideoFeatures, video_id)
+    vp = getattr(vf, "vlm_perception", None) if vf else None
+    return vp if isinstance(vp, dict) else None
+
+
+def _genre_mismatch_caveat(vlm: Optional[dict], niche: Optional[str]) -> str:
+    """A soft hedge when the reel's content type (VLM genre) clearly belongs to a
+    different niche than the cohort it's being judged against. '' if congruent."""
+    if not vlm or niche not in _NICHE_CORE:
+        return ""
+    g = str(vlm.get("genre") or "").lower()
+    if not g or any(k in g for k in _NICHE_CORE[niche]):
+        return ""  # no genre, or congruent with its own niche
+    for other, kws in _NICHE_CORE.items():
+        if other != niche and any(k in g for k in kws):
+            return (
+                f" Heads up: by the visuals this reads more like {_NICHE_LABEL[other]} "
+                f"than {_NICHE_LABEL[niche]} content, so the {_NICHE_LABEL[niche]} "
+                f"benchmarks here are a rough fit."
+            )
+    return ""
+
+
 def build_summary(
     breakdown: VideoBreakdown, frame_benchmark: dict, niche: Optional[str] = None
 ) -> PlainSummary:
     """Synthesise the structured breakdowns into a plain-English read."""
     cohort = _cohort(niche, breakdown.video_id)
     frame_sugs, face_frac = _frame_suggestions(breakdown, frame_benchmark, cohort)
-    # A transcript-heavy reel with (almost) no presenter is voiceover-led
-    # (animation / b-roll) — calling it "talking-to-camera" reads as wrong.
-    if is_voiceover_led(breakdown.archetype, face_frac):
+    vlm = _fetch_vlm(breakdown.video_id)
+    has_presenter = vlm.get("has_presenter") if vlm else None
+    if not isinstance(has_presenter, bool):
+        has_presenter = None
+    caveat = _genre_mismatch_caveat(vlm, niche)
+    # A transcript-heavy reel with no presenter is voiceover-led (animation /
+    # b-roll) — calling it "talking-to-camera" reads as wrong. The VLM
+    # has_presenter makes this reliable (the broad re-cohort lever).
+    if is_voiceover_led(breakdown.archetype, face_frac, has_presenter):
         arch_plain = "voiceover-led video (no presenter on screen)"
     else:
         arch_plain = ARCHETYPE_PLAIN.get(breakdown.archetype, "video")
@@ -309,7 +353,7 @@ def build_summary(
         )
         return PlainSummary(
             archetype=breakdown.archetype,
-            read=read,
+            read=read + caveat,
             worth_trying=[],
             strengths=strengths,
         )
@@ -329,7 +373,7 @@ def build_summary(
 
     return PlainSummary(
         archetype=breakdown.archetype,
-        read=read,
+        read=read + caveat,
         worth_trying=worth,
         strengths=strengths,
     )

@@ -190,7 +190,7 @@ def analyze_timeline(video_id: str, benchmark: Optional[dict] = None) -> FrameBr
     noun = "Reels" if video_id.startswith(("ig_", "up_")) else "Shorts"
     faces = [r.has_face for r in tl if r.has_face is not None]
     face_frac = (sum(faces) / len(faces)) if faces else None
-    voiceover_led = is_voiceover_led(arch, face_frac)
+    voiceover_led = is_voiceover_led(arch, face_frac, has_presenter)
 
     # --- Hook: face presence ---
     if voiceover_led:

@@ -283,6 +283,32 @@ def build_summary(
 
     dur = breakdown.duration_seconds
     dur_txt = f"{dur}s " if dur else ""
+
+    strengths = [
+        f"{f.label} is in line with winners (~{f.benchmark_value:.0f}{f.unit})."
+        for f in breakdown.findings
+        if not f.off_benchmark
+    ][:3]
+
+    # A proven top-tercile performer is NOT told what to "fix" — prescribing the
+    # niche median to a reel that already beat it ("you run short") is exactly
+    # the disconnect real users felt. Lead with the fact that it worked, and let
+    # the differences read as the creator's distinctive choices, not flaws.
+    # (Only corpus videos carry a tercile; uploads fall through to the normal
+    # read since we can't claim an unproven upload is a winner.)
+    if breakdown.tercile == 2:
+        read = (
+            f"This {dur_txt}{arch_plain} performed in the top third of {cohort} "
+            f"its size — the fundamentals are working. Where it diverges from the "
+            f"median winner, treat that as your style, not a gap to close."
+        )
+        return PlainSummary(
+            archetype=breakdown.archetype,
+            read=read,
+            worth_trying=[],
+            strengths=strengths,
+        )
+
     if worth:
         clauses = [s.clause for s in worth[:2]]
         gaps = clauses[0] if len(clauses) == 1 else f"{clauses[0]}, and {clauses[1]}"
@@ -295,12 +321,6 @@ def build_summary(
             f"This {dur_txt}{arch_plain} tracks winning {cohort} closely on "
             f"every feature measured — no clear gaps stand out."
         )
-
-    strengths = [
-        f"{f.label} is in line with winners (~{f.benchmark_value:.0f}{f.unit})."
-        for f in breakdown.findings
-        if not f.off_benchmark
-    ][:3]
 
     return PlainSummary(
         archetype=breakdown.archetype,

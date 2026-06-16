@@ -173,16 +173,42 @@ def _overall_face_frac(video) -> Optional[float]:
     return (sum(vals) / len(vals)) if vals else None
 
 
-def winner_recommendations(video, niche: Optional[str], limit: int = 6) -> list[dict]:
+# Features that must NEVER become a creator-facing suggestion. Two kinds:
+#  - PACKAGING/proxy: thumbnail look + "how many corpus reels use this sound"
+#    are weak correlational proxies, not levers — and on IG Reels the thumbnail
+#    is a grid tile almost nobody optimizes. Telling a creator to make a "darker
+#    thumbnail" or use a sound "fewer corpus reels use" reads as the tool not
+#    understanding the craft. (This is what real users bounced off of.)
+#  - any feature without hand-written copy in _FEATURE_META leaks its raw column
+#    name ("Less music audio id corpus uses", "Less thumb face count"). Those
+#    are filtered by the meta-only rule below.
+_NEVER_ADVISE: frozenset[str] = frozenset(
+    f for f in _FEATURE_META if f.startswith("thumb_")
+) | frozenset({
+    "music_audio_id_corpus_uses",
+    "music_uses_original",
+    "thumb_face_count",
+})
+
+
+def winner_recommendations(
+    video, niche: Optional[str], limit: int = 3, tercile: Optional[str] = None
+) -> list[dict]:
     """Top data-derived 'do what winners do' moves.
 
     The predictive features (for this niche) where the reel is on the WRONG side
     of the winner-favorable direction, phrased as directives and ranked by |rho|
     (how strongly the feature predicts performance). This is the moat: specific,
     category-tuned advice grounded in what actually correlates with winning.
+
+    A top-tercile video gets NO "fix" directives — prescribing the median to a
+    proven winner ("say less" to the niche's #1 reel) is the fastest way to lose
+    a creator's trust. Its strengths are surfaced elsewhere instead.
     """
     from creative_director.advice.benchmark import classify_archetype, face_advice_applies
 
+    if tercile == "high":
+        return []
     feats = _predictive_map().get(niche or "")
     if not feats or video.features is None:
         return []
@@ -190,6 +216,11 @@ def winner_recommendations(video, niche: Optional[str], limit: int = 6) -> list[
     face_frac = _overall_face_frac(video)
     recs: list[dict] = []
     for feat, meta in feats.items():
+        # Only features with hand-written, creator-meaningful copy are eligible —
+        # this is the hard gate against raw column names reaching a user, and
+        # against packaging/proxy levers nobody can act on.
+        if feat not in _FEATURE_META or feat in _NEVER_ADVISE:
+            continue
         # The read owns length advice (tier+archetype cohort); carrying duration
         # here too lets two benchmarks argue on one page ("runs short" vs
         # "make it shorter").
@@ -447,7 +478,9 @@ def analyze_video(
         # plus the specific moves to close the gap.
         _niche = video.channel.niche if video.channel else None
         breakdown.pattern_match = predictive_pattern_match(video, _niche)
-        breakdown.recommendations = winner_recommendations(video, _niche)
+        breakdown.recommendations = winner_recommendations(
+            video, _niche, tercile=_TERCILE_NAME.get(breakdown.tercile)
+        )
 
     # Off-benchmark findings first (by rank_score desc); aligned at the tail.
     conf_rank = {"strong": 0, "moderate": 1}

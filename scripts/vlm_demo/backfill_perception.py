@@ -74,7 +74,8 @@ def _process(vid, niche, dur, title) -> dict:
             media._client().download_file(settings.r2_bucket, media.video_key(vid), str(mp4))
             strips, ts = vp.sample_strips(str(mp4), Path(td) / "strips")
             tags = vp.perceive_from_strips(
-                strips, niche=niche, caption=(title or "")[:200], duration_s=dur, timestamps=ts
+                strips, niche=niche, caption=(title or "")[:200], duration_s=dur,
+                timestamps=ts, lean=True,  # structural fields only — fast bulk backfill
             )
         return {"video_id": vid, "niche": niche, "vlm_perception": tags}
     except Exception as e:  # noqa: BLE001

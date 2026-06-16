@@ -120,7 +120,7 @@ def _strip_from_frames(frames, out_path: Path) -> None:
     cv2.imwrite(str(out_path), cv2.hconcat(frames))
 
 
-def sample_strips(mp4_path: str, out_dir: Path, n_frames: int = 12) -> tuple[list[str], list[float]]:
+def sample_strips(mp4_path: str, out_dir: Path, n_frames: int = 4) -> tuple[list[str], list[float]]:
     """Sample n_frames evenly across the WHOLE clip, timestamp-stamp them, and
     write them as ceil(n/4) horizontal strips of 4. Returns (strip_paths, timestamps)."""
     import cv2
@@ -136,7 +136,7 @@ def sample_strips(mp4_path: str, out_dir: Path, n_frames: int = 12) -> tuple[lis
         ok, fr = cap.read()
         if not ok:
             continue
-        h = 360
+        h = 224
         w = int(fr.shape[1] * h / fr.shape[0])
         fr = cv2.resize(fr, (w, h))
         cv2.putText(fr, f"{t:.1f}s", (8, 28), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 0), 4)
@@ -192,9 +192,24 @@ def _perceive_anthropic(strip_paths, ctx, timestamps) -> Optional[dict]:
     return None
 
 
-def _perceive_openai_compatible(strip_paths, ctx, timestamps) -> Optional[dict]:
-    """Call a self-hosted vLLM (e.g. RunPod serving Qwen3-VL) or any OpenAI-style
-    endpoint, forcing the canonical schema via guided-JSON response_format."""
+def _lean_schema() -> dict:
+    """Gate-critical fields ONLY (genre/format/has_presenter/confidence) — for the
+    bulk corpus backfill. Drops the free-text fields (on_screen_text/opening_shot)
+    too: the model puts reels' multi-line overlay text in them with raw newlines,
+    which breaks JSON, and the gate doesn't need them. Tiny output = fast + robust.
+    The full schema is reserved for per-upload Craft Reads."""
+    s = _PERCEPTION_TOOL["input_schema"]
+    drop = {"observed", "hypothesis", "on_screen_text", "opening_shot"}
+    return {
+        **s,
+        "properties": {k: v for k, v in s["properties"].items() if k not in drop},
+        "required": [r for r in s["required"] if r not in drop],
+    }
+
+
+def _perceive_openai_compatible(strip_paths, ctx, timestamps, lean=False) -> Optional[dict]:
+    """Call a self-hosted vLLM (e.g. RunPod serving Qwen) or any OpenAI-style
+    endpoint, forcing the (lean or full) schema via guided-JSON response_format."""
     import httpx
 
     base = (settings.vlm_base_url or "").rstrip("/")
@@ -209,9 +224,10 @@ def _perceive_openai_compatible(strip_paths, ctx, timestamps) -> Optional[dict]:
     content = [{"type": "text", "text": ctx}] + [
         {"type": "image_url", "image_url": {"url": data_uri(p)}} for p in strip_paths
     ]
+    schema = _lean_schema() if lean else _PERCEPTION_TOOL["input_schema"]
     body = {
         "model": model,
-        "max_tokens": 2500,
+        "max_tokens": 400 if lean else 2500,
         "temperature": 0,
         "messages": [
             {"role": "system", "content": _SYSTEM},
@@ -219,11 +235,11 @@ def _perceive_openai_compatible(strip_paths, ctx, timestamps) -> Optional[dict]:
         ],
         "response_format": {
             "type": "json_schema",
-            "json_schema": {"name": "report_perception", "schema": _PERCEPTION_TOOL["input_schema"], "strict": True},
+            "json_schema": {"name": "report_perception", "schema": schema, "strict": True},
         },
     }
     headers = {"Authorization": f"Bearer {settings.vlm_api_key or 'EMPTY'}"}
-    r = httpx.post(f"{base}/chat/completions", json=body, headers=headers, timeout=120)
+    r = httpx.post(f"{base}/chat/completions", json=body, headers=headers, timeout=240)
     r.raise_for_status()
     out = json.loads(r.json()["choices"][0]["message"]["content"])
     out["schema_version"] = SCHEMA_VERSION
@@ -237,16 +253,19 @@ def perceive_from_strips(
     caption: Optional[str] = None,
     duration_s: Optional[int] = None,
     timestamps: Optional[list[float]] = None,
+    lean: bool = False,
 ) -> Optional[dict]:
     """One VLM call over pre-rendered timestamped frame strips -> canonical
     perception dict (or None on any failure). Routes to the configured provider
-    (Claude tool-use, or an OpenAI-compatible vLLM endpoint with guided JSON)."""
+    (Claude tool-use, or an OpenAI-compatible vLLM endpoint with guided JSON).
+
+    ``lean=True`` (corpus backfill) returns structural fields only — far cheaper."""
     if not strip_paths:
         return None
     ctx = _context_text(niche, caption, duration_s, timestamps)
     try:
         if settings.vlm_provider == "openai_compatible":
-            out = _perceive_openai_compatible(strip_paths, ctx, timestamps)
+            out = _perceive_openai_compatible(strip_paths, ctx, timestamps, lean=lean)
         else:
             out = _perceive_anthropic(strip_paths, ctx, timestamps)
         return _validate(out, timestamps) if out else None

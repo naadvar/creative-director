@@ -205,7 +205,11 @@ def winner_recommendations(
     proven winner ("say less" to the niche's #1 reel) is the fastest way to lose
     a creator's trust. Its strengths are surfaced elsewhere instead.
     """
-    from creative_director.advice.benchmark import classify_archetype, face_advice_applies
+    from creative_director.advice.benchmark import (
+        classify_archetype,
+        face_advice_applies,
+        vlm_has_presenter,
+    )
 
     if tercile == "high":
         return []
@@ -214,6 +218,7 @@ def winner_recommendations(
         return []
     archetype = classify_archetype(video.features.transcript_word_count)
     face_frac = _overall_face_frac(video)
+    has_presenter = vlm_has_presenter(video.features)
     recs: list[dict] = []
     for feat, meta in feats.items():
         # Only features with hand-written, creator-meaningful copy are eligible —
@@ -228,7 +233,7 @@ def winner_recommendations(
             continue
         if feat in _SPEECH_FEATS and archetype != "talking":
             continue
-        if feat in _FACE_FEATS and not face_advice_applies(archetype, face_frac):
+        if feat in _FACE_FEATS and not face_advice_applies(archetype, face_frac, has_presenter):
             continue
         rho = meta.get("rho") or 0.0
         med = meta.get("niche_median")

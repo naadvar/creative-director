@@ -15,12 +15,16 @@ from typing import Optional
 
 from sqlalchemy import select
 
-from creative_director.advice.benchmark import face_advice_applies, is_voiceover_led
+from creative_director.advice.benchmark import (
+    face_advice_applies,
+    is_voiceover_led,
+    vlm_has_presenter,
+)
 from creative_director.advice.breakdown import VideoBreakdown
 from creative_director.advice.categories import _base as _niche_base
 from creative_director.advice.timeline_benchmark import summarize_timeline
 from creative_director.storage.db import session_scope
-from creative_director.storage.models import VideoTimeline
+from creative_director.storage.models import VideoFeatures, VideoTimeline
 
 # How to describe the *subject* video's format (niche-neutral). The demo
 # phrase avoids claiming "silent" — demo just means little-to-no talking, and
@@ -201,6 +205,7 @@ def _frame_suggestions(
             .scalars()
             .all()
         )
+        has_presenter = vlm_has_presenter(s.get(VideoFeatures, b.video_id))
     faces = [r.has_face for r in rows if r.has_face is not None]
     face_frac = (sum(faces) / len(faces)) if faces else None
     if not bm:
@@ -209,7 +214,7 @@ def _frame_suggestions(
     if not summ:
         return [], face_frac
     out: list[Suggestion] = []
-    presenter_ok = face_advice_applies(b.archetype, face_frac)
+    presenter_ok = face_advice_applies(b.archetype, face_frac, has_presenter)
 
     yf, bf = summ.get("hook_face_frac"), bm.get("hook_face_pct")
     # "Get a face on screen" only when the format HAS a presenter to deploy —

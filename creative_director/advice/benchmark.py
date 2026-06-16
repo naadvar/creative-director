@@ -104,13 +104,37 @@ def is_voiceover_led(archetype: str, face_frac: Optional[float]) -> bool:
 NO_PRESENTER_FACE_FRAC = 0.10
 
 
-def face_advice_applies(archetype: str, face_frac: Optional[float]) -> bool:
+def vlm_has_presenter(video_features) -> Optional[bool]:
+    """The full-video VLM's read on whether a human presenter is on camera —
+    a more reliable presenter signal than the scalar face fraction (which a
+    food/product/animation reel can fool). Returns True / False / None
+    (None = no VLM run, or the VLM was not confident -> defer to the scalar)."""
+    vp = getattr(video_features, "vlm_perception", None) if video_features else None
+    if not isinstance(vp, dict):
+        return None
+    if vp.get("confidence") == "low":
+        return None
+    hp = vp.get("has_presenter")
+    return hp if isinstance(hp, bool) else None
+
+
+def face_advice_applies(
+    archetype: str, face_frac: Optional[float], has_presenter: Optional[bool] = None
+) -> bool:
     """Should we give 'get a face on screen' style advice at all?
 
     False for voiceover-led talking reels (narration over animation/b-roll)
     and for demos with essentially no face anywhere — both are formats where
     'show a face sooner' prescribes a different format, not a tweak.
+
+    ``has_presenter`` is the VLM override: a CONFIDENT False (no human on camera)
+    suppresses face advice regardless of the scalar face_frac — this is the gate
+    that stops faceless food/product reels being told to "show a face." A True or
+    None defers to the scalar logic (conservative: the VLM only vetoes, it never
+    manufactures face advice the scalar wouldn't already give).
     """
+    if has_presenter is False:
+        return False
     if is_voiceover_led(archetype, face_frac):
         return False
     if face_frac is not None and face_frac < NO_PRESENTER_FACE_FRAC:

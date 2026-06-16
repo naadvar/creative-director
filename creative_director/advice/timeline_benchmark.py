@@ -26,6 +26,7 @@ from creative_director.advice.benchmark import (
     classify_archetype,
     face_advice_applies,
     is_voiceover_led,
+    vlm_has_presenter,
 )
 from creative_director.advice.tier import tier_for_count
 from creative_director.storage.db import session_scope
@@ -169,6 +170,7 @@ def analyze_timeline(video_id: str, benchmark: Optional[dict] = None) -> FrameBr
         summ = summarize_timeline(tl)
         title = video.title
         arch = classify_archetype(feat.transcript_word_count if feat else None)
+        has_presenter = vlm_has_presenter(feat)
 
     fb = FrameBreakdown(
         video_id=video_id,
@@ -196,7 +198,7 @@ def analyze_timeline(video_id: str, benchmark: Optional[dict] = None) -> FrameBr
             "FORMAT: voiceover-led — narration with no presenter on screen "
             "(animation / b-roll). Face-timing benchmarks don't apply to this format."
         )
-    elif not face_advice_applies(arch, face_frac):
+    elif not face_advice_applies(arch, face_frac, has_presenter):
         fb.findings.append(
             "FORMAT: no presenter on screen (b-roll / product format) — "
             "face-timing benchmarks don't apply to this format."

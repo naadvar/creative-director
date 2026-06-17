@@ -5,7 +5,7 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://correspondence-paying-run-homepage.trycloudflare.com/:path*"
+      "destination": "https://commentary-underground-medline-strengthening.trycloudflare.com/:path*"
     },
     { "source": "/(.*)", "destination": "/index.html" }
   ]

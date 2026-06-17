@@ -48,4 +48,7 @@ def dev_login(request: Request) -> RedirectResponse:
         scopes="demo",
     )
     login_user(request, user_id)
-    return RedirectResponse(f"{api_settings.frontend_base_url}/?demo=1")
+    # Relative redirect resolves to the visitor's OWN origin (the Vercel URL for a
+    # remote visitor, localhost:5173 for local dev) — no config dependency, and it
+    # never bounces a public visitor to the dev server.
+    return RedirectResponse("/?demo=1")

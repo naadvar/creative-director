@@ -61,11 +61,34 @@ export interface Suggestion {
   is_proxy: boolean
 }
 
+export interface WatchWinner {
+  video_id: string
+  title: string
+  channel: string
+  value: number
+  benchmark_value: number
+  duration_seconds: number | null
+}
+
+// An honest, grounded observation about the reel — derived from real frame
+// detail, framed as something we noticed, not a fix-or-fail directive.
+// Often empty ([]) when there's nothing solid to say.
+export interface CraftNote {
+  kind: string
+  note: string
+  evidence: string
+}
+
 export interface PlainSummary {
   archetype: string
   read: string
   worth_trying: Suggestion[]
   strengths: string[]
+  // Honest grounded observations, surfaced above worth_trying. Often [].
+  craft_notes: CraftNote[]
+  watch_winners: WatchWinner[]
+  // Heading for the winners row, e.g. "Winners that nail pacing". Null when there's nothing to show.
+  watch_winners_label: string | null
 }
 
 export interface FrameBreakdown {

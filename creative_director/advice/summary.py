@@ -20,6 +20,7 @@ from creative_director.advice.benchmark import (
     is_voiceover_led,
     vlm_has_presenter,
 )
+from creative_director.advice.craft_notes import CraftNote, craft_notes as build_craft_notes
 from creative_director.advice.breakdown import VideoBreakdown
 from creative_director.advice.categories import _base as _niche_base
 from creative_director.advice.timeline_benchmark import summarize_timeline
@@ -103,6 +104,9 @@ class PlainSummary:
     read: str
     worth_trying: list[Suggestion] = field(default_factory=list)
     strengths: list[str] = field(default_factory=list)
+    # Honest, grounded "what we noticed" observations (no performance claim). Lead
+    # the advice with these; the jargon-proxy cards get demoted below them.
+    craft_notes: list[CraftNote] = field(default_factory=list)
 
 
 def _aggregate_suggestions(b: VideoBreakdown, cohort: str) -> list[Suggestion]:
@@ -310,6 +314,59 @@ def _genre_mismatch_caveat(vlm: Optional[dict], niche: Optional[str]) -> str:
     return ""
 
 
+# Words that must never appear in the grounded opening line. The opening_shot
+# describes ONE static frame, so temporal/motion verbs ("cuts to", "zooms") are
+# out of place, and the reason a reel travels isn't in a single frame, so
+# causal/performance words ("viral", "drives views", "retention") are forbidden.
+# If the VLM text slipped any past the extraction prompt, we DROP the grounding
+# rather than surface an unfounded claim — the deterministic verifier's safety net.
+_OPENING_BANNED = (
+    # causal/lift (performance-of-the-reel claims) — phrase-precise so legit visual
+    # description ("performing a calf exercise", "engagement ring") isn't caught.
+    "viral", "drives views", "drive views", "boosts views", "retention rate",
+    "the algorithm", "engagement rate", "clickbait", "hook works", "grabs attention",
+    "performs well", "high-perform", "outperform", "underperform", "under-perform",
+    # temporal/motion (opening_shot is ONE static frame)
+    "cuts to", "transitions to", "zooms in", "zooms out", "pans across",
+    "the camera moves", "scrolls past", "swipes",
+)
+
+
+def _clean_opening(vlm: Optional[dict]) -> str:
+    """A grounded one-clause description of what the reel OPENS on, from the VLM's
+    static first-frame read. Returns a lowercase mid-sentence fragment (no trailing
+    period), or '' when there's no rich perception or the text trips the verifier."""
+    if not vlm:
+        return ""
+    shot = str(vlm.get("opening_shot") or "").strip()
+    if not shot:
+        return ""
+    first = shot.split(". ")[0].strip().rstrip(".")  # first sentence only
+    low = first.lower()
+    # Drop the internal "no wasted frame/space" QA note — it's not user-facing.
+    for note in (", no wasted frame", "; no wasted frame", ", no wasted space",
+                 "; no wasted space", ". no wasted frame", ". no wasted space"):
+        idx = low.find(note)
+        if idx != -1:
+            first = first[:idx].strip().rstrip(",;.")
+            low = first.lower()
+    # Strip the VLM's leading "frame shows…" narration tic so the opener reads
+    # naturally after "It opens on …".
+    for tic in ("frame shows ", "the frame shows ", "this frame shows ",
+                "image shows ", "the image shows ", "the opening frame shows ",
+                "frame appears to be ", "the frame appears to be "):
+        if low.startswith(tic):
+            first = first[len(tic):].strip()
+            low = first.lower()
+            break
+    if not first or any(b in low for b in _OPENING_BANNED):
+        return ""  # verifier: drop grounding rather than risk a bad claim
+    words = first.split()
+    if len(words) > 28:  # keep the read tight
+        first = " ".join(words[:28]).rstrip(",;") + "…"
+    return first[0].lower() + first[1:]  # mid-sentence fragment
+
+
 def build_summary(
     breakdown: VideoBreakdown, frame_benchmark: dict, niche: Optional[str] = None
 ) -> PlainSummary:
@@ -321,6 +378,11 @@ def build_summary(
     if not isinstance(has_presenter, bool):
         has_presenter = None
     caveat = _genre_mismatch_caveat(vlm, niche)
+    # The grounded opening — what the reel actually opens on, from the VLM's
+    # static first-frame read. '' for lean/untagged reels (read falls back to the
+    # pure-template form, no regression). This is the "it watched my video" line.
+    opener = _clean_opening(vlm)
+    notes = build_craft_notes(vlm)  # honest grounded observations (often [] — that's fine)
     # A transcript-heavy reel with no presenter is voiceover-led (animation /
     # b-roll) — calling it "talking-to-camera" reads as wrong. The VLM
     # has_presenter makes this reliable (the broad re-cohort lever).
@@ -328,6 +390,12 @@ def build_summary(
         arch_plain = "voiceover-led video (no presenter on screen)"
     else:
         arch_plain = ARCHETYPE_PLAIN.get(breakdown.archetype, "video")
+    # When the VLM gives a grounded read of the opening, it supersedes the weaker
+    # CLIP-vibe "you open on X" guess — drop the vibe-opener so the read can't
+    # contradict itself (e.g. VLM "opens on a calf exercise" vs vibe "physique
+    # reveal"). VLM grounds, scalar defers — the same gate philosophy as elsewhere.
+    if opener:
+        frame_sugs = [s for s in frame_sugs if "opens on" not in s.clause]
     suggestions = _aggregate_suggestions(breakdown, cohort) + frame_sugs
     suggestions.sort(key=lambda s: -s.gap)
     # Proxy findings self-describe as "not a lever — don't act on this"; they
@@ -351,29 +419,32 @@ def build_summary(
     # (Only corpus videos carry a tercile; uploads fall through to the normal
     # read since we can't claim an unproven upload is a winner.)
     if breakdown.tercile == 2:
+        open_txt = f"It opens on {opener}. " if opener else ""
         read = (
             f"This {dur_txt}{arch_plain} performed in the top third of {cohort} "
-            f"its size — the fundamentals are working. Where it diverges from the "
-            f"median winner, treat that as your style, not a gap to close."
+            f"its size — the fundamentals are working. {open_txt}Where it diverges "
+            f"from the median winner, treat that as your style, not a gap to close."
         )
         return PlainSummary(
             archetype=breakdown.archetype,
             read=read + caveat,
             worth_trying=[],
             strengths=strengths,
+            craft_notes=notes,
         )
 
+    open_mid = f" It opens on {opener}." if opener else ""
     if worth:
         clauses = [s.clause for s in worth[:2]]
         gaps = clauses[0] if len(clauses) == 1 else f"{clauses[0]}, and {clauses[1]}"
         read = (
-            f"This is a {dur_txt}{arch_plain}. Compared with winning {cohort} "
+            f"This is a {dur_txt}{arch_plain}.{open_mid} Compared with winning {cohort} "
             f"of the same format, {gaps}."
         )
     else:
         read = (
             f"This {dur_txt}{arch_plain} tracks winning {cohort} closely on "
-            f"every feature measured — no clear gaps stand out."
+            f"every feature measured — no clear gaps stand out.{open_mid}"
         )
 
     return PlainSummary(
@@ -381,4 +452,5 @@ def build_summary(
         read=read + caveat,
         worth_trying=worth,
         strengths=strengths,
+        craft_notes=notes,
     )

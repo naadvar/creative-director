@@ -83,11 +83,25 @@ class Suggestion(_FromAttrs):
     is_proxy: bool
 
 
+class CraftNote(_FromAttrs):
+    """An honest, grounded 'what we noticed' observation — no performance claim."""
+
+    kind: str
+    note: str
+    evidence: str
+
+
 class PlainSummary(_FromAttrs):
     archetype: str
     read: str
     worth_trying: list[Suggestion]
     strengths: list[str]
+    # Honest grounded observations — the LEAD advice (no performance claim).
+    craft_notes: list[CraftNote] = []
+    # Block 4: up to 3 real winning reels for the creator to watch — exemplifying
+    # their top gap (or representative cohort winners when there's no clear gap).
+    watch_winners: list[ExampleVideo] = []
+    watch_winners_label: Optional[str] = None
 
 
 # --- example library --------------------------------------------------------
@@ -110,6 +124,12 @@ class ExampleList(BaseModel):
     feature: str
     benchmark_value: float
     examples: list[ExampleVideo]
+
+
+# PlainSummary.watch_winners references ExampleVideo (defined above); with
+# `from __future__ import annotations` that ref is a string, so rebuild the
+# model now that ExampleVideo is in the module namespace.
+PlainSummary.model_rebuild()
 
 
 # --- frame breakdown: FrameBreakdown ----------------------------------------

@@ -5,19 +5,19 @@ function fmt(v: number | null): string {
   return Number.isInteger(v) ? String(v) : v.toFixed(2)
 }
 
-/** The moat: specific, category-tuned "do what winners do" moves, derived from
- * the features that actually predict performance in this reel's niche. */
+/** Weak proxy signals — numeric feature gaps vs cohort winners. These are
+ * correlational at best, so they're demoted below the read and tucked behind a
+ * collapsed disclosure rather than surfaced as prime advice. Renders bare (no
+ * outer card) so it can live inside a Collapsible. */
 export default function WinnerMoves({ b }: { b: VideoBreakdown }) {
   const recs = b.recommendations ?? []
   if (recs.length === 0) return null
   return (
-    <div className="rounded-2xl border border-accent/30 bg-surface p-5 sm:p-6">
-      <h2 className="text-xs font-semibold uppercase tracking-widest text-muted">
-        Do what winners do
-      </h2>
-      <p className="mt-1 text-sm text-muted">
-        The biggest gaps between this reel and what actually predicts performance in its
-        niche — most impactful first.
+    <div>
+      <p className="text-sm text-muted">
+        Raw feature gaps between this reel and cohort winners. These are weak,
+        correlational signals — patterns, not causes. Treat as curiosities, not
+        a to-do list.
       </p>
       <ul className="mt-4 space-y-2.5">
         {recs.map((r) => (
@@ -25,9 +25,9 @@ export default function WinnerMoves({ b }: { b: VideoBreakdown }) {
             key={r.feature}
             className="flex items-start gap-3 rounded-lg border border-border bg-surface-2 px-3 py-2.5"
           >
-            <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-accent" />
+            <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-muted" />
             <div className="min-w-0">
-              <div className="text-sm font-semibold leading-snug">{r.advice}</div>
+              <div className="text-sm font-medium leading-snug">{r.advice}</div>
               <div className="mt-0.5 text-xs text-muted">
                 Winners ≈ <span className="text-text">{fmt(r.winner_value)}</span> · yours{' '}
                 <span className="text-text">{fmt(r.your_value)}</span>

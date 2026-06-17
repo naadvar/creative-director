@@ -134,6 +134,21 @@ opening_shot and observed describe a SINGLE frame, not change between frames.
 about WHAT the reel is; you are NOT a performance predictor."""
 
 
+_RICH_JSON_INSTRUCTION = (
+    "Respond with ONLY a single JSON object (no markdown fences, no text before or after) "
+    "with exactly these keys: "
+    '"genre" (string), "format" (string), "has_presenter" (true/false/null), '
+    '"on_screen_text" (string or null; single line — replace any newline with " / "), '
+    '"opening_shot" (string describing the very first frame), '
+    '"observed" (array of AT MOST 6 objects, each {"text": string, '
+    '"frame_ts": a stamped timestamp number, "kind": one of "opening_shot" | "on_screen_text" | '
+    '"presence_of_person" | "object_on_screen" | "composition"}), '
+    '"hypothesis" (array of {"text": string}), "confidence" ("high" | "medium" | "low"). '
+    "Use strictly valid JSON: double-quote every key and string, no trailing commas, "
+    "no raw newlines inside any string."
+)
+
+
 def _strip_from_frames(frames, out_path: Path) -> None:
     import cv2
     cv2.imwrite(str(out_path), cv2.hconcat(frames))
@@ -240,10 +255,15 @@ def _perceive_openai_compatible(strip_paths, ctx, timestamps, lean=False) -> Opt
     def data_uri(p):
         return "data:image/jpeg;base64," + base64.standard_b64encode(Path(p).read_bytes()).decode("ascii")
 
-    content = [{"type": "text", "text": ctx}] + [
+    text = ctx
+    if not lean:
+        # The rich schema's guided-JSON decoding deadlocks vLLM under concurrent
+        # multimodal load (and still mis-emits). Instead, ask for the JSON in the
+        # prompt and parse robustly — the GPU runs free, nothing to deadlock.
+        text += "\n\n" + _RICH_JSON_INSTRUCTION
+    content = [{"type": "text", "text": text}] + [
         {"type": "image_url", "image_url": {"url": data_uri(p)}} for p in strip_paths
     ]
-    schema = _lean_schema() if lean else _PERCEPTION_TOOL["input_schema"]
     body = {
         "model": model,
         "max_tokens": 400 if lean else 900,
@@ -252,11 +272,12 @@ def _perceive_openai_compatible(strip_paths, ctx, timestamps, lean=False) -> Opt
             {"role": "system", "content": _SYSTEM},
             {"role": "user", "content": content},
         ],
-        "response_format": {
-            "type": "json_schema",
-            "json_schema": {"name": "report_perception", "schema": schema, "strict": True},
-        },
     }
+    if lean:
+        body["response_format"] = {
+            "type": "json_schema",
+            "json_schema": {"name": "report_perception", "schema": _lean_schema(), "strict": True},
+        }
     headers = {"Authorization": f"Bearer {settings.vlm_api_key or 'EMPTY'}"}
     r = httpx.post(f"{base}/chat/completions", json=body, headers=headers, timeout=240)
     r.raise_for_status()
@@ -312,12 +333,28 @@ def perceive_from_strips(
         return None
 
 
+def _coerce_ts(v) -> Optional[float]:
+    """The model sometimes writes frame_ts as '8.6s' or '8.6 s' — coerce to float."""
+    try:
+        return float(v)
+    except (TypeError, ValueError):
+        import re
+        m = re.search(r"-?\d+(?:\.\d+)?", str(v))
+        return float(m.group()) if m else None
+
+
 def _validate(out: dict, timestamps: Optional[list[float]]) -> dict:
     """Drop observed items whose frame_ts isn't a real sampled timestamp (the
-    anti-temporal-hallucination rule). The full note verifier comes later."""
+    anti-temporal-hallucination rule). The full note verifier comes later.
+    Never raises — a bad frame_ts drops the item, not the whole reel."""
     if timestamps:
         allowed = {round(t, 1) for t in timestamps}
-        kept = [o for o in (out.get("observed") or []) if round(float(o.get("frame_ts", -1)), 1) in allowed]
+        kept = []
+        for o in (out.get("observed") or []):
+            ts = _coerce_ts(o.get("frame_ts"))
+            if ts is not None and round(ts, 1) in allowed:
+                o["frame_ts"] = ts
+                kept.append(o)
         out["observed_dropped"] = len(out.get("observed") or []) - len(kept)
         out["observed"] = kept
     return out

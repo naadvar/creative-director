@@ -131,7 +131,7 @@ def _run_job(job: _Job, mp4: Path) -> None:
             persist_features,
         )
         from creative_director.storage.db import session_scope
-        from creative_director.storage.models import Video, VideoTimeline
+        from creative_director.storage.models import Video, VideoFeatures, VideoTimeline
 
         vid = job.video_id
 
@@ -147,12 +147,41 @@ def _run_job(job: _Job, mp4: Path) -> None:
 
         # 2. Full feature extraction (transcript, hook, audio, visual).
         job.message = "analyzing — transcribing audio + reading frames (1-3 min)…"
+        caption = None
+        duration_s = None
         with session_scope() as s:
             v = s.get(Video, vid)
             if v is None:
                 raise RuntimeError("video row vanished")
+            caption = v.description
+            duration_s = v.duration_seconds
             feats = extract_features_from_file(v, mp4, thumb if has_thumb else None)
             persist_features(s, vid, feats)
+
+        # 2b. VLM rich-perception layer (grounded read + presenter gate). Opt-in
+        # via ENABLE_VLM_PERCEPTION; defensive — a failure never fails the job.
+        if settings.enable_vlm_perception:
+            try:
+                from creative_director.features.vlm_perception import (
+                    extract_vlm_perception,
+                )
+
+                job.message = "reading the frames…"
+                perception = extract_vlm_perception(
+                    str(mp4),
+                    niche=job.niche,
+                    caption=caption,
+                    duration_s=duration_s,
+                )
+                if perception is not None:
+                    with session_scope() as s:
+                        f = s.get(VideoFeatures, vid)
+                        if f is not None:
+                            f.vlm_perception = perception
+                else:
+                    logger.info(f"vlm perception skipped/empty for {vid}")
+            except Exception as e:  # noqa: BLE001
+                logger.warning(f"vlm perception failed for {vid}: {e}")
 
         # 3. Per-second timeline (cuts, vibes, faces, beats) for the strip + cut plan.
         job.message = "building the per-second timeline (1-2 min)…"

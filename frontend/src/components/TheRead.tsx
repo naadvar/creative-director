@@ -1,4 +1,6 @@
-import type { PlainSummary } from '../api/types'
+import { Link } from 'react-router-dom'
+import type { PlainSummary, WatchWinner } from '../api/types'
+import { formatDuration, thumbnailUrl } from '../lib/format'
 
 function CheckIcon() {
   return (
@@ -40,7 +42,68 @@ function ArrowIcon() {
   )
 }
 
+/** Eye glyph for the "what we noticed" observation block. */
+function EyeIcon() {
+  return (
+    <svg
+      width="13"
+      height="13"
+      viewBox="0 0 14 14"
+      fill="none"
+      className="shrink-0 text-mid"
+    >
+      <path
+        d="M1 7s2.2-4 6-4 6 4 6 4-2.2 4-6 4-6-4-6-4Z"
+        stroke="currentColor"
+        strokeWidth="1.4"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <circle cx="7" cy="7" r="1.6" stroke="currentColor" strokeWidth="1.4" />
+    </svg>
+  )
+}
+
+/** A single clickable winning reel — same routing the example cards use:
+ * navigate to that reel's own analysis page. */
+function WinnerCard({ w }: { w: WatchWinner }) {
+  return (
+    <Link
+      to={`/video/${w.video_id}`}
+      className="group flex shrink-0 flex-col gap-1.5 rounded-lg border border-border bg-surface-2 p-2.5 transition-colors hover:border-accent/50"
+      style={{ width: 160 }}
+    >
+      <div className="aspect-[9/12] overflow-hidden rounded-md bg-surface">
+        <img
+          src={thumbnailUrl(w.video_id)}
+          alt=""
+          loading="lazy"
+          className="h-full w-full object-cover transition-transform group-hover:scale-105"
+        />
+      </div>
+      <div className="min-w-0 leading-tight">
+        <div className="truncate text-xs font-medium" title={w.title}>
+          {w.title}
+        </div>
+        <div className="truncate text-[11px] text-muted" title={w.channel}>
+          {w.channel}
+        </div>
+        {w.duration_seconds != null ? (
+          <div className="mt-1 text-[11px] text-muted">
+            {formatDuration(w.duration_seconds)}
+          </div>
+        ) : null}
+      </div>
+    </Link>
+  )
+}
+
 export default function TheRead({ s }: { s: PlainSummary }) {
+  // Proxy items are weak signals — never surface them as advice.
+  const advice = s.worth_trying.filter((x) => !x.is_proxy)
+  const winners = s.watch_winners ?? []
+  const notes = s.craft_notes ?? []
+
   return (
     <div className="rounded-2xl border border-border bg-surface p-5 sm:p-6">
       <h3 className="text-xs font-semibold uppercase tracking-widest text-muted">
@@ -48,7 +111,30 @@ export default function TheRead({ s }: { s: PlainSummary }) {
       </h3>
       <p className="mt-2 text-lg leading-relaxed">{s.read}</p>
 
-      {s.worth_trying.length > 0 ? (
+      {notes.length > 0 ? (
+        <div className="mt-5 rounded-xl border border-mid/30 bg-mid/10 p-4">
+          <div className="flex items-center gap-2">
+            <EyeIcon />
+            <h4 className="text-xs font-semibold uppercase tracking-widest text-mid">
+              What we noticed
+            </h4>
+          </div>
+          <ul className="mt-3 space-y-3.5">
+            {notes.map((n, i) => (
+              <li key={i} className="text-sm leading-relaxed">
+                <p>{n.note}</p>
+                {n.evidence ? (
+                  <p className="mt-1 border-l-2 border-mid/40 pl-3 text-[13px] italic leading-relaxed text-muted">
+                    {n.evidence}
+                  </p>
+                ) : null}
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+
+      {advice.length > 0 ? (
         <div className="mt-5">
           <h4 className="text-sm font-semibold">
             Worth trying{' '}
@@ -57,15 +143,10 @@ export default function TheRead({ s }: { s: PlainSummary }) {
             </span>
           </h4>
           <ul className="mt-2.5 space-y-2">
-            {s.worth_trying.map((x, i) => (
+            {advice.map((x, i) => (
               <li key={i} className="flex gap-2.5 text-sm leading-relaxed">
                 <ArrowIcon />
-                <span>
-                  {x.text}
-                  {x.is_proxy ? (
-                    <span className="text-muted"> (weak signal)</span>
-                  ) : null}
-                </span>
+                <span>{x.text}</span>
               </li>
             ))}
           </ul>
@@ -86,6 +167,22 @@ export default function TheRead({ s }: { s: PlainSummary }) {
               </li>
             ))}
           </ul>
+        </div>
+      ) : null}
+
+      {winners.length > 0 ? (
+        <div className="mt-6 border-t border-border pt-5">
+          <h4 className="text-sm font-semibold">
+            {s.watch_winners_label ?? 'Watch these winners'}
+          </h4>
+          <p className="mt-0.5 text-xs text-muted">
+            Real reels winning in your lane — patterns to study, not guarantees.
+          </p>
+          <div className="mt-3 flex gap-2.5 overflow-x-auto pb-1">
+            {winners.slice(0, 3).map((w) => (
+              <WinnerCard key={w.video_id} w={w} />
+            ))}
+          </div>
         </div>
       ) : null}
     </div>

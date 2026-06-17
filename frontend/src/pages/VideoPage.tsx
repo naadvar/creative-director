@@ -163,8 +163,6 @@ export default function VideoPage() {
 
           <Scorecard b={b} />
 
-          <WinnerMoves b={b} />
-
           {summary.loading ? (
             <div className="rounded-2xl border border-border bg-surface p-6">
               <Spinner label="Writing the read…" />
@@ -176,6 +174,15 @@ export default function VideoPage() {
           ) : null}
 
           <div className="space-y-2.5">
+            {b.recommendations && b.recommendations.length > 0 ? (
+              <Collapsible
+                title="Other signals (weak)"
+                subtitle="raw feature gaps — correlational, not advice"
+              >
+                <WinnerMoves b={b} />
+              </Collapsible>
+            ) : null}
+
             <Collapsible
               title="Feature comparison"
               subtitle={`this video vs winning ${platformNoun(b.video_id)}`}

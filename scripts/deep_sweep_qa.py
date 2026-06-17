@@ -165,7 +165,15 @@ def main(limit: int = typer.Option(0, help="Max videos (0 = all)")) -> None:
                     flag("FRAME_face_on_no_presenter", vid, fnd[:120])
 
             # --- copy stats ---
-            if vid.startswith(("ig_", "up_")) and "title" in blob.lower():
+            # The YouTube-ism: ADVICE calling the caption a "title". IG advice uses
+            # "caption opening", so this should be 0. The grounded opener legitimately
+            # describes on-screen title text/cards ("a book titled X", "bold title 'Y'"),
+            # which is correct — so match the YouTube-ism PHRASES, not the substring.
+            if vid.startswith(("ig_", "up_")) and any(
+                p in blob.lower() for p in
+                ("the title", "your title", "shorten the title", "title runs",
+                 "title length", "title emoji", "in the title", "title differs")
+            ):
                 stats["ig_reads_saying_title"] += 1
             if len(sample_dump) < 60 and i % max(1, len(rows) // 15) == 0:
                 sample_dump.append(

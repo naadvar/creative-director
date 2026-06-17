@@ -16,7 +16,7 @@ from fastapi.responses import FileResponse, RedirectResponse, Response
 
 from api import schemas
 from api.benchmarks import benchmarks, pick_for_tier
-from creative_director.advice.benchmark import classify_archetype
+from creative_director.advice.benchmark import REPORTABLE, classify_archetype
 from creative_director.advice.breakdown import analyze_video
 from creative_director.advice.categories import (
     CATEGORIES,
@@ -88,6 +88,67 @@ def analyze(video_id: str) -> schemas.VideoBreakdown:
     return schemas.VideoBreakdown.model_validate(breakdown)
 
 
+def _watch_winners(breakdown, niche, tier, archetype, video_id):
+    """Block 4: up to 3 winning reels for the creator to WATCH — exemplifying
+    their top actionable gap, or representative cohort winners when there's no
+    clear gap (already a top performer / on-benchmark). Returns (examples, label)."""
+    if niche is None:
+        return [], None
+    # Don't frame winners as a "gap to fix" for a proven top-tercile performer —
+    # the read doesn't lecture them, so show representative peers instead.
+    top = None
+    if breakdown.tercile != 2:
+        cands = sorted(
+            [
+                f for f in breakdown.findings
+                if getattr(f, "off_benchmark", False)
+                and getattr(f, "fixability", None) != "low"
+                and getattr(f, "causal", None) != "likely-proxy"
+                and getattr(f, "benchmark_value", None) is not None
+                and getattr(f, "rank_score", 0.0) >= 0.1  # same bar as worth_trying
+                and f.feature in REPORTABLE
+            ],
+            key=lambda f: -getattr(f, "rank_score", 0.0),
+        )
+        top = cands[0] if cands else None
+    # Honest label: descriptive, never "winners that nail <feature>" — we proved
+    # no observable craft feature predicts winning, so don't imply one does. We
+    # still SELECT winners near the top gap (or duration) for relevance.
+    _NW = {"ig_fitness": "fitness", "ig_food": "food", "ig_travel": "travel", "ig_fashion": "fashion"}
+    nw = _NW.get(niche)
+    label = f"Top {nw} performers your size — watch how they open" if nw else "Top performers your size"
+    if top is not None:
+        feature, bench_val = top.feature, float(top.benchmark_value)
+    else:
+        feature, bench_val = "duration_seconds", None
+    with session_scope() as s:
+        video = s.get(Video, video_id)
+        category = video.category if video else None
+        if bench_val is None:
+            bm, _ = pick_for_tier(benchmarks.aggregate(niche), tier, archetype)
+            prof = (
+                (bm.get("archetypes", {}).get(archetype, {}) if archetype else {})
+                .get("profile", {})
+                .get(feature)
+            )
+            if not prof:
+                return [], None
+            bench_val = float(prof["high_median"])
+        results = find_examples(
+            s,
+            label_scheme=api_settings.label_scheme,
+            niche=niche,
+            feature=feature,
+            benchmark_value=bench_val,
+            tier=tier,
+            archetype=archetype,
+            category=category,
+            n=3,
+            exclude_video_id=video_id,
+        )
+    return results, (label if results else None)
+
+
 @router.get("/{video_id}/summary", response_model=schemas.PlainSummary)
 def summary(video_id: str) -> schemas.PlainSummary:
     """Plain-English 'creative-director read' — drives the WHOOP-style scorecard."""
@@ -100,7 +161,15 @@ def summary(video_id: str) -> schemas.PlainSummary:
         raise HTTPException(status_code=404, detail=str(exc))
     timeline_bm, _ = pick_for_tier(benchmarks.timeline(niche), tier, archetype)
     plain = build_summary(breakdown, timeline_bm, niche)
-    return schemas.PlainSummary.model_validate(plain)
+    resp = schemas.PlainSummary.model_validate(plain)
+    # Block 4: winning reels to watch (best-effort — never break the core read).
+    try:
+        winners, label = _watch_winners(breakdown, niche, tier, archetype, video_id)
+        resp.watch_winners = [schemas.ExampleVideo.model_validate(e) for e in winners]
+        resp.watch_winners_label = label
+    except Exception:  # noqa: BLE001
+        pass
+    return resp
 
 
 @router.get("/{video_id}/frame", response_model=schemas.FrameBreakdown)

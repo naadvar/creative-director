@@ -151,8 +151,12 @@ def _aggregate_suggestions(b: VideoBreakdown, cohort: str) -> list[Suggestion]:
                 else f"it is shorter than winners ({yv:.0f}s vs ~{bv:.0f}s)"
             )
         elif feat == "transcript_word_count":
-            # Word counts need a real gap — "3 spoken words vs about 1" or
-            # "0 vs ~1" is noise, not advice.
+            # Silent-demo cohorts have a winner median of ~0-1 words, so any
+            # spoken-word comparison there produces "trim to ~1 word" nonsense.
+            # Word advice only makes sense when winners actually talk.
+            if bv is None or bv < 5:
+                continue
+            # Word counts also need a real gap — "3 spoken words vs about 1" is noise.
             if yv is None or abs(yv - bv) < 15:
                 continue
             text = (
@@ -166,8 +170,9 @@ def _aggregate_suggestions(b: VideoBreakdown, cohort: str) -> list[Suggestion]:
                 else f"it uses fewer spoken words than winners ({yv:.0f} vs ~{bv:.0f})"
             )
         elif feat == "title_char_count":
-            # Needs a real gap — "43 chars vs about 33" is noise.
-            if yv is None or abs(yv - bv) < 12:
+            # Caption/title length is a weak proxy lever; only surface it on a
+            # genuinely large gap. "60 vs 47 chars" is noise nobody can act on.
+            if yv is None or abs(yv - bv) < 25:
                 continue
             text = (
                 f"Shorten the {t_word} — {yv:.0f} characters vs about {bv:.0f} for winners."

@@ -75,7 +75,7 @@ def _process(vid, niche, dur, title) -> dict:
         with tempfile.TemporaryDirectory() as td:
             mp4 = Path(td) / "v.mp4"
             media._client().download_file(settings.r2_bucket, media.video_key(vid), str(mp4))
-            strips, ts = vp.sample_strips(str(mp4), Path(td) / "strips", n_frames=12 if RICH else 4)
+            strips, ts = vp.sample_strips(str(mp4), Path(td) / "strips", n_frames=8 if RICH else 4)
             tags = vp.perceive_from_strips(
                 strips, niche=niche, caption=(title or "")[:200], duration_s=dur,
                 timestamps=ts, lean=not RICH,  # rich = full schema; else structural-only fast pass

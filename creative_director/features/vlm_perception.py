@@ -72,6 +72,7 @@ _PERCEPTION_TOOL = {
                 "description": "CITED-ONLY static-frame facts. Each MUST cite a frame_ts equal to a "
                 "stamped timestamp. Describe one frame — no motion/temporal verbs, no causal or "
                 "outcome language. Each item is tagged with a 'kind' so it can be routed safely.",
+                "maxItems": 6,
                 "items": {
                     "type": "object",
                     "additionalProperties": False,
@@ -245,7 +246,7 @@ def _perceive_openai_compatible(strip_paths, ctx, timestamps, lean=False) -> Opt
     schema = _lean_schema() if lean else _PERCEPTION_TOOL["input_schema"]
     body = {
         "model": model,
-        "max_tokens": 400 if lean else 2500,
+        "max_tokens": 400 if lean else 900,
         "temperature": 0,
         "messages": [
             {"role": "system", "content": _SYSTEM},

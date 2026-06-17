@@ -69,15 +69,22 @@ _PERCEPTION_TOOL = {
             },
             "observed": {
                 "type": "array",
-                "description": "CITED-ONLY perceptible facts. Each MUST cite a frame_ts that is one "
-                "of the timestamps shown stamped on the frames. No causal/outcome language.",
+                "description": "CITED-ONLY static-frame facts. Each MUST cite a frame_ts equal to a "
+                "stamped timestamp. Describe one frame — no motion/temporal verbs, no causal or "
+                "outcome language. Each item is tagged with a 'kind' so it can be routed safely.",
                 "items": {
                     "type": "object",
                     "additionalProperties": False,
-                    "required": ["text", "frame_ts"],
+                    "required": ["text", "frame_ts", "kind"],
                     "properties": {
                         "text": {"type": "string"},
                         "frame_ts": {"type": "number", "description": "a stamped timestamp in seconds"},
+                        "kind": {
+                            "type": "string",
+                            "enum": ["opening_shot", "on_screen_text", "presence_of_person",
+                                     "object_on_screen", "composition"],
+                            "description": "what kind of WHAT-fact this is (closed vocabulary)",
+                        },
                     },
                 },
             },
@@ -103,16 +110,27 @@ _PERCEPTION_TOOL = {
 
 _SYSTEM = """You are a short-form video strategist reading a creator's Instagram Reel \
 from frames sampled across its whole timeline. Each frame is stamped with its \
-timestamp in seconds (top-left). Report ONLY what you can actually see.
+timestamp in seconds (top-left). Report ONLY what you can literally see in a frame.
 
-Hard rules:
-- has_presenter, genre, format, on_screen_text, opening_shot are STRUCTURAL FACTS \
-from the frames — be decisive; set null only if genuinely indeterminate.
-- Every 'observed' item MUST cite a frame_ts equal to one of the stamped timestamps. \
-Do not invent motion or events between frames you cannot see.
-- 'hypothesis' is for craft patterns and risks. Never state a causal/outcome claim \
-('this is why it flopped', 'this will get views') as fact — those are hypotheses at most.
-- You are reliable about WHAT the reel is; you are NOT a performance predictor."""
+What to report:
+- genre, format, has_presenter are STRUCTURAL FACTS — be decisive; null only if truly indeterminate.
+- opening_shot: name what is in the VERY FIRST frame (0.0s) as static nouns/adjectives — \
+subject present or not, framing, dominant colors, and explicitly whether the frame is WASTED \
+(a black frame / logo bumper / title slate / blank). One frame only.
+- on_screen_text: transcribe text visible in the first ~3s VERBATIM on a single line \
+(replace line breaks with ' / '); null if none.
+- observed: cited static-frame facts, each tagged with a 'kind' and a frame_ts from a stamp.
+
+FORBIDDEN (these break the read):
+- ANY motion or temporal verb (pushes, pans, zooms, reveals, then, cuts to, builds) — \
+opening_shot and observed describe a SINGLE frame, not change between frames.
+- ANY causal / outcome / performance word (hook, engaging, works, underperforms, 'this is why', \
+'viewers will', boosts, hurts) anywhere except 'hypothesis'.
+- Inventing text or objects not legible in a cited frame; aesthetic 'best moment' or 'should' language.
+- Raw newlines inside any string value (use ' / ' instead) — they corrupt the output.
+
+'hypothesis' may note craft patterns/risks but NEVER as guaranteed outcomes. You are reliable \
+about WHAT the reel is; you are NOT a performance predictor."""
 
 
 def _strip_from_frames(frames, out_path: Path) -> None:
@@ -241,9 +259,28 @@ def _perceive_openai_compatible(strip_paths, ctx, timestamps, lean=False) -> Opt
     headers = {"Authorization": f"Bearer {settings.vlm_api_key or 'EMPTY'}"}
     r = httpx.post(f"{base}/chat/completions", json=body, headers=headers, timeout=240)
     r.raise_for_status()
-    out = json.loads(r.json()["choices"][0]["message"]["content"])
+    content = r.json()["choices"][0]["message"]["content"]
+    out = _loads_robust(content)
+    if out is None:
+        return None
     out["schema_version"] = SCHEMA_VERSION
     return out
+
+
+def _loads_robust(content: str) -> Optional[dict]:
+    """json.loads, with a fallback that escapes raw control chars inside string
+    values (the model occasionally emits a raw newline in on_screen_text, which
+    is invalid JSON). Returns None if it still can't parse."""
+    try:
+        return json.loads(content)
+    except json.JSONDecodeError:
+        import re
+        fixed = re.sub(r"[\x00-\x1f]", lambda m: {"\n": "\\n", "\t": "\\t", "\r": ""}.get(m.group(), " "), content)
+        try:
+            return json.loads(fixed)
+        except json.JSONDecodeError:
+            logger.warning("vlm_perception: unparseable JSON even after sanitize")
+            return None
 
 
 def perceive_from_strips(

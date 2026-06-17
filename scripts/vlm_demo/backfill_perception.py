@@ -64,6 +64,9 @@ def _targets_from_db(niches, limit):
     return rows[:limit] if limit else rows
 
 
+RICH = False  # set by --rich: full schema (opening_shot/observed/on_screen_text) + 12 dense frames
+
+
 def _process(vid, niche, dur, title) -> dict:
     """Pull mp4 from R2 -> sample frames -> VLM. Returns a JSONL record."""
     if not media.exists(media.video_key(vid)):
@@ -72,10 +75,10 @@ def _process(vid, niche, dur, title) -> dict:
         with tempfile.TemporaryDirectory() as td:
             mp4 = Path(td) / "v.mp4"
             media._client().download_file(settings.r2_bucket, media.video_key(vid), str(mp4))
-            strips, ts = vp.sample_strips(str(mp4), Path(td) / "strips")
+            strips, ts = vp.sample_strips(str(mp4), Path(td) / "strips", n_frames=12 if RICH else 4)
             tags = vp.perceive_from_strips(
                 strips, niche=niche, caption=(title or "")[:200], duration_s=dur,
-                timestamps=ts, lean=True,  # structural fields only — fast bulk backfill
+                timestamps=ts, lean=not RICH,  # rich = full schema; else structural-only fast pass
             )
         return {"video_id": vid, "niche": niche, "vlm_perception": tags}
     except Exception as e:  # noqa: BLE001
@@ -85,14 +88,18 @@ def _process(vid, niche, dur, title) -> dict:
 @app.command()
 def main(
     manifest: str = typer.Option(None, help="pod mode: read the work-list from this JSONL (no DB needed)"),
+    rich: bool = typer.Option(False, "--rich", help="full schema (opening_shot/observed/text) + 12 dense frames"),
     niche: str = typer.Option(None, help="single niche, e.g. ig_fitness"),
     all: bool = typer.Option(False, "--all", help="all 4 IG niches"),
     limit: int = typer.Option(0, help="cap (0=all)"),
     workers: int = typer.Option(6, help="concurrent reels (pod batches them)"),
 ) -> None:
+    global RICH
+    RICH = rich
     if settings.vlm_provider != "openai_compatible" or not settings.vlm_base_url:
         logger.warning("Set vlm_provider=openai_compatible + vlm_base_url in .env (the RunPod vLLM endpoint) first.")
         raise typer.Exit(1)
+    logger.info(f"mode: {'RICH (full schema, 12 frames)' if rich else 'lean'}")
     if manifest:
         rows = _targets_from_manifest(manifest, limit)
     else:

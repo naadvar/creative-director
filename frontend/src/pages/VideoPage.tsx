@@ -6,6 +6,7 @@ import { useAsync } from '../hooks/useAsync'
 import { archetypeName, externalUrl, formatDuration, platformNoun, thumbnailUrl } from '../lib/format'
 import CategoryPicker from '../components/CategoryPicker'
 import Collapsible from '../components/Collapsible'
+import CraftRead from '../components/CraftRead'
 import CutPlanPanel from '../components/CutPlanPanel'
 import FindingsTable from '../components/FindingsTable'
 import FrameFindings from '../components/FrameFindings'
@@ -50,6 +51,7 @@ export default function VideoPage() {
   const id = videoId ?? ''
 
   const breakdown = useAsync(() => api.analyze(id), [id])
+  const craft = useAsync(() => api.craftRead(id), [id])
   const summary = useAsync(() => api.summary(id), [id])
   const frame = useAsync(() => api.frame(id), [id])
   const timeline = useAsync(() => api.timeline(id), [id])
@@ -160,6 +162,11 @@ export default function VideoPage() {
             onPlayWinnerCut={handlePlayWinnerCut}
             currentSecond={currentSecond}
           />
+
+          {/* The Craft X-ray leads when present; the scalar scorecard + read stay below. */}
+          {craft.data?.available && craft.data.read ? (
+            <CraftRead data={craft.data.read} />
+          ) : null}
 
           <Scorecard b={b} />
 

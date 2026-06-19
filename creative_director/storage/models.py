@@ -200,6 +200,10 @@ class VideoFeatures(Base):
     # (corpus videos pre-backfill, or no key) -> advice falls back to scalar.
     vlm_perception: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
 
+    # Craft X-ray read (advice/craft_xray.py) — the grounded craft critic output.
+    # Cached because it's a strong-VLM call; null = not generated yet.
+    craft_read: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
+
     extracted_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
     video: Mapped[Video] = relationship(back_populates="features")
@@ -259,8 +263,10 @@ class VideoTimeline(Base):
 
 
 class User(Base):
-    """A creator using the app. Authentication is via Instagram Login, so a
-    User is created/looked-up on first OAuth — no passwords stored."""
+    """A creator using the app. Auth is either a passwordless email gate (demo
+    lead capture) or Instagram Login — no passwords stored. ``email`` is set for
+    email-gate users and is the lead-capture signal; OAuth-only users may have
+    none."""
 
     __tablename__ = "users"
 
@@ -268,6 +274,7 @@ class User(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     last_login_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
     display_name: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    email: Mapped[Optional[str]] = mapped_column(String(320), nullable=True, index=True)
 
     connections: Mapped[list["ConnectedAccount"]] = relationship(
         back_populates="user", cascade="all, delete-orphan"

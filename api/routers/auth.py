@@ -8,11 +8,23 @@ from __future__ import annotations
 
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import RedirectResponse
+from pydantic import BaseModel
 
-from api.auth import get_optional_user, login_user, logout_user, upsert_user_and_connection
+from api.auth import (
+    email_login,
+    get_optional_user,
+    login_user,
+    logout_user,
+    normalize_email,
+    upsert_user_and_connection,
+)
 from api.config import api_settings
 
 router = APIRouter(prefix="/auth", tags=["auth"])
+
+
+class EmailLoginBody(BaseModel):
+    email: str
 
 # Sentinel token marking the demo account; /me/reels serves corpus reels for it.
 DEMO_TOKEN = "DEMO"
@@ -22,6 +34,17 @@ DEMO_TOKEN = "DEMO"
 def me(request: Request) -> dict:
     """Current auth state. Returns {"user": null} when not logged in (200, not
     401) so the SPA can check on load without treating it as an error."""
+    return {"user": get_optional_user(request)}
+
+
+@router.post("/email")
+def email_gate(body: EmailLoginBody, request: Request) -> dict:
+    """Passwordless email gate — the public demo's low-friction login + lead
+    capture. Find-or-create the user by email, start a session, return them."""
+    email = normalize_email(body.email)
+    if email is None:
+        raise HTTPException(status_code=422, detail="Enter a valid email address")
+    email_login(request, email)
     return {"user": get_optional_user(request)}
 
 

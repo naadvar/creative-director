@@ -98,16 +98,17 @@ export default function UploadPage() {
     <div className="mx-auto max-w-2xl space-y-6">
       <div className="space-y-2 pt-4 text-center">
         <h1 className="text-2xl font-semibold leading-tight sm:text-3xl">
-          See how your reel stacks up against winners in your niche
+          Get a craft read of your reel
         </h1>
         <p className="mx-auto max-w-xl text-sm leading-relaxed text-muted">
-          Upload a reel — even a draft you haven&apos;t posted — and get a
-          frame-by-frame read: hook, pacing, length, caption, all benchmarked
-          against what actually performs in your niche.
+          Upload a reel — even a draft you haven&apos;t posted — and the model
+          watches it frame by frame: the hook, the payoff, pacing, framing, and
+          every on-screen text beat, then flags the craft blind spots you&apos;re
+          too close to notice.
           {corpusTotal ? (
             <>
               {' '}
-              Built on <span className="text-text">{corpusTotal.toLocaleString()}</span>{' '}
+              Drawing on <span className="text-text">{corpusTotal.toLocaleString()}</span>{' '}
               analyzed reels.
             </>
           ) : null}

@@ -41,7 +41,7 @@ from api.config import api_settings
 from creative_director.config import settings
 from creative_director.storage import media
 from creative_director.storage.db import session_scope
-from creative_director.storage.models import Video
+from creative_director.storage.models import Video, VideoFeatures
 
 router = APIRouter(prefix="/videos", tags=["analysis"])
 
@@ -170,6 +170,20 @@ def summary(video_id: str) -> schemas.PlainSummary:
     except Exception:  # noqa: BLE001
         pass
     return resp
+
+
+@router.get("/{video_id}/craft-read")
+def craft_read(video_id: str) -> dict:
+    """The Craft X-ray — the grounded craft critic read (advice/craft_xray.py).
+    Served from cache (VideoFeatures.craft_read); returns {available: false} when it
+    hasn't been generated yet, so the frontend can show the card only when present.
+    Additive: never touches the existing scalar summary/scorecard surface."""
+    with session_scope() as s:
+        f = s.query(VideoFeatures).filter(VideoFeatures.video_id == video_id).first()
+        read = getattr(f, "craft_read", None) if f else None
+    if not read:
+        return {"available": False}
+    return {"available": True, "read": read}
 
 
 @router.get("/{video_id}/frame", response_model=schemas.FrameBreakdown)

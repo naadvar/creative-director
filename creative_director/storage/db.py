@@ -30,6 +30,26 @@ SessionLocal = sessionmaker(
 
 def init_db() -> None:
     Base.metadata.create_all(engine)
+    _ensure_runtime_columns()
+
+
+# Columns added AFTER their table first shipped. create_all() never alters an
+# existing table, so these idempotent ADDs keep a long-lived SQLite file in sync
+# with the model on every boot (and on fresh deploys, which is a no-op).
+_RUNTIME_COLUMNS = (
+    ("users", "email", "VARCHAR(320)"),
+    ("video_features", "craft_read", "JSON"),
+)
+
+
+def _ensure_runtime_columns() -> None:
+    if not str(settings.database_url).startswith("sqlite"):
+        return
+    with engine.begin() as conn:
+        for table, col, decl in _RUNTIME_COLUMNS:
+            have = {r[1] for r in conn.exec_driver_sql(f"PRAGMA table_info({table})")}
+            if col not in have:
+                conn.exec_driver_sql(f"ALTER TABLE {table} ADD COLUMN {col} {decl}")
 
 
 @contextmanager

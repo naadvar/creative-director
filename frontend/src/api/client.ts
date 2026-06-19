@@ -6,6 +6,7 @@ import type {
   CategoryInfo,
   CorpusFacets,
   CorpusPage,
+  CraftReadResponse,
   CutPlan,
   NicheList,
   ExampleList,
@@ -97,6 +98,11 @@ export const api = {
 
   summary(id: string): Promise<PlainSummary> {
     return request<PlainSummary>(`/videos/${encodeURIComponent(id)}/summary`)
+  },
+
+  /** The Craft X-ray read (grounded craft critic). {available:false} when not generated. */
+  craftRead(id: string): Promise<CraftReadResponse> {
+    return request<CraftReadResponse>(`/videos/${encodeURIComponent(id)}/craft-read`)
   },
 
   frame(id: string): Promise<FrameBreakdown> {
@@ -191,6 +197,15 @@ export const api = {
   // --- auth + creator ---
   me(): Promise<{ user: AuthUser | null }> {
     return request<{ user: AuthUser | null }>('/auth/me')
+  },
+
+  /** Passwordless email gate — find-or-create the user, start a session. */
+  emailLogin(email: string): Promise<{ user: AuthUser | null }> {
+    return request<{ user: AuthUser | null }>('/auth/email', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email }),
+    })
   },
 
   logout(): Promise<{ ok: boolean }> {

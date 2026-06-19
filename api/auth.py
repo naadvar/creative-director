@@ -6,16 +6,26 @@ main.py). These helpers read it back and resolve the current ``User``.
 """
 from __future__ import annotations
 
+import re
 from datetime import datetime
 from typing import Optional
 
 from fastapi import Depends, HTTPException, Request
-from sqlalchemy import select
+from sqlalchemy import func, select
 
 from creative_director.storage.db import session_scope
 from creative_director.storage.models import ConnectedAccount, User
 
 SESSION_USER_KEY = "user_id"
+
+# Pragmatic email shape check — not RFC-perfect, just enough to reject typos and
+# junk at the passwordless gate (the email IS the lead-capture signal).
+_EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+
+
+def normalize_email(raw: str) -> Optional[str]:
+    e = (raw or "").strip().lower()
+    return e if _EMAIL_RE.match(e) and len(e) <= 320 else None
 
 
 def login_user(request: Request, user_id: int) -> None:
@@ -58,6 +68,7 @@ def get_optional_user(request: Request) -> Optional[dict]:
         return {
             "id": user.id,
             "display_name": user.display_name,
+            "email": user.email,
             "connections": [
                 {
                     "platform": c.platform,
@@ -78,6 +89,31 @@ def get_current_user(request: Request) -> dict:
     if user is None:
         raise HTTPException(status_code=401, detail="Not authenticated")
     return user
+
+
+def email_login(request: Request, email: str) -> int:
+    """Passwordless gate: find-or-create the User for this email, log them in,
+    and return the user_id. The email is the lead-capture signal; there's no
+    password, so this is a low-friction demo gate, not hardened account security."""
+    now = datetime.utcnow()
+    with session_scope() as s:
+        user = (
+            s.execute(select(User).where(func.lower(User.email) == email))
+            .scalars()
+            .first()
+        )
+        if user is None:
+            user = User(
+                created_at=now, last_login_at=now, email=email,
+                display_name=email.split("@", 1)[0],
+            )
+            s.add(user)
+            s.flush()  # assign user.id
+        else:
+            user.last_login_at = now
+        uid = user.id
+    login_user(request, uid)
+    return uid
 
 
 def upsert_user_and_connection(

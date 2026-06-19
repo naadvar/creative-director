@@ -84,6 +84,15 @@ class Settings(BaseSettings):
     vlm_model: Optional[str] = None         # e.g. Qwen/Qwen3-VL-32B-Instruct
     vlm_api_key: Optional[str] = None       # serverless key; a vLLM pod accepts any/none
 
+    # Craft X-ray (advice/craft_xray.py) provider — independent of the perception VLM
+    # above. Leave craft_read_base_url unset -> Anthropic (uses anthropic_api_key) with
+    # craft_read_model. Set craft_read_base_url (+ key + model) -> OpenAI-compatible, e.g.
+    # DeepInfra Qwen2.5-VL-72B: base=https://api.deepinfra.com/v1/openai,
+    # model=Qwen/Qwen2.5-VL-72B-Instruct.
+    craft_read_model: Optional[str] = None
+    craft_read_base_url: Optional[str] = None
+    craft_read_api_key: Optional[str] = None
+
     # Apify — public-data Instagram ingestion path (training-corpus bootstrap
     # only; not the permanent product foundation per the project kill-criterion).
     # Get a Personal API token at Apify Console > Settings > Integrations.

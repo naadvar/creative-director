@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import { Link, NavLink, Route, Routes } from 'react-router-dom'
 import BrowsePage from './pages/BrowsePage'
 import VideoPage from './pages/VideoPage'
@@ -5,7 +6,8 @@ import UploadPage from './pages/UploadPage'
 import LandingPage from './pages/LandingPage'
 import Disclaimer from './components/Disclaimer'
 import Spinner from './components/Spinner'
-import { AuthProvider, useAuth, useInstagram } from './hooks/useAuth'
+import EmailGate from './components/EmailGate'
+import { AuthProvider, useAuth } from './hooks/useAuth'
 
 function Logo() {
   return (
@@ -22,8 +24,7 @@ function navClass({ isActive }: { isActive: boolean }) {
 }
 
 function Header() {
-  const { logout } = useAuth()
-  const { username } = useInstagram()
+  const { user, logout } = useAuth()
   return (
     <header className="sticky top-0 z-20 border-b border-border bg-ink/85 backdrop-blur">
       <div className="mx-auto flex h-14 max-w-6xl items-center gap-6 px-5">
@@ -32,75 +33,111 @@ function Header() {
           <span className="text-sm font-semibold tracking-tight">Creative Director</span>
         </Link>
         <nav className="flex items-center gap-4">
-          <NavLink to="/" end className={navClass}>
+          <NavLink to="/analyze" className={navClass}>
             Analyze
           </NavLink>
           <NavLink to="/browse" className={navClass}>
-            Corpus
+            Examples
           </NavLink>
         </nav>
         <div className="ml-auto flex items-center gap-3 text-sm">
-          {username ? <span className="text-muted">@{username}</span> : null}
-          <button
-            type="button"
-            onClick={() => void logout()}
-            className="text-muted transition-colors hover:text-text"
-          >
-            Sign out
-          </button>
+          {user ? (
+            <>
+              {user.email ? (
+                <span className="hidden max-w-[12rem] truncate text-muted sm:inline">
+                  {user.email}
+                </span>
+              ) : null}
+              <button
+                type="button"
+                onClick={() => void logout()}
+                className="text-muted transition-colors hover:text-text"
+              >
+                Sign out
+              </button>
+            </>
+          ) : (
+            <NavLink to="/analyze" className="font-medium text-accent hover:opacity-90">
+              Sign in
+            </NavLink>
+          )}
         </div>
       </div>
     </header>
   )
 }
 
-function AuthedApp() {
-  return (
-    <div className="flex min-h-screen flex-col">
-      <Header />
-      <main className="mx-auto w-full max-w-6xl flex-1 px-5 py-7">
-        <Routes>
-          <Route path="/" element={<UploadPage />} />
-          <Route path="/browse" element={<BrowsePage />} />
-          <Route path="/video/:videoId" element={<VideoPage />} />
-          <Route
-            path="*"
-            element={
-              <div className="text-sm text-muted">
-                Page not found.{' '}
-                <Link to="/" className="text-accent hover:underline">
-                  Analyze a reel
-                </Link>
-              </div>
-            }
-          />
-        </Routes>
-      </main>
-      <footer className="border-t border-border">
-        <div className="mx-auto max-w-6xl px-5 py-5">
-          <Disclaimer />
-        </div>
-      </footer>
-    </div>
-  )
-}
-
-function Gate() {
+/** Route-level gate: render children if signed in, else show the email gate. */
+function RequireAuth({ children }: { children: ReactNode }) {
   const { user, loading } = useAuth()
   if (loading) {
     return (
-      <div className="grid min-h-screen place-items-center">
+      <div className="grid min-h-[50vh] place-items-center">
         <Spinner label="Loading…" />
       </div>
     )
   }
-  return user ? <AuthedApp /> : <LandingPage />
+  if (!user) {
+    return (
+      <div className="grid min-h-[50vh] place-items-center py-10">
+        <EmailGate redirectTo="/analyze" />
+      </div>
+    )
+  }
+  return <>{children}</>
+}
+
+/** Home: logged-out visitors get the marketing landing; signed-in users go
+ * straight to the upload flow. */
+function Home() {
+  const { user, loading } = useAuth()
+  if (loading) {
+    return (
+      <div className="grid min-h-[50vh] place-items-center">
+        <Spinner label="Loading…" />
+      </div>
+    )
+  }
+  return user ? <UploadPage /> : <LandingPage />
 }
 
 export default function App() {
   return (
     <AuthProvider>
-      <Gate />
+      <div className="flex min-h-screen flex-col">
+        <Header />
+        <main className="mx-auto w-full max-w-6xl flex-1 px-5 py-7">
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route
+              path="/analyze"
+              element={
+                <RequireAuth>
+                  <UploadPage />
+                </RequireAuth>
+              }
+            />
+            <Route path="/browse" element={<BrowsePage />} />
+            <Route path="/video/:videoId" element={<VideoPage />} />
+            <Route
+              path="*"
+              element={
+                <div className="text-sm text-muted">
+                  Page not found.{' '}
+                  <Link to="/" className="text-accent hover:underline">
+                    Go home
+                  </Link>
+                </div>
+              }
+            />
+          </Routes>
+        </main>
+        <footer className="border-t border-border">
+          <div className="mx-auto max-w-6xl px-5 py-5">
+            <Disclaimer />
+          </div>
+        </footer>
+      </div>
     </AuthProvider>
   )
 }

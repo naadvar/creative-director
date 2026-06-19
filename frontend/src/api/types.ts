@@ -79,6 +79,25 @@ export interface CraftNote {
   evidence: string
 }
 
+// The Craft X-ray — the grounded craft-critic read (advice/craft_xray.py).
+export interface CraftReadData {
+  on_screen_text_found: string[]
+  what_it_is: string
+  hook: string
+  payoff: string
+  pacing: string
+  verdict: string
+  biggest_opportunity: string
+  // each blind spot is one string shaped "m:ss - observation. Fix: ..."
+  blind_spots: string[]
+  done_well: string[]
+}
+
+export interface CraftReadResponse {
+  available: boolean
+  read?: CraftReadData
+}
+
 export interface PlainSummary {
   archetype: string
   read: string
@@ -286,6 +305,7 @@ export interface Connection {
 export interface AuthUser {
   id: number
   display_name: string | null
+  email: string | null
   connections: Connection[]
 }
 

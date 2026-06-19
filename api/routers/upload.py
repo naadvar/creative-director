@@ -21,9 +21,11 @@ from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
-from fastapi import APIRouter, File, Form, HTTPException, Request, UploadFile
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
 from loguru import logger
 from pydantic import BaseModel
+
+from api.auth import get_current_user
 
 router = APIRouter(tags=["upload"])
 
@@ -183,6 +185,27 @@ def _run_job(job: _Job, mp4: Path) -> None:
             except Exception as e:  # noqa: BLE001
                 logger.warning(f"vlm perception failed for {vid}: {e}")
 
+        # 2c. Craft read — the product's headline output ("a craft read of your
+        # reel"). Same strong-VLM engine as the corpus (Qwen via DeepInfra, per
+        # CRAFT_READ_* config). Defensive: a failure never fails the job — the
+        # page falls back to the scorecard, but we want this to be the hero.
+        try:
+            from creative_director.advice.craft_xray import extract_craft_read
+
+            job.message = "writing your craft read…"
+            read = extract_craft_read(
+                str(mp4), niche=job.niche, caption=caption, duration_s=duration_s
+            )
+            if read is not None:
+                with session_scope() as s:
+                    f = s.get(VideoFeatures, vid)
+                    if f is not None:
+                        f.craft_read = read
+            else:
+                logger.info(f"craft read skipped (no provider configured) for {vid}")
+        except Exception as e:  # noqa: BLE001
+            logger.warning(f"craft read failed for {vid}: {e}")
+
         # 3. Per-second timeline (cuts, vibes, faces, beats) for the strip + cut plan.
         job.message = "building the per-second timeline (1-2 min)…"
         timeline = extract_timeline(mp4, niche=job.niche)
@@ -205,8 +228,11 @@ async def upload_reel(
     niche: str = Form(...),
     caption: str = Form(""),
     followers: Optional[int] = Form(None),
+    user: dict = Depends(get_current_user),
 ) -> UploadJobStatus:
-    """Accept a reel upload and start the analysis job.
+    """Accept a reel upload and start the analysis job. Requires a session
+    (the passwordless email gate) — uploading is the conversion point, so we
+    capture the email before spending the extraction compute.
 
     ``caption`` feeds the title/description features (emoji count, hashtags…)
     so paste the real caption for a truer read. ``followers`` (optional) sets

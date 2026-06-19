@@ -5,7 +5,7 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://commentary-underground-medline-strengthening.trycloudflare.com/:path*"
+      "destination": "https://offset-champion-abu-xhtml.trycloudflare.com/:path*"
     },
     { "source": "/(.*)", "destination": "/index.html" }
   ]

@@ -34,6 +34,12 @@ class ApiSettings(BaseSettings):
     niche: str = "fitness"
     label_scheme: str = "views_per_sub_aged_v1"
 
+    # Demo curation: when True, the public browse/niches only surface reels that
+    # have a Qwen craft read (VideoFeatures.craft_read), so every browsable reel
+    # has the hero card. Reversible (set API_CORPUS_REQUIRE_CRAFT_READ=false) —
+    # the rows stay in the DB so benchmarks keep full strength.
+    corpus_require_craft_read: bool = True
+
     # --- Auth / session ---------------------------------------------------
     # Signed-cookie session secret. MUST be overridden in production
     # (API_SESSION_SECRET in .env). The dev default is intentionally obvious.

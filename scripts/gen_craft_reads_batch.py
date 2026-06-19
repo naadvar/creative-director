@@ -28,11 +28,11 @@ from creative_director.storage.models import Channel, Video, VideoFeatures
 NICHES = ("ig_fitness", "ig_food", "ig_travel", "ig_fashion")
 
 
-def pick_targets(total: int) -> list[tuple]:
-    per = max(1, total // len(NICHES))
+def pick_targets(total: int, niches: tuple = NICHES) -> list[tuple]:
+    per = max(1, total // len(niches))
     out = []
     with session_scope() as s:
-        for n in NICHES:
+        for n in niches:
             rows = s.execute(
                 select(Video.id, Video.duration_seconds, Video.title)
                 .join(Channel, Channel.id == Video.channel_id)
@@ -75,9 +75,9 @@ def store(vid: str, read: dict) -> None:
     logger.warning(f"{vid}: DB write failed after retries")
 
 
-def main(total: int, workers: int) -> None:
-    targets = pick_targets(total)
-    logger.info(f"targets: {len(targets)} reels (workers={workers}, "
+def main(total: int, workers: int, niches: tuple = NICHES) -> None:
+    targets = pick_targets(total, niches)
+    logger.info(f"targets: {len(targets)} reels (niches={niches}, workers={workers}, "
                 f"openai={bool(settings.craft_read_base_url)} model={settings.craft_read_model})")
     t0 = time.time()
     ok = fail = done = 0
@@ -101,7 +101,11 @@ def main(total: int, workers: int) -> None:
 
 
 if __name__ == "__main__":
-    nums = [int(a) for a in sys.argv[1:] if a.isdigit()]
+    args = sys.argv[1:]
+    nums = [int(a) for a in args if a.isdigit()]
+    niche_args = tuple(a for a in args if a.startswith("ig_"))
     total = nums[0] if nums else 24
     workers = nums[1] if len(nums) > 1 else 8
-    main(total, workers)
+    # Single-niche run: pass e.g. `ig_fitness` to pull ALL remaining reels of that
+    # niche (per = total, so set total >= the remaining count).
+    main(total, workers, niche_args or NICHES)

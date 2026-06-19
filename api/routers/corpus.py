@@ -56,6 +56,9 @@ def browse_corpus(
     with session_scope() as s:
         # Private uploads (synthetic upch_* channels) never appear in the browse.
         not_upload = Channel.id.notlike("upch_%")
+        # Demo curation: only reels that went through Qwen (have a craft read).
+        has_read = VideoFeatures.craft_read.isnot(None)
+        require_read = api_settings.corpus_require_craft_read
         count_q = (
             select(func.count())
             .select_from(Video)
@@ -74,6 +77,9 @@ def browse_corpus(
             )
             .where(not_upload)
         )
+        if require_read:
+            count_q = count_q.where(has_read)
+            rows_q = rows_q.where(has_read)
         if niche:
             count_q = count_q.where(Channel.niche == niche)
             rows_q = rows_q.where(Channel.niche == niche)
@@ -150,6 +156,9 @@ def corpus_categories(
             .group_by(Video.category)
             .order_by(func.count().desc())
         )
+        if api_settings.corpus_require_craft_read:
+            total_q = total_q.where(VideoFeatures.craft_read.isnot(None))
+            rows_q = rows_q.where(VideoFeatures.craft_read.isnot(None))
         if niche:
             total_q = total_q.where(Channel.niche == niche)
             rows_q = rows_q.where(Channel.niche == niche)
@@ -170,7 +179,7 @@ def list_niches() -> schemas.NicheList:
     niche switcher. A niche only appears once its videos have features (so a
     freshly-ingested, not-yet-extracted niche won't show a broken empty tab)."""
     with session_scope() as s:
-        rows = s.execute(
+        niche_q = (
             select(Channel.niche, func.count())
             .select_from(Video)
             .join(Channel, Channel.id == Video.channel_id)
@@ -178,7 +187,10 @@ def list_niches() -> schemas.NicheList:
             .where(Channel.niche.is_not(None), Channel.id.notlike("upch_%"))
             .group_by(Channel.niche)
             .order_by(func.count().desc())
-        ).all()
+        )
+        if api_settings.corpus_require_craft_read:
+            niche_q = niche_q.where(VideoFeatures.craft_read.isnot(None))
+        rows = s.execute(niche_q).all()
 
     niches = []
     for niche, count in rows:

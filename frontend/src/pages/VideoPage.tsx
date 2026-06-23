@@ -165,7 +165,7 @@ export default function VideoPage() {
           {/* The craft read is the hero: the first analysis after the video, and
               every timestamp is tap-verifiable against their own footage. */}
           {craft.data?.available && craft.data.read ? (
-            <CraftRead data={craft.data.read} onSeek={handleSeek} />
+            <CraftRead data={craft.data.read} onSeek={handleSeek} videoId={id} />
           ) : null}
 
           <CutPlanPanel

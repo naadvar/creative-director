@@ -222,6 +222,15 @@ export const api = {
     return request<Fingerprint>('/me/fingerprint')
   },
 
+  /** Record a one-tap dismissal of a craft-read note ("not useful" / "not in my reel"). */
+  noteFeedback(videoId: string, note: string, reason?: string): Promise<{ ok: boolean }> {
+    return request<{ ok: boolean }>(`/videos/${encodeURIComponent(videoId)}/note-feedback`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ note, reason }),
+    })
+  },
+
   analyzeOwnReel(id: string): Promise<{ video_id: string }> {
     return request<{ video_id: string }>(
       `/me/reels/${encodeURIComponent(id)}/analyze`,

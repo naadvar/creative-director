@@ -315,3 +315,18 @@ class ConnectedAccount(Base):
     )
 
     user: Mapped[User] = relationship(back_populates="connections")
+
+
+class NoteFeedback(Base):
+    """A creator's one-tap dismissal of a craft-read note ('not useful' / 'not in
+    my reel'). The visible trust affordance AND the cheapest fabrication/quality
+    labeling signal — each row is a frame-grounded labeled example for tuning."""
+
+    __tablename__ = "note_feedback"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    video_id: Mapped[str] = mapped_column(String(64), index=True)
+    user_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True, index=True)
+    note: Mapped[str] = mapped_column(Text)  # the dismissed blind_spot text
+    reason: Mapped[Optional[str]] = mapped_column(String(32), nullable=True)  # not_useful / not_in_reel
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)

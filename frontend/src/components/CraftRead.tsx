@@ -1,4 +1,5 @@
-import type { ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
+import { api } from '../api/client'
 import type { CraftReadData } from '../api/types'
 
 function Check() {
@@ -91,12 +92,23 @@ const STRUCTURE: [string, (d: CraftReadData) => string][] = [
 export default function CraftRead({
   data,
   onSeek,
+  videoId,
 }: {
   data: CraftReadData
   onSeek?: (second: number) => void
+  videoId?: string
 }) {
-  const spots = (data.blind_spots ?? []).map(parseSpot)
+  const rawSpots = data.blind_spots ?? []
+  const spots = rawSpots.map(parseSpot)
   const doneWell = data.done_well ?? []
+  const [dismissed, setDismissed] = useState<Set<number>>(new Set())
+
+  // One-tap dismissal: hide the note and record it (trust affordance + training signal).
+  const dismiss = (i: number, reason: string) => {
+    setDismissed((prev) => new Set(prev).add(i))
+    if (videoId && rawSpots[i]) api.noteFeedback(videoId, rawSpots[i], reason).catch(() => {})
+  }
+  const visibleSpots = spots.map((s, i) => ({ s, i })).filter(({ i }) => !dismissed.has(i))
 
   return (
     <div className="rounded-2xl border border-border bg-surface p-5 sm:p-6">
@@ -140,11 +152,11 @@ export default function CraftRead({
         </div>
       ) : null}
 
-      {spots.length > 0 ? (
+      {visibleSpots.length > 0 ? (
         <div className="mt-5">
           <h4 className="text-sm font-semibold">Worth a second look</h4>
           <ul className="mt-2.5 space-y-2.5">
-            {spots.map((s, i) => (
+            {visibleSpots.map(({ s, i }) => (
               <li key={i} className="rounded-lg border border-border bg-surface-2 p-3">
                 <div className="flex items-baseline gap-2">
                   {s.where ? (
@@ -158,6 +170,25 @@ export default function CraftRead({
                     <span>{linkify(s.fix, onSeek)}</span>
                   </div>
                 ) : null}
+                {/* Calm one-tap override — the creator is the expert on their own footage. */}
+                <div className="mt-2 flex items-center gap-2 text-[11px] text-muted/60">
+                  <span>Off-base?</span>
+                  <button
+                    type="button"
+                    onClick={() => dismiss(i, 'not_in_reel')}
+                    className="underline-offset-2 transition-colors hover:text-text hover:underline"
+                  >
+                    not in my reel
+                  </button>
+                  <span aria-hidden>·</span>
+                  <button
+                    type="button"
+                    onClick={() => dismiss(i, 'not_useful')}
+                    className="underline-offset-2 transition-colors hover:text-text hover:underline"
+                  >
+                    not useful
+                  </button>
+                </div>
               </li>
             ))}
           </ul>

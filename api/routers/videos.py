@@ -11,10 +11,12 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Optional
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import FileResponse, RedirectResponse, Response
+from pydantic import BaseModel
 
 from api import schemas
+from api.auth import get_optional_user
 from api.benchmarks import benchmarks, pick_for_tier
 from creative_director.advice.benchmark import REPORTABLE, classify_archetype
 from creative_director.advice.breakdown import analyze_video
@@ -41,7 +43,7 @@ from api.config import api_settings
 from creative_director.config import settings
 from creative_director.storage import media
 from creative_director.storage.db import session_scope
-from creative_director.storage.models import Video, VideoFeatures
+from creative_director.storage.models import NoteFeedback, Video, VideoFeatures
 
 router = APIRouter(prefix="/videos", tags=["analysis"])
 
@@ -184,6 +186,27 @@ def craft_read(video_id: str) -> dict:
     if not read:
         return {"available": False}
     return {"available": True, "read": read}
+
+
+class NoteFeedbackBody(BaseModel):
+    note: str
+    reason: Optional[str] = None  # "not_useful" | "not_in_reel"
+
+
+@router.post("/{video_id}/note-feedback")
+def note_feedback(video_id: str, body: NoteFeedbackBody, request: Request) -> dict:
+    """One-tap dismissal of a craft-read note. Records it for trust (the creator
+    overrides a note they disagree with) + as labeled training data. Captures the
+    user when signed in; works anonymously otherwise."""
+    user = get_optional_user(request)
+    with session_scope() as s:
+        s.add(NoteFeedback(
+            video_id=video_id,
+            user_id=user["id"] if user else None,
+            note=(body.note or "")[:2000],
+            reason=(body.reason or "dismissed")[:32],
+        ))
+    return {"ok": True}
 
 
 @router.get("/{video_id}/frame", response_model=schemas.FrameBreakdown)

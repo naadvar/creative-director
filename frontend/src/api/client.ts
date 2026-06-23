@@ -8,6 +8,7 @@ import type {
   CorpusPage,
   CraftReadResponse,
   CutPlan,
+  Fingerprint,
   NicheList,
   ExampleList,
   FrameBreakdown,
@@ -214,6 +215,11 @@ export const api = {
 
   myReels(): Promise<MyReels> {
     return request<MyReels>('/me/reels')
+  },
+
+  /** The creator's style fingerprint, built from their own uploaded reels. */
+  myFingerprint(): Promise<Fingerprint> {
+    return request<Fingerprint>('/me/fingerprint')
   },
 
   analyzeOwnReel(id: string): Promise<{ video_id: string }> {

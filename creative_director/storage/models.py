@@ -49,6 +49,10 @@ class Video(Base):
     default_language: Mapped[Optional[str]] = mapped_column(String(16), nullable=True)
     category_id: Mapped[Optional[str]] = mapped_column(String(8), nullable=True)
     ingested_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    # Set when a logged-in creator uploads this reel — links uploads → User so we
+    # can build a per-creator style fingerprint from their OWN uploads (no scraping).
+    # NULL for corpus videos.
+    uploaded_by_user_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True, index=True)
 
     # IG-specific metadata captured from the Apify Reel Scraper output. NULL
     # for YouTube videos and for pre-2026-05-21 IG ingests (backfill from

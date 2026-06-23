@@ -39,6 +39,7 @@ def init_db() -> None:
 _RUNTIME_COLUMNS = (
     ("users", "email", "VARCHAR(320)"),
     ("video_features", "craft_read", "JSON"),
+    ("videos", "uploaded_by_user_id", "INTEGER"),
 )
 
 

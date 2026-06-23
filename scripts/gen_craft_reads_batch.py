@@ -28,20 +28,21 @@ from creative_director.storage.models import Channel, Video, VideoFeatures
 NICHES = ("ig_fitness", "ig_food", "ig_travel", "ig_fashion")
 
 
-def pick_targets(total: int, niches: tuple = NICHES) -> list[tuple]:
+def pick_targets(total: int, niches: tuple = NICHES, force: bool = False) -> list[tuple]:
+    """force=True re-selects reels that ALREADY have a craft_read (to regenerate
+    them in place on a new engine), instead of only the ones still missing one."""
     per = max(1, total // len(niches))
     out = []
     with session_scope() as s:
         for n in niches:
-            rows = s.execute(
-                select(Video.id, Video.duration_seconds, Video.title)
-                .join(Channel, Channel.id == Video.channel_id)
-                .join(VideoFeatures, VideoFeatures.video_id == Video.id)
-                .where(VideoFeatures.vlm_perception.isnot(None),
-                       VideoFeatures.craft_read.is_(None),
-                       Channel.niche == n, Channel.id.notlike("upch_%"))
-                .limit(per)
-            ).all()
+            q = (select(Video.id, Video.duration_seconds, Video.title)
+                 .join(Channel, Channel.id == Video.channel_id)
+                 .join(VideoFeatures, VideoFeatures.video_id == Video.id)
+                 .where(VideoFeatures.vlm_perception.isnot(None),
+                        Channel.niche == n, Channel.id.notlike("upch_%")))
+            if not force:
+                q = q.where(VideoFeatures.craft_read.is_(None))
+            rows = s.execute(q.limit(per)).all()
             out += [(vid, n, dur, title) for vid, dur, title in rows]
     return out
 
@@ -75,9 +76,9 @@ def store(vid: str, read: dict) -> None:
     logger.warning(f"{vid}: DB write failed after retries")
 
 
-def main(total: int, workers: int, niches: tuple = NICHES) -> None:
-    targets = pick_targets(total, niches)
-    logger.info(f"targets: {len(targets)} reels (niches={niches}, workers={workers}, "
+def main(total: int, workers: int, niches: tuple = NICHES, force: bool = False) -> None:
+    targets = pick_targets(total, niches, force)
+    logger.info(f"targets: {len(targets)} reels (niches={niches}, force={force}, workers={workers}, "
                 f"openai={bool(settings.craft_read_base_url)} model={settings.craft_read_model})")
     t0 = time.time()
     ok = fail = done = 0
@@ -106,6 +107,8 @@ if __name__ == "__main__":
     niche_args = tuple(a for a in args if a.startswith("ig_"))
     total = nums[0] if nums else 24
     workers = nums[1] if len(nums) > 1 else 8
+    force = "force" in args  # regenerate reels that already have a read (new engine)
     # Single-niche run: pass e.g. `ig_fitness` to pull ALL remaining reels of that
-    # niche (per = total, so set total >= the remaining count).
-    main(total, workers, niche_args or NICHES)
+    # niche (per = total, so set total >= the remaining count). Add `force` to redo
+    # reels that already have a craft_read.
+    main(total, workers, niche_args or NICHES, force)

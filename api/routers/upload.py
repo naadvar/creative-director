@@ -308,6 +308,7 @@ async def upload_reel(
                 video_file_path=str(mp4),
                 category=guess,
                 category_confirmed=0,
+                uploaded_by_user_id=user["id"],  # link upload → creator for the fingerprint
             )
         )
 

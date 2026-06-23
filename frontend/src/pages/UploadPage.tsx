@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { api } from '../api/client'
+import type { Fingerprint } from '../api/types'
+import CreatorFingerprint from '../components/CreatorFingerprint'
 import Spinner from '../components/Spinner'
 
 const NICHES = [
@@ -31,6 +33,7 @@ export default function UploadPage() {
   const [message, setMessage] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [corpusTotal, setCorpusTotal] = useState<number | null>(null)
+  const [fingerprint, setFingerprint] = useState<Fingerprint | null>(null)
   const cancelled = useRef(false)
 
   useEffect(() => {
@@ -44,6 +47,7 @@ export default function UploadPage() {
         ),
       )
       .catch(() => {})
+    api.myFingerprint().then(setFingerprint).catch(() => {})
     return () => {
       cancelled.current = true
     }
@@ -114,6 +118,8 @@ export default function UploadPage() {
           ) : null}
         </p>
       </div>
+
+      {fingerprint?.ready ? <CreatorFingerprint fp={fingerprint} /> : null}
 
       <div className="space-y-4 rounded-2xl border border-border bg-surface p-5 sm:p-6">
         {/* Drop zone */}

@@ -33,6 +33,15 @@ from creative_director.storage.models import (
 router = APIRouter(prefix="/me", tags=["creator"])
 
 _GRAPH = "https://graph.instagram.com"
+
+
+@router.get("/fingerprint")
+def my_fingerprint(user: dict = Depends(get_current_user)) -> dict:
+    """The creator's style fingerprint, built from their OWN uploaded reels.
+    Descriptive only; accumulates as they upload more."""
+    from creative_director.profile.fingerprint import compute_fingerprint
+
+    return compute_fingerprint(user["id"])
 _DEMO_TOKEN = "DEMO"  # marks the dev demo account; served from the corpus
 
 

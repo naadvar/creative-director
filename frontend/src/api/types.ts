@@ -309,6 +309,22 @@ export interface AuthUser {
   connections: Connection[]
 }
 
+export interface FingerprintRecurring {
+  type: string
+  label: string
+  count: number
+}
+
+export interface Fingerprint {
+  ready: boolean
+  n_reels: number
+  niche?: string | null
+  format?: string | null
+  format_label?: string | null
+  recurring?: FingerprintRecurring[]
+  summary: string
+}
+
 export interface ReelCard {
   id: string
   video_id: string | null // set when already analyzable -> link straight to dashboard

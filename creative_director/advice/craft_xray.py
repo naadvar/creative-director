@@ -27,7 +27,7 @@ from loguru import logger
 
 from creative_director.config import settings
 
-SCHEMA_VERSION = 2  # v2 = format-aware prompt + timestamp guard + verifier pass
+SCHEMA_VERSION = 3  # v3 = v2 + drop advice-101 (text-hook/CTA) + cover-aware hook
 
 
 def _model() -> str:
@@ -147,8 +147,11 @@ repeated across every scene (that is the joke and the through-line, not clutter)
 of narration; an implicit, unstated message; and a brief hold on the opening or final beat. A \
 held hero shot or a relatable on-screen hook is a STRONG open, never a "dead opening". Never \
 tell such a reel to slow its cuts, add transitions, hold/trim a beat for pacing, de-repeat its \
-overlay, or restate its takeaway in a card. A faceless / voiceover / text-led reel is likewise \
-a LEGITIMATE format, never a flaw in itself.
+overlay, or restate its takeaway in a card. Do NOT suggest "add a text overlay/hook at 0:00" or \
+a title card just because the first frame has no text — a clear visual opening (e.g. a cook with \
+ingredients) IS a hook, and the reel's cover (which you can't see) usually carries the title \
+text. Do NOT suggest adding a CTA or restating the message at the end. A faceless / voiceover / \
+text-led reel is likewise a LEGITIMATE format, never a flaw in itself.
 
 THE INTELLIGENCE — say how it can be BETTER (this is the point of the tool):
 - verdict: one honest line judging the craft of THIS video — if it's well-executed, say so directly.
@@ -337,8 +340,16 @@ _VERIFIER_SYSTEM = (
     "For each numbered note decide KEEP or DROP.\n"
     "DROP if the note is any of:\n"
     "- A FORMAT nitpick: complains about fast/abrupt cuts, missing transitions or bridges, a "
-    "held beat / 'dead spot', a 'redundant'/'wasted' ending, or tells the reel to slow down, "
-    "hold shots longer, add transitions, or restate its message — those are format choices.\n"
+    "held beat / 'dead spot', a 'redundant'/'wasted' ending, the ending 'leaving the message "
+    "hanging', or tells the reel to slow down, hold shots longer, add transitions, or restate "
+    "its message — those are format choices.\n"
+    "- ADVICE-101 boilerplate that fits almost any reel: 'add a text overlay/hook at 0:00 to "
+    "state the topic', 'add a title card', 'add a CTA', 'reinforce/restate the takeaway at the "
+    "end'. A hook can be VISUAL (a clear subject or activity makes the topic read instantly — a "
+    "cook with ingredients is obviously a cooking reel), and the reel's COVER (which you do not "
+    "see in these frames) usually carries the title text — so 'the opening has no text overlay' "
+    "is almost never a real problem. DROP unless the opening is genuinely ambiguous about what "
+    "the reel even is.\n"
     "- A SUBTITLE-FRAGMENT misread: flags a short partial caption (a few words, e.g. 'If', "
     "'out there this', '20 exercises or') as incomplete/confusing/grammatically-broken text. "
     "Word-by-word captions naturally show fragments per frame; that is the style, not a flaw.\n"
@@ -377,6 +388,21 @@ def _verify_call(user: str) -> Optional[set]:
         return {int(i) for i in d["keep"]}
     except (TypeError, ValueError):
         return None
+
+
+_ADVICE101 = re.compile(
+    r"\badd (a |an )?(quick |bold |small )?(text|title|caption)\s*(overlay|card|hook)"
+    r"|\badd (a |an )?(cta|call.to.action)"
+    r"|\b(restate|reinforce|repeat) the (message|takeaway)"
+    r"|\btext overlay at 0:00", re.I)
+
+
+def _reconcile_opportunity(read: dict) -> None:
+    """If the verifier left ZERO blind spots, biggest_opportunity must not invent a
+    flaw (a self-contradiction the audit flagged as a trust-killer). Replace any
+    advice-101 'opportunity' on an otherwise-clean read with an honest clean line."""
+    if not (read.get("blind_spots") or []) and _ADVICE101.search(read.get("biggest_opportunity") or ""):
+        read["biggest_opportunity"] = "This is well-executed as is — no major craft change needed."
 
 
 def _verify_notes(read: dict) -> None:
@@ -449,6 +475,7 @@ def craft_read_from_frames(frames: list[str], ts: list[float], *, niche=None,
         # PASS 2b: verifier — drop format-blind nitpicks + subtitle-fragment misreads
         # (re-aligns change_types to the surviving blind_spots).
         _verify_notes(out)
+        _reconcile_opportunity(out)     # don't let a clean read invent a flaw in biggest_opportunity
         out["niche"] = niche            # join key for change_type x niche x format_class
         out["schema_version"] = SCHEMA_VERSION
         out["model"] = settings.craft_read_model if openai else _model()

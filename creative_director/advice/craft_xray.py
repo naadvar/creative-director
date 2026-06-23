@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import base64
 import json
+import re
 import tempfile
 from pathlib import Path
 from typing import Optional
@@ -126,14 +127,39 @@ finished dish is on screen by 0:02, then the video runs 20s more").
 - NEVER claim anything about views, virality, reach, followers, the algorithm, or "doing \
 better". You cannot predict performance and must not imply it. "hook"/"engaging"/"retention" \
 only as plain craft description, never as a performance claim.
-- Be specific and HONEST. Most reels have 2-4 genuine blind spots a sharp editor would \
-name on a careful watch — surface them. Return fewer only when the reel is genuinely strong, \
-and NEVER invent ones that aren't there.
-- A faceless / voiceover / text-led reel is a LEGITIMATE format, never a flaw in itself.
+- Be specific and HONEST: surface every genuine craft issue, and ONLY genuine ones — there is \
+NO target count (some reels are clean, many have one or two real things worth fixing — don't \
+force a number, and don't default to "clean" without actually looking). A genuine weakness is \
+one a viewer who already LIKES this kind of reel would STILL trip on. The bar is the CLARITY \
+and LEGIBILITY of the reel's core — flag things like: you can't clearly SEE the main action / \
+exercise / result (bad angle, too fast to follow, cut off frame, occluded); the hook or first \
+frame doesn't make clear what the reel is or who it's for; essential on-screen text is too \
+small/brief to read or covers the action; a promised payoff never clearly arrives; an on-screen \
+claim the footage contradicts; key info illegible at reel size. Do NOT flag pacing, cut rhythm, \
+or transitions — those are format choices, not flaws. If, after genuinely checking each of \
+those, nothing of that calibre is present, the reel is CLEAN — say so. Manufacturing a nitpick \
+and waving a real weakness through are equally bad.
+- RESPECT THE FORMAT — this is where craft reads most often go wrong. Judge by the conventions \
+of the reel's OWN format. For a montage / "me when…" / trend / hype / transformation reel, the \
+following ARE the format working and must NEVER be flagged as problems or "fixed": fast or \
+"abrupt" cuts between scenes; the absence of transitions or bridges; the same caption/overlay \
+repeated across every scene (that is the joke and the through-line, not clutter); music instead \
+of narration; an implicit, unstated message; and a brief hold on the opening or final beat. A \
+held hero shot or a relatable on-screen hook is a STRONG open, never a "dead opening". Never \
+tell such a reel to slow its cuts, add transitions, hold/trim a beat for pacing, de-repeat its \
+overlay, or restate its takeaway in a card. A faceless / voiceover / text-led reel is likewise \
+a LEGITIMATE format, never a flaw in itself.
 
 THE INTELLIGENCE — say how it can be BETTER (this is the point of the tool):
-- verdict: one honest line judging the craft of THIS video.
-- biggest_opportunity: the single highest-leverage CRAFT change for THIS video, and why.
+- verdict: one honest line judging the craft of THIS video — if it's well-executed, say so directly.
+- biggest_opportunity: ALWAYS give the single highest-leverage GENUINE craft lever for THIS \
+video — the one change a great editor would make first — and why. Even a strong, clean reel \
+almost always has ONE real way to push it further (a sharper hook line, a more specific caption \
+than "this exercise is great", a clearer angle on the key moment, a stronger first frame). Name \
+THAT, framed as building on its strength: "This is strong — the one thing that would sharpen it \
+further is …". It must be a REAL, specific lever for THIS reel, never a generic platitude and \
+never a manufactured flaw, and never a pacing/cut nit on a montage. Make each read's opportunity \
+specific to that reel (do not reuse a stock sentence).
 - every blind_spot ends with a concrete 'Fix:'.
 - 'Better' = clearer / tighter / more watchable / more coherent AS A VIDEO. You may NEVER \
 say or imply a change gets more views/reach/followers. Judge and improve the CRAFT only.
@@ -192,7 +218,14 @@ def _use_openai() -> bool:
 
 
 def _incomplete(o: dict) -> bool:
-    return not (o.get("verdict") and o.get("what_it_is") and o.get("blind_spots"))
+    # verdict + what_it_is are load-bearing; the read needs SOME substance, but an
+    # empty blind_spots is VALID — a clean reel earns a clean verdict + done_well,
+    # and must not be retried into manufacturing nitpicks.
+    return not (
+        o.get("verdict")
+        and o.get("what_it_is")
+        and (o.get("blind_spots") or o.get("done_well"))
+    )
 
 
 def _data_uri(p: str) -> str:
@@ -257,6 +290,121 @@ def _call_openai(ctx: str, frames, extra: str) -> Optional[dict]:
     return _loads_robust(r.json()["choices"][0]["message"]["content"])
 
 
+# ---- PASS 2: clean the candidate read (deterministic timestamp guard + a verifier) ----
+# Prompt-only generation oscillates between manufacturing nitpicks and going soft; a second,
+# narrow pass reliably strips the residuals a single call can't self-calibrate.
+
+_TS_PREFIX = re.compile(r"^\s*(\d{1,2}[:.]\d{1,2}s?|\d{1,3}s?)\s*[-–—]\s*(.*)$", re.I)
+
+
+def _norm_ts(token: str, dur: float) -> Optional[str]:
+    """Coerce a leading timestamp token to a valid m:ss within `dur`, or None to strip.
+    Recovers the common malformations ('7:11'/'6:6s'/'15:0s' on short reels = seconds)."""
+    token = token.rstrip("sS").strip()
+    parts = re.split(r"[:.]", token)
+    if len(parts) == 2 and parts[0].isdigit() and parts[1].isdigit():
+        a, b = int(parts[0]), int(parts[1])
+        if len(parts[1]) == 2:                       # genuine m:ss
+            secs = a * 60 + b
+            if secs <= dur + 2:
+                return f"{secs // 60}:{secs % 60:02d}"
+        if a <= dur + 2:                             # reinterpret "a.b" as ~a seconds
+            return f"{a // 60}:{a % 60:02d}"
+        return None
+    if token.isdigit() and int(token) <= dur + 2:
+        s = int(token)
+        return f"{s // 60}:{s % 60:02d}"
+    return None
+
+
+def _fix_timestamps(read: dict, duration_s) -> None:
+    """Rewrite each blind_spot's leading timestamp to a valid in-range m:ss, or strip it
+    (so a broken 'm:ss' never reaches the tap-to-seek UI)."""
+    dur = float(duration_s or 0) or 9999.0
+    out = []
+    for bs in read.get("blind_spots") or []:
+        m = _TS_PREFIX.match(bs)
+        if not m:
+            out.append(bs)
+            continue
+        ts = _norm_ts(m.group(1), dur)
+        out.append(f"{ts} - {m.group(2)}" if ts else m.group(2))
+    read["blind_spots"] = out
+
+
+_VERIFIER_SYSTEM = (
+    "You are a strict editor cleaning a junior reviewer's craft notes on a short-form reel. "
+    "For each numbered note decide KEEP or DROP.\n"
+    "DROP if the note is any of:\n"
+    "- A FORMAT nitpick: complains about fast/abrupt cuts, missing transitions or bridges, a "
+    "held beat / 'dead spot', a 'redundant'/'wasted' ending, or tells the reel to slow down, "
+    "hold shots longer, add transitions, or restate its message — those are format choices.\n"
+    "- A SUBTITLE-FRAGMENT misread: flags a short partial caption (a few words, e.g. 'If', "
+    "'out there this', '20 exercises or') as incomplete/confusing/grammatically-broken text. "
+    "Word-by-word captions naturally show fragments per frame; that is the style, not a flaw.\n"
+    "- Vague/generic, not specific to THIS reel.\n"
+    "KEEP if the note's CORE is a genuine CLARITY/LEGIBILITY/grounding problem: on-screen text "
+    "too small or cut off; the key action/exercise/result not clearly visible (bad angle, "
+    "occluded, too fast); the hook doesn't say what the reel is; a promised payoff never arrives; "
+    "an on-screen claim the footage contradicts. KEEP these even if they mention a transition, as "
+    "long as the real problem is the viewer can't SEE/UNDERSTAND the thing (clarity), not the cut "
+    "rhythm (pacing). When unsure, DROP."
+)
+
+
+def _verify_call(user: str) -> Optional[set]:
+    if _use_openai():
+        import httpx
+        base = settings.craft_read_base_url.rstrip("/")
+        body = {"model": settings.craft_read_model, "max_tokens": 200, "temperature": 0,
+                "messages": [{"role": "system", "content": _VERIFIER_SYSTEM},
+                             {"role": "user", "content": user}],
+                "response_format": {"type": "json_object"}}
+        r = httpx.post(f"{base}/chat/completions", json=body, timeout=120,
+                       headers={"Authorization": f"Bearer {settings.craft_read_api_key}"})
+        r.raise_for_status()
+        d = _loads_robust(r.json()["choices"][0]["message"]["content"])
+    else:
+        import anthropic
+        client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
+        resp = client.messages.create(
+            model=_model(), max_tokens=200, system=_VERIFIER_SYSTEM,
+            messages=[{"role": "user", "content": user + " Respond with ONLY the JSON."}])
+        d = _loads_robust("".join(b.text for b in resp.content if getattr(b, "type", None) == "text"))
+    if not isinstance(d, dict) or "keep" not in d:
+        return None
+    try:
+        return {int(i) for i in d["keep"]}
+    except (TypeError, ValueError):
+        return None
+
+
+def _verify_notes(read: dict) -> None:
+    """Drop format-blind nitpicks + subtitle-fragment misreads via a narrow verifier pass.
+    Defensive: any failure keeps the notes as-is (never breaks the read)."""
+    spots = read.get("blind_spots") or []
+    if not spots:
+        return
+    numbered = "\n".join(f"{i}. {s}" for i, s in enumerate(spots))
+    user = (f"Reel format_class: {read.get('format_class') or 'unknown'}. "
+            f"What it is: {(read.get('what_it_is') or '')[:300]}\n\n"
+            f"Notes to review:\n{numbered}\n\n"
+            'Return ONLY JSON {"keep": [integer indices to KEEP]}.')
+    try:
+        keep = _verify_call(user)
+    except Exception as e:  # noqa: BLE001
+        logger.warning(f"craft_xray verifier failed (keeping all): {type(e).__name__}")
+        return
+    if keep is None:
+        return
+    kept = [i for i in range(len(spots)) if i in keep]
+    if len(kept) != len(spots):
+        logger.info(f"craft_xray verifier dropped {len(spots) - len(kept)}/{len(spots)} notes")
+    cts = read.get("change_types") or []
+    read["blind_spots"] = [spots[i] for i in kept]
+    read["change_types"] = [cts[i] if i < len(cts) else "other" for i in kept]
+
+
 def craft_read_from_frames(frames: list[str], ts: list[float], *, niche=None,
                            caption=None, duration_s=None) -> Optional[dict]:
     """Strong-VLM craft read over hi-res frames. Routes to Anthropic (forced tool-use) or
@@ -270,8 +418,9 @@ def craft_read_from_frames(frames: list[str], ts: list[float], *, niche=None,
            f"span the whole clip; their stamped timestamps are: {ts}.")
     content = [{"type": "text", "text": ctx}] + [_img(p) for p in frames]
     _RETRY = ("Your previous output was incomplete. Return the FULL object with EVERY "
-              "required field populated — especially verdict, what_it_is, and blind_spots "
-              "(each with a Fix:) plus its matching change_types.")
+              "required field populated — especially verdict and what_it_is, plus EITHER "
+              "genuine blind_spots (each with a Fix: and a matching change_types) OR, if the "
+              "reel is clean, what it does well. Do NOT invent blind spots to fill the list.")
 
     def one(retry: bool = False):
         if openai:
@@ -290,11 +439,16 @@ def craft_read_from_frames(frames: list[str], ts: list[float], *, niche=None,
         for k in _ARRAY_FIELDS:  # never let a missing array break the card
             if not isinstance(out.get(k), list):
                 out[k] = []
+        # PASS 2a: deterministic timestamp guard (strip/repair out-of-range "m:ss").
+        _fix_timestamps(out, duration_s)
         # align the treatment tags to the blind spots (pad/truncate) so the moat join is
         # 1:1, and drop any tag outside the closed vocabulary.
         tags = [t if t in CHANGE_TYPES else "other" for t in out["change_types"]]
         nbs = len(out["blind_spots"])
         out["change_types"] = (tags + ["other"] * nbs)[:nbs]
+        # PASS 2b: verifier — drop format-blind nitpicks + subtitle-fragment misreads
+        # (re-aligns change_types to the surviving blind_spots).
+        _verify_notes(out)
         out["niche"] = niche            # join key for change_type x niche x format_class
         out["schema_version"] = SCHEMA_VERSION
         out["model"] = settings.craft_read_model if openai else _model()

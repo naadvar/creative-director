@@ -3,20 +3,17 @@ import { Link, useParams } from 'react-router-dom'
 import { api, videoFileUrl } from '../api/client'
 import type { CutSegment } from '../api/types'
 import { useAsync } from '../hooks/useAsync'
-import { archetypeName, externalUrl, formatDuration, platformNoun, thumbnailUrl } from '../lib/format'
+import { archetypeName, externalUrl, formatDuration, thumbnailUrl } from '../lib/format'
 import CategoryPicker from '../components/CategoryPicker'
 import Collapsible from '../components/Collapsible'
 import CraftRead from '../components/CraftRead'
+import CraftScrubber, { type CraftMark } from '../components/CraftScrubber'
 import CutPlanPanel from '../components/CutPlanPanel'
-import FindingsTable from '../components/FindingsTable'
-import FrameFindings from '../components/FrameFindings'
 import Scorecard from '../components/Scorecard'
 import Spinner from '../components/Spinner'
-import TercileBadge from '../components/TercileBadge'
 import TheRead from '../components/TheRead'
 import TimelineStrip from '../components/TimelineStrip'
 import VideoPlayer from '../components/VideoPlayer'
-import WinnerMoves from '../components/WinnerMoves'
 
 function BackLink() {
   return (
@@ -46,6 +43,22 @@ function ErrorBox({ message }: { message: string }) {
   )
 }
 
+/** Pull "m:ss" + observation out of each craft-read blind spot so they can be
+ * placed as markers on the scrubber. */
+function parseCraftMarks(blindSpots: string[] | undefined): CraftMark[] {
+  const out: CraftMark[] = []
+  for (const s of blindSpots ?? []) {
+    const m = s.match(/^\s*(\d{1,2}):(\d{2})/)
+    if (!m) continue
+    const second = parseInt(m[1], 10) * 60 + parseInt(m[2], 10)
+    let label = s.replace(/^\s*\d{1,2}:\d{2}\s*[-–—]?\s*/, '')
+    const fi = label.search(/\bfix:/i)
+    if (fi >= 0) label = label.slice(0, fi)
+    out.push({ second, label: label.trim().replace(/[.\s]+$/, '') })
+  }
+  return out
+}
+
 export default function VideoPage() {
   const { videoId } = useParams<{ videoId: string }>()
   const id = videoId ?? ''
@@ -53,7 +66,6 @@ export default function VideoPage() {
   const breakdown = useAsync(() => api.analyze(id), [id])
   const craft = useAsync(() => api.craftRead(id), [id])
   const summary = useAsync(() => api.summary(id), [id])
-  const frame = useAsync(() => api.frame(id), [id])
   const timeline = useAsync(() => api.timeline(id), [id])
 
   // Bidirectional sync between the video player and the timeline strip.
@@ -78,6 +90,7 @@ export default function VideoPage() {
   }
 
   const b = breakdown.data
+  const marks = parseCraftMarks(craft.data?.read?.blind_spots)
 
   return (
     <div className="space-y-5">
@@ -117,7 +130,6 @@ export default function VideoPage() {
                 <span>{formatDuration(b.duration_seconds)}</span>
                 <span aria-hidden>·</span>
                 <span>{archetypeName(b.archetype)}</span>
-                <TercileBadge tercile={b.tercile} />
                 <span aria-hidden>·</span>
                 <CategoryPicker
                   videoId={id}
@@ -127,9 +139,9 @@ export default function VideoPage() {
             </div>
           </div>
 
-          {/* The centerpiece: video + synchronized scrubbable timeline.
-              Click any timeline segment to jump the video; the playhead
-              indicator on the strip tracks playback. */}
+          {/* The centerpiece: the video, with the craft read's flagged moments
+              marked on the scrubber. Tap a dot (or any timestamp in the read) to
+              jump there — the read annotates the creator's own footage. */}
           <div className="rounded-2xl border border-border bg-surface p-4 sm:p-5">
             <VideoPlayer
               src={videoFileUrl(b.video_id)}
@@ -141,19 +153,20 @@ export default function VideoPage() {
               onTimeUpdate={setCurrentSecond}
             />
             <div className="mt-4">
-              {timeline.loading ? (
-                <Spinner label="Loading timeline…" />
-              ) : timeline.error ? (
-                <ErrorBox message={timeline.error} />
-              ) : timeline.data ? (
-                <TimelineStrip
-                  timeline={timeline.data}
-                  currentSecond={currentSecond}
-                  onSeek={handleSeek}
-                />
-              ) : null}
+              <CraftScrubber
+                durationSeconds={b.duration_seconds}
+                marks={marks}
+                currentSecond={currentSecond}
+                onSeek={handleSeek}
+              />
             </div>
           </div>
+
+          {/* The craft read is the hero: the first analysis after the video, and
+              every timestamp is tap-verifiable against their own footage. */}
+          {craft.data?.available && craft.data.read ? (
+            <CraftRead data={craft.data.read} onSeek={handleSeek} />
+          ) : null}
 
           <CutPlanPanel
             videoId={b.video_id}
@@ -163,48 +176,30 @@ export default function VideoPage() {
             currentSecond={currentSecond}
           />
 
-          {/* The Craft X-ray leads when present; the scalar scorecard + read stay below. */}
-          {craft.data?.available && craft.data.read ? (
-            <CraftRead data={craft.data.read} />
-          ) : null}
-
-          <Scorecard b={b} />
-
-          {summary.loading ? (
-            <div className="rounded-2xl border border-border bg-surface p-6">
-              <Spinner label="Writing the read…" />
-            </div>
-          ) : summary.error ? (
-            <ErrorBox message={summary.error} />
-          ) : summary.data ? (
-            <TheRead s={summary.data} />
-          ) : null}
-
           <div className="space-y-2.5">
-            {b.recommendations && b.recommendations.length > 0 ? (
-              <Collapsible
-                title="Other signals (weak)"
-                subtitle="raw feature gaps — correlational, not advice"
-              >
-                <WinnerMoves b={b} />
-              </Collapsible>
-            ) : null}
-
+            {/* The scalar scorecard + benchmark read — preserved, but demoted below
+                the craft read so the page speaks with one honest voice. */}
             <Collapsible
-              title="Feature comparison"
-              subtitle={`this video vs winning ${platformNoun(b.video_id)}`}
+              title="Scorecard & benchmark read"
+              subtitle="how it compares to same-size winners — correlational, not a verdict"
             >
-              <FindingsTable videoId={b.video_id} findings={b.findings} />
-            </Collapsible>
-
-            <Collapsible title="Hook & pacing" subtitle="frame-level breakdown">
-              {frame.loading ? (
-                <Spinner label="Loading…" />
-              ) : frame.error ? (
-                <ErrorBox message={frame.error} />
-              ) : frame.data ? (
-                <FrameFindings fb={frame.data} />
-              ) : null}
+              <div className="space-y-4">
+                <Scorecard b={b} />
+                {summary.loading ? (
+                  <Spinner label="Writing the read…" />
+                ) : summary.error ? (
+                  <ErrorBox message={summary.error} />
+                ) : summary.data ? (
+                  <TheRead s={summary.data} />
+                ) : null}
+                {timeline.data ? (
+                  <TimelineStrip
+                    timeline={timeline.data}
+                    currentSecond={currentSecond}
+                    onSeek={handleSeek}
+                  />
+                ) : null}
+              </div>
             </Collapsible>
           </div>
         </>

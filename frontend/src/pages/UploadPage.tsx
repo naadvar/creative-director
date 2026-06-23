@@ -254,7 +254,7 @@ export default function UploadPage() {
 
       <p className="text-center text-xs leading-relaxed text-muted">
         Your video is analyzed on the spot and never shared or published.
-        Comparisons are correlational — patterns winners share, not guarantees.
+        A craft read of your footage — no performance or virality predictions.
       </p>
     </div>
   )

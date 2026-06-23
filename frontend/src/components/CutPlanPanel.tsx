@@ -22,16 +22,9 @@ const hasCategory = (plan: CutPlan): boolean =>
   Boolean(plan.category_label) &&
   plan.category_label !== 'Uncategorized'
 
-/** "Powerlifting winners" / "winners in your tier" — names the cohort badge. */
+/** Names the comparison cohort descriptively (no "winner" framing). */
 function scopeLabel(plan: CutPlan): string {
-  return hasCategory(plan) ? `${plan.category_label} winners` : 'winners in your tier'
-}
-
-/** Inline phrase for the body copy: "winning powerlifting reels" / "winning reels your size". */
-function cohortPhrase(plan: CutPlan): string {
-  return hasCategory(plan)
-    ? `winning ${plan.category_label.toLowerCase()} reels`
-    : 'winning reels your size'
+  return hasCategory(plan) ? `${plan.category_label} reels your size` : 'reels your size'
 }
 
 function CheckRow({ label, pass }: { label: string; pass: boolean }) {
@@ -142,7 +135,7 @@ export default function CutPlanPanel({
   return (
     <div className="rounded-2xl border border-border bg-surface p-4 sm:p-5">
       <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-        <h3 className="text-base font-semibold">Cut it like a winner</h3>
+        <h3 className="text-base font-semibold">Tighten the cut</h3>
         <span className="text-xs text-muted">
           compared to{' '}
           <span className="font-medium text-text/80">{scopeLabel(p)}</span>
@@ -151,7 +144,7 @@ export default function CutPlanPanel({
 
       {/* ============ Winner cut (auto) ============ */}
       {auto.loading ? (
-        <p className="mt-3 text-sm text-muted">Building the winner cut…</p>
+        <p className="mt-3 text-sm text-muted">Finding dead air to trim…</p>
       ) : a && a.changed ? (
         <div className="mt-3">
           <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
@@ -163,7 +156,7 @@ export default function CutPlanPanel({
               <svg width="11" height="12" viewBox="0 0 11 12" fill="currentColor" aria-hidden>
                 <path d="M1 1.3v9.4a.6.6 0 0 0 .92.5l7.5-4.7a.6.6 0 0 0 0-1L1.92.8A.6.6 0 0 0 1 1.3Z" />
               </svg>
-              Play the winner cut
+              Preview the tightened cut
             </button>
             <span className="text-sm">
               <span className="font-semibold tabular-nums">{a.original_duration}s</span>
@@ -208,13 +201,13 @@ export default function CutPlanPanel({
       ) : a ? (
         <div className="mt-3 flex items-center gap-2 text-sm text-good">
           <span aria-hidden>✓</span>
-          <span>Already tight — no dead air to cut. This reel is paced like winners.</span>
+          <span>Already tight — no dead air to cut.</span>
         </div>
       ) : null}
 
       <p className="mt-2.5 text-xs leading-relaxed text-muted">
-        The winner cut removes only footage with <span className="text-text/70">no one on screen and no motion</span> —
-        never live footage. It matches how {cohortPhrase(p)} are paced; it doesn’t promise more views.
+        This removes only footage with <span className="text-text/70">no one on screen and no motion</span> —
+        never live footage. A pacing aid, not a performance claim.
       </p>
 
       {/* ============ Fine-tune the open (manual) ============ */}

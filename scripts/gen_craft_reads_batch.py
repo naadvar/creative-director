@@ -16,10 +16,10 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
 from loguru import logger
-from sqlalchemy import select
+from sqlalchemy import func, or_, select
 from sqlalchemy.exc import OperationalError
 
-from creative_director.advice.craft_xray import extract_craft_read
+from creative_director.advice.craft_xray import SCHEMA_VERSION, extract_craft_read
 from creative_director.config import settings
 from creative_director.storage import media
 from creative_director.storage.db import session_scope
@@ -40,7 +40,16 @@ def pick_targets(total: int, niches: tuple = NICHES, force: bool = False) -> lis
                  .join(VideoFeatures, VideoFeatures.video_id == Video.id)
                  .where(VideoFeatures.vlm_perception.isnot(None),
                         Channel.niche == n, Channel.id.notlike("upch_%")))
-            if not force:
+            if force:
+                # Resumable regen: reels missing a read OR not yet on the current
+                # engine schema. Reels already regenerated (schema_version==current)
+                # are skipped, so the run can stop/resume freely.
+                q = q.where(or_(
+                    VideoFeatures.craft_read.is_(None),
+                    func.json_extract(VideoFeatures.craft_read, "$.schema_version")
+                    != SCHEMA_VERSION,
+                ))
+            else:
                 q = q.where(VideoFeatures.craft_read.is_(None))
             rows = s.execute(q.limit(per)).all()
             out += [(vid, n, dur, title) for vid, dur, title in rows]

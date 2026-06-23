@@ -27,7 +27,7 @@ from loguru import logger
 
 from creative_director.config import settings
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2  # v2 = format-aware prompt + timestamp guard + verifier pass
 
 
 def _model() -> str:

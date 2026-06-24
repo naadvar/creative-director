@@ -159,11 +159,11 @@ export default function BrowsePage() {
       <div>
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h1 className="text-lg font-semibold">Browse the corpus</h1>
+            <h1 className="text-xl font-bold tracking-tight sm:text-2xl">Example reads</h1>
             <p className="text-sm text-muted">
               {loading
                 ? 'Loading…'
-                : `${total.toLocaleString()} analyzable ${selectedLabel} reels`}
+                : `${total.toLocaleString()} ${selectedLabel} reels, each with a craft read`}
             </p>
           </div>
           <div className="flex gap-1 rounded-lg border border-border bg-surface p-1">

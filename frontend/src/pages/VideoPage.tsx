@@ -3,7 +3,7 @@ import { Link, useParams } from 'react-router-dom'
 import { api, videoFileUrl } from '../api/client'
 import type { CutSegment } from '../api/types'
 import { useAsync } from '../hooks/useAsync'
-import { archetypeName, externalUrl, formatDuration, thumbnailUrl } from '../lib/format'
+import { externalUrl, formatDuration, thumbnailUrl } from '../lib/format'
 import CategoryPicker from '../components/CategoryPicker'
 import Collapsible from '../components/Collapsible'
 import CraftRead from '../components/CraftRead'
@@ -101,42 +101,36 @@ export default function VideoPage() {
 
       {b ? (
         <>
-          <div className="flex gap-4">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <h1 className="text-xl font-bold leading-tight tracking-tight sm:text-2xl">
+                {b.title}
+              </h1>
+              <div className="mt-1 flex items-center gap-x-2 text-sm text-muted">
+                <span className="truncate">{b.channel}</span>
+                <span aria-hidden>·</span>
+                <span className="shrink-0 tabular-nums">{formatDuration(b.duration_seconds)}</span>
+              </div>
+            </div>
             {externalUrl(b.video_id) ? (
               <a
                 href={externalUrl(b.video_id)}
                 target="_blank"
                 rel="noreferrer"
-                className="hidden shrink-0 sm:block"
+                className="inline-flex shrink-0 items-center gap-1 pt-1 text-xs text-muted transition-colors hover:text-text"
               >
-                <img
-                  src={thumbnailUrl(b.video_id)}
-                  alt=""
-                  className="h-[68px] w-[120px] rounded-lg object-cover"
-                />
+                Original
+                <svg width="11" height="11" viewBox="0 0 12 12" fill="none">
+                  <path
+                    d="M4.5 2.5h5v5M9.5 2.5 4 8"
+                    stroke="currentColor"
+                    strokeWidth="1.3"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
               </a>
-            ) : (
-              <img
-                src={thumbnailUrl(b.video_id)}
-                alt=""
-                className="hidden h-[68px] w-[120px] shrink-0 rounded-lg object-cover sm:block"
-              />
-            )}
-            <div className="min-w-0">
-              <h1 className="text-xl font-semibold leading-tight">{b.title}</h1>
-              <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted">
-                <span>{b.channel}</span>
-                <span aria-hidden>·</span>
-                <span>{formatDuration(b.duration_seconds)}</span>
-                <span aria-hidden>·</span>
-                <span>{archetypeName(b.archetype)}</span>
-                <span aria-hidden>·</span>
-                <CategoryPicker
-                  videoId={id}
-                  onChange={() => setCategoryVersion((v) => v + 1)}
-                />
-              </div>
-            </div>
+            ) : null}
           </div>
 
           {/* The centerpiece: the video, with the craft read's flagged moments
@@ -167,6 +161,12 @@ export default function VideoPage() {
           {craft.data?.available && craft.data.read ? (
             <CraftRead data={craft.data.read} onSeek={handleSeek} videoId={id} />
           ) : null}
+
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted">
+            <span className="text-[11px] font-semibold uppercase tracking-wider">Content type</span>
+            <CategoryPicker videoId={id} onChange={() => setCategoryVersion((v) => v + 1)} />
+            <span className="text-xs text-muted/70">— sets the winners it&apos;s compared to</span>
+          </div>
 
           <CutPlanPanel
             videoId={b.video_id}

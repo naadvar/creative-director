@@ -69,7 +69,7 @@ export default function EmailGate({
         <button
           type="submit"
           disabled={busy}
-          className="shrink-0 rounded-lg bg-accent px-5 py-2.5 text-sm font-semibold text-ink transition-opacity hover:opacity-90 disabled:opacity-60"
+          className="shrink-0 rounded-lg bg-grad px-5 py-2.5 text-sm font-bold text-white transition-all hover:brightness-110 disabled:opacity-60"
         >
           {busy ? 'One sec…' : cta}
         </button>

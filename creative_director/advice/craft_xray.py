@@ -431,6 +431,145 @@ def _verify_notes(read: dict) -> None:
     read["change_types"] = [cts[i] if i < len(cts) else "other" for i in kept]
 
 
+# ---- PASS 3: grounding gate — suppress reads that describe a DIFFERENT video, and
+# fix a redundant biggest_opportunity. Compares the read against the INDEPENDENT
+# vlm_perception pass + transcript (one cheap text-only Qwen call). Runs in the upload
+# job (live) and the corpus backfill — both have both channels; it is NOT inside the
+# read call (which has no perception pass).
+
+def _compact_perception(vp) -> str:
+    if not isinstance(vp, dict):
+        return "(no perception data)"
+    obs = vp.get("observed") or []
+    obs_s = "; ".join(
+        (f"{o.get('frame_ts')}s: {(o.get('text') or '')[:120]}" if isinstance(o, dict) else str(o)[:120])
+        for o in obs[:6])
+    return (f"genre={vp.get('genre')} format={vp.get('format')} has_presenter={vp.get('has_presenter')}; "
+            f"opening_shot={(vp.get('opening_shot') or '')[:200]}; "
+            f"on_screen_text={(vp.get('on_screen_text') or '')[:200]}; observed=[{obs_s}]")
+
+
+_GROUND_SYSTEM = (
+    "You judge whether a craft read of a short-form fitness reel is GROUNDED — it describes the SAME "
+    "video as the evidence, not a hallucinated different one — and you fix a redundant "
+    "biggest_opportunity. You compare text only; you do not watch the video.\n"
+    "What the reel is ABOUT (the activity, the people, the objects, the on-screen text) is established "
+    "by, in order of reliability: the CAPTION, the THUMB_TEXT (cover text — it carries on-screen text "
+    "the sampler misses), the TRANSCRIPT when the creator is narrating, and the perception pass's "
+    "observed CONTENT.\n"
+    "Set grounded=false ONLY if the read's CORE SUBJECT is clearly WRONG against that evidence: a "
+    "different exercise/activity (read says kettlebell; evidence is mobility stretches), a different "
+    "named person (read says Oprah; caption says Adele), or an invented object/animal/narrative the "
+    "evidence rules out (a shark, a vacuum, a spotter who isn't there).\n"
+    "Otherwise grounded=true. In particular, NEVER suppress over any of these — they are noise, not a "
+    "fabrication: the presenter's SEX or GENDER (the read's pronoun and the sampler's guess are both "
+    "unreliable, and the caption rarely states it — gender is never a reason); the NUMBER of people; "
+    "single-take vs montage vs reaction; a transcript that is only song lyrics / background music "
+    "(treat it as absent); or the read simply having more detail than the sampler saw. When the "
+    "caption, thumb_text, or narration supports the read's core activity, keep it. When in doubt, "
+    "grounded=true.\n"
+    "opportunity: return a corrected biggest_opportunity. If the read's is a genuine, specific lever, "
+    "echo it. If it is REDUNDANT (e.g. 'add a text overlay naming the topic' when the reel already "
+    "shows that text on-screen or the caption states it) or generic boilerplate, replace it with a "
+    "different genuine lever from the read, or 'This is well-executed as is — no major craft change "
+    "needed.' if there is none."
+)
+
+
+_CONFIRM_SYSTEM = (
+    "A first reviewer flagged a craft read of a fitness reel as UNGROUNDED — i.e. describing a "
+    "DIFFERENT video than the evidence. You are the second reviewer, and suppression HIDES the "
+    "creator's reel, so confirm ONLY when the read is CLEARLY about a different video: a different "
+    "exercise/activity, a different named person, or an invented object/animal the evidence rules "
+    "out. If the CAPTION, THUMB_TEXT, or the creator's NARRATION supports the read's core "
+    "activity/subject — even when the perception sampler disagrees on the presenter's gender, the "
+    "number of people, or the format, or the transcript is only song lyrics/music — then it is "
+    "GROUNDED. Gender is never a reason to suppress. Default to grounded=true unless the read is "
+    'clearly wrong. Return ONLY JSON {"grounded": true/false, "reason": "..."}.'
+)
+
+
+def _ground_evidence(read: dict, vp, transcript, caption, thumb_text) -> str:
+    return (
+        f"READ:\n what_it_is: {(read.get('what_it_is') or '')[:400]}\n"
+        f" verdict: {(read.get('verdict') or '')[:300]}\n"
+        f" biggest_opportunity: {(read.get('biggest_opportunity') or '')[:300]}\n"
+        f" on_screen_text_found: {(read.get('on_screen_text_found') or [])}\n"
+        f" blind_spots: {(read.get('blind_spots') or [])}\n\n"
+        "EVIDENCE:\n"
+        f" caption (ground truth): {(caption or '(none)')[:200]}\n"
+        f" thumb_text / cover text (ground truth — carries on-screen text the sampler misses): "
+        f"{(thumb_text or '(none)')[:200]}\n"
+        f" transcript (ground truth IF the creator is narrating; IGNORE if song lyrics/music): "
+        f"{(transcript or '(none)')[:600]}\n"
+        f" perception (noisy frame sampler — trust its on-screen text, distrust presenter "
+        f"sex/count/format): {_compact_perception(vp)}\n"
+    )
+
+
+def _ground_post(system: str, user: str) -> Optional[dict]:
+    if not _use_openai():
+        return None  # grounding gate requires the openai/qwen provider
+    import httpx
+    base = settings.craft_read_base_url.rstrip("/")
+    body = {"model": settings.craft_read_model, "max_tokens": 320, "temperature": 0,
+            "messages": [{"role": "system", "content": system},
+                         {"role": "user", "content": user}],
+            "response_format": {"type": "json_object"}}
+    r = httpx.post(f"{base}/chat/completions", json=body, timeout=120,
+                   headers={"Authorization": f"Bearer {settings.craft_read_api_key}"})
+    r.raise_for_status()
+    return _loads_robust(r.json()["choices"][0]["message"]["content"])
+
+
+def _ground_gate_call(read: dict, vp, transcript, caption, thumb_text=None) -> Optional[dict]:
+    user = _ground_evidence(read, vp, transcript, caption, thumb_text) + (
+        '\nReturn ONLY JSON {"grounded": true/false, "reason": "...", "opportunity": "..."}.')
+    return _ground_post(_GROUND_SYSTEM, user)
+
+
+def _ground_confirm_call(read, vp, transcript, caption, thumb_text, first_reason) -> Optional[dict]:
+    user = _ground_evidence(read, vp, transcript, caption, thumb_text) + (
+        f"\nFirst reviewer's reason for flagging: {(first_reason or '')[:300]}\n"
+        'Is this read GROUNDED — about the SAME video the evidence shows? grounded=true keeps it, '
+        'grounded=false suppresses it. Return ONLY JSON {"grounded": true/false, "reason": "..."}.')
+    return _ground_post(_CONFIRM_SYSTEM, user)
+
+
+def ground_and_gate(read: dict, vp, transcript, caption=None, thumb_text=None) -> dict:
+    """Two-pass grounding check against the independent perception pass + transcript + caption +
+    thumb_text. A read is SUPPRESSED (grounded=False) only when BOTH the gate and a confirmation
+    reviewer agree it describes a materially different video — suppression hides the creator's reel,
+    so it requires agreement, which recovers over-suppressions while keeping clear fabrications.
+    Also replaces a redundant biggest_opportunity. Defensive: any failure keeps the read."""
+    if not read:
+        return read
+    try:
+        g = _ground_gate_call(read, vp, transcript, caption, thumb_text)
+    except Exception as e:  # noqa: BLE001
+        logger.warning(f"grounding check failed (keeping read): {type(e).__name__}")
+        g = None
+    if not isinstance(g, dict):
+        read["grounded"] = True
+        return read
+    if g.get("grounded") is False:
+        # Confirmation pass: suppress only if a second reviewer also judges the read to be
+        # about a different video. Overturned (or unavailable) -> keep the read.
+        try:
+            c = _ground_confirm_call(read, vp, transcript, caption, thumb_text, g.get("reason"))
+        except Exception as e:  # noqa: BLE001
+            logger.warning(f"grounding confirm failed (keeping read): {type(e).__name__}")
+            c = None
+        if isinstance(c, dict) and c.get("grounded") is False:
+            read["grounded"] = False
+            read["grounding_reason"] = (c.get("reason") or g.get("reason") or "")[:200]
+            return read
+    read["grounded"] = True
+    if g.get("opportunity"):
+        read["biggest_opportunity"] = str(g["opportunity"])[:600]
+    return read
+
+
 def craft_read_from_frames(frames: list[str], ts: list[float], *, niche=None,
                            caption=None, duration_s=None) -> Optional[dict]:
     """Strong-VLM craft read over hi-res frames. Routes to Anthropic (forced tool-use) or

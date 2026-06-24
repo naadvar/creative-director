@@ -4,7 +4,7 @@ from __future__ import annotations
 from typing import Optional
 
 from fastapi import APIRouter, Query
-from sqlalchemy import func, or_, select
+from sqlalchemy import and_, func, or_, select
 
 from api import schemas
 from api.config import api_settings
@@ -13,6 +13,20 @@ from creative_director.storage.db import session_scope
 from creative_director.storage.models import Channel, Video, VideoFeatures, VideoLabel
 
 router = APIRouter(tags=["corpus"])
+
+
+def _visible_read():
+    """A craft read that is present AND not grounding-suppressed.
+
+    The grounding gate stamps ``grounded=false`` on materially-fabricated reads;
+    those must never surface in the browse. Reads predating the gate (or from
+    other niches) have no ``grounded`` field — ``coalesce(..., 1)`` treats those
+    as visible, so only an explicit ``false`` (=0) is hidden.
+    """
+    return and_(
+        VideoFeatures.craft_read.isnot(None),
+        func.coalesce(func.json_extract(VideoFeatures.craft_read, "$.grounded"), 1) != 0,
+    )
 
 
 def _niche_label(niche: str) -> tuple[str, str]:
@@ -57,7 +71,7 @@ def browse_corpus(
         # Private uploads (synthetic upch_* channels) never appear in the browse.
         not_upload = Channel.id.notlike("upch_%")
         # Demo curation: only reels that went through Qwen (have a craft read).
-        has_read = VideoFeatures.craft_read.isnot(None)
+        has_read = _visible_read()
         require_read = api_settings.corpus_require_craft_read
         count_q = (
             select(func.count())
@@ -157,8 +171,8 @@ def corpus_categories(
             .order_by(func.count().desc())
         )
         if api_settings.corpus_require_craft_read:
-            total_q = total_q.where(VideoFeatures.craft_read.isnot(None))
-            rows_q = rows_q.where(VideoFeatures.craft_read.isnot(None))
+            total_q = total_q.where(_visible_read())
+            rows_q = rows_q.where(_visible_read())
         if niche:
             total_q = total_q.where(Channel.niche == niche)
             rows_q = rows_q.where(Channel.niche == niche)
@@ -189,7 +203,7 @@ def list_niches() -> schemas.NicheList:
             .order_by(func.count().desc())
         )
         if api_settings.corpus_require_craft_read:
-            niche_q = niche_q.where(VideoFeatures.craft_read.isnot(None))
+            niche_q = niche_q.where(_visible_read())
         rows = s.execute(niche_q).all()
 
     niches = []

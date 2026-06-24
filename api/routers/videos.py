@@ -185,6 +185,11 @@ def craft_read(video_id: str) -> dict:
         read = getattr(f, "craft_read", None) if f else None
     if not read:
         return {"available": False}
+    # The grounding gate stamps grounded=false on a materially-fabricated read.
+    # We'd rather say nothing than serve a hallucinated critique of the creator's
+    # own footage — so a suppressed read is reported as not-available.
+    if isinstance(read, dict) and read.get("grounded") is False:
+        return {"available": False, "suppressed": True}
     return {"available": True, "read": read}
 
 

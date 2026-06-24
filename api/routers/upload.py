@@ -162,6 +162,8 @@ def _run_job(job: _Job, mp4: Path) -> None:
 
         # 2b. VLM rich-perception layer (grounded read + presenter gate). Opt-in
         # via ENABLE_VLM_PERCEPTION; defensive — a failure never fails the job.
+        # Kept in scope so the grounding gate (2c) can contrast the read against it.
+        perception = None
         if settings.enable_vlm_perception:
             try:
                 from creative_director.features.vlm_perception import (
@@ -197,6 +199,29 @@ def _run_job(job: _Job, mp4: Path) -> None:
                 str(mp4), niche=job.niche, caption=caption, duration_s=duration_s
             )
             if read is not None:
+                # Grounding gate — the same trust check the corpus went through.
+                # Contrasts the read against the INDEPENDENT vlm_perception pass +
+                # transcript; stamps grounded=false (and suppresses) on a material
+                # fabrication, and fixes a redundant biggest_opportunity. Only fires
+                # when we have a perception pass to contrast against (else it has no
+                # independent evidence and would no-op). Defensive: never fails the job.
+                if perception is not None:
+                    try:
+                        from creative_director.advice.craft_xray import ground_and_gate
+
+                        with session_scope() as s:
+                            f = s.get(VideoFeatures, vid)
+                            transcript = getattr(f, "transcript", None) if f else None
+                            thumb_text = getattr(f, "thumb_text", None) if f else None
+                        job.message = "fact-checking the read against your footage…"
+                        read = ground_and_gate(read, perception, transcript, caption, thumb_text)
+                        if read.get("grounded") is False:
+                            logger.info(
+                                f"craft read suppressed (ungrounded) for {vid}: "
+                                f"{read.get('grounding_reason', '')[:120]}"
+                            )
+                    except Exception as e:  # noqa: BLE001
+                        logger.warning(f"grounding gate failed for {vid}: {e}")
                 with session_scope() as s:
                     f = s.get(VideoFeatures, vid)
                     if f is not None:

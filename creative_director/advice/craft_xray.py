@@ -741,3 +741,76 @@ def extract_craft_read(mp4_path: str, *, niche=None, caption=None,
         frames, ts = sample_frames_hires(mp4_path, Path(td))
         return craft_read_from_frames(frames, ts, niche=niche, caption=caption,
                                       duration_s=duration_s)
+
+
+# ---- The "director's note": a focused VISION pass for one high-leverage lever ----
+# Unlike synthesize_opportunity (which works from a text summary and confabulates on clean
+# reels), this re-watches the actual frames, so its lever is grounded in what is on screen.
+# Used to upgrade legibility-only levers and to find a real lever on otherwise-silent reels.
+
+_LEVER_VLM_SYSTEM = (
+    "You are a top short-form video editor giving a creator the ONE highest-leverage craft note on "
+    "their fitness Reel. You can SEE the actual frames (stamped with timestamps). Watch the whole clip, "
+    "then name the single change that would most improve it AS A VIDEO.\n"
+    "Weigh ALL of these EQUALLY and pick the one that matters most FOR THIS SPECIFIC REEL — do not "
+    "default to any single one: pacing and dead air, cut rhythm, shot and framing, the payoff/ending, "
+    "structure and order, energy and delivery, clarity of the core message, the hook.\n"
+    "Anti-patterns you MUST avoid:\n"
+    "- Do NOT reflexively call the hook weak. A reel that opens on the creator reacting to a phone or "
+    "an embedded clip is usually an intentional reaction format, NOT a flaw. Only flag the hook if it "
+    "is genuinely the single biggest problem and you can say specifically why for THIS reel.\n"
+    "- Do NOT give a templated note like 'replace the first 2 seconds with a dynamic shot'. Your note "
+    "must name something specific you actually SEE in THIS reel that no other reel would share.\n"
+    "GROUND IT in a real moment and timestamp. Invent nothing. If the reel is genuinely well-crafted "
+    "with no meaningful lever, return lever 'This is well-executed as is — no major craft change "
+    "needed.' with vocabulary 'none' and confidence 'high'.\n"
+    "Second person, one or two concrete sentences. Return ONLY JSON "
+    '{"lever": "...", "vocabulary": "hook|pacing|cut|framing|payoff|structure|text|clarity|audio|none", '
+    '"timestamp": "m:ss or empty", "confidence": "high|medium|low"}.'
+)
+
+
+def _call_lever_vlm(ctx: str, frames) -> Optional[dict]:
+    import httpx
+    base = settings.craft_read_base_url.rstrip("/")
+    user = ([{"type": "text", "text": ctx}]
+            + [{"type": "image_url", "image_url": {"url": _data_uri(p)}} for p in frames])
+    body = {"model": settings.craft_read_model, "max_tokens": 500, "temperature": 0,
+            "messages": [{"role": "system", "content": _LEVER_VLM_SYSTEM},
+                         {"role": "user", "content": user}],
+            "response_format": {"type": "json_object"}}
+    r = httpx.post(f"{base}/chat/completions", json=body, timeout=240,
+                   headers={"Authorization": f"Bearer {settings.craft_read_api_key}"})
+    r.raise_for_status()
+    return _loads_robust(r.json()["choices"][0]["message"]["content"])
+
+
+def craft_lever_from_frames(frames: list[str], ts: list[float], *, niche=None,
+                            caption=None, duration_s=None) -> Optional[dict]:
+    """One grounded high-leverage craft lever from the actual frames (Qwen-VL). Returns
+    {lever, vocabulary, timestamp, confidence} or None. 'well-executed as is' is a valid lever."""
+    if not frames or not _use_openai():
+        return None  # the vision lever pass requires the Qwen-VL (openai-compatible) provider
+    ctx = (f"Context: niche={niche or 'unknown'}, duration={duration_s or '?'}s. "
+           f"Caption opening: {json.dumps(caption or '')[:200]}. {len(frames)} high-res frames span "
+           f"the whole clip; their stamped timestamps are: {ts}. Give the single highest-leverage "
+           f"craft lever for this reel.")
+    try:
+        g = _call_lever_vlm(ctx, frames)
+    except Exception as e:  # noqa: BLE001
+        logger.warning(f"craft lever call failed: {type(e).__name__}: {str(e)[:120]}")
+        return None
+    if not isinstance(g, dict) or not g.get("lever"):
+        return None
+    return {"lever": str(g.get("lever"))[:600], "vocabulary": (g.get("vocabulary") or "")[:20],
+            "timestamp": (g.get("timestamp") or "")[:8], "confidence": (g.get("confidence") or "")[:8]}
+
+
+def extract_craft_lever(mp4_path: str, *, niche=None, caption=None,
+                        duration_s=None) -> Optional[dict]:
+    """Entry point: sample hi-res frames from the mp4 and return one grounded craft lever."""
+    if not _use_openai():
+        return None
+    with tempfile.TemporaryDirectory() as td:
+        frames, ts = sample_frames_hires(mp4_path, Path(td))
+        return craft_lever_from_frames(frames, ts, niche=niche, caption=caption, duration_s=duration_s)

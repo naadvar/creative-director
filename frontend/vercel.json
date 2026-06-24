@@ -5,7 +5,7 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://offset-champion-abu-xhtml.trycloudflare.com/:path*"
+      "destination": "https://paintball-mostly-performance-saturn.trycloudflare.com/:path*"
     },
     { "source": "/(.*)", "destination": "/index.html" }
   ]

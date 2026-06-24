@@ -5,7 +5,7 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://paintball-mostly-performance-saturn.trycloudflare.com/:path*"
+      "destination": "https://asn-accidents-cardiac-coast.trycloudflare.com/:path*"
     },
     { "source": "/(.*)", "destination": "/index.html" }
   ]

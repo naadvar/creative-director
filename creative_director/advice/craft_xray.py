@@ -570,6 +570,114 @@ def ground_and_gate(read: dict, vp, transcript, caption=None, thumb_text=None) -
     return read
 
 
+_WELL_EXEC = re.compile(r"well-executed as is|no major craft change", re.I)
+
+
+def _is_silent(bo: str) -> bool:
+    """A biggest_opportunity that gives the creator nothing to act on: empty, or the
+    honest 'well-executed as is' fallback the reconcile/gate steps leave behind."""
+    return (not (bo or "").strip()) or bool(_WELL_EXEC.search(bo or ""))
+
+
+_SYNTH_SYSTEM = (
+    "You set the biggest_opportunity for an AI craft read of a short-form fitness Reel — the single "
+    "highest-leverage fix the creator should make, the 'if you fix one thing, fix this.'\n"
+    "The read below lists blind_spots — concrete craft issues already found in this reel. Pick the "
+    "SINGLE most important of those listed blind_spots and rewrite it as one clear, prioritized lever "
+    "addressed to the creator (second person), naming the craft dimension it touches.\n"
+    "HARD CONSTRAINT: use ONLY what the listed blind_spots already say. Do NOT introduce any new "
+    "defect, timestamp, frame, object, exercise, or on-screen text that is not already in the "
+    "blind_spots, and do NOT embellish (do not call a frame 'pixelated', 'blurred', or 'distorted', or "
+    "add a 'distracting' object, unless a blind_spot already says so). The evidence (caption, "
+    "thumb_text, transcript, perception) is only there to help you phrase the existing blind_spot "
+    "accurately — never to add a new claim.\n"
+    "If none of the listed blind_spots is a genuine craft issue worth elevating (all trivial or pure "
+    "legibility nitpicks), set lever to exactly 'This is well-executed as is — no major craft change "
+    "needed.' with vocabulary 'none'.\n"
+    "One or two concrete sentences. Return ONLY JSON "
+    '{"lever": "...", "vocabulary": "hook|pacing|cut|framing|payoff|structure|text|clarity|audio|none"}.'
+)
+
+
+def _synth_evidence(read: dict, vp, transcript, caption, thumb_text) -> str:
+    return (
+        f"READ:\n what_it_is: {(read.get('what_it_is') or '')[:300]}\n"
+        f" hook: {(read.get('hook') or '')[:200]}\n"
+        f" payoff: {(read.get('payoff') or '')[:200]}\n"
+        f" pacing: {(read.get('pacing') or '')[:200]}\n"
+        f" verdict: {(read.get('verdict') or '')[:200]}\n"
+        f" done_well: {(read.get('done_well') or [])}\n"
+        f" blind_spots: {(read.get('blind_spots') or [])}\n"
+        f" on_screen_text_found: {(read.get('on_screen_text_found') or [])}\n\n"
+        "EVIDENCE:\n"
+        f" caption: {(caption or '(none)')[:200]}\n"
+        f" thumb_text: {(thumb_text or '(none)')[:160]}\n"
+        f" transcript: {(transcript or '(none)')[:500]}\n"
+        f" perception: {_compact_perception(vp)}\n"
+    )
+
+
+_LEVER_VERIFY_SYSTEM = (
+    "You verify a biggest_opportunity lever that was supposed to be a faithful restatement of the craft "
+    "read's OWN listed blind_spots. Compare the lever against the blind_spots in the READ. Set "
+    "grounded=false if the lever asserts ANY concrete detail — a defect, timestamp, frame, object, "
+    "exercise, or on-screen text — that is NOT already present in the listed blind_spots (i.e. it was "
+    "invented or embellished, e.g. calling a frame 'pixelated' when no blind_spot says so), or if it is "
+    "generic boilerplate ('add a text overlay at 0:00', 'add a CTA'). Set grounded=true only when every "
+    "concrete claim in the lever traces to a listed blind_spot. "
+    'Return ONLY JSON {"grounded": true/false, "reason": "..."}.'
+)
+
+
+def _lever_grounded(lever: str, read, vp, transcript, caption, thumb_text) -> bool:
+    """Second pass: is the synthesized lever actually supported by the evidence (not invented, not
+    built on a fabricated premise, not boilerplate)? Defensive: a transient failure keeps the lever."""
+    try:
+        user = (_synth_evidence(read, vp, transcript, caption, thumb_text)
+                + f"\nPROPOSED LEVER: {lever}\n"
+                'Return ONLY JSON {"grounded": true/false, "reason": "..."}.')
+        g = _ground_post(_LEVER_VERIFY_SYSTEM, user)
+    except Exception as e:  # noqa: BLE001
+        logger.warning(f"lever verify failed (keeping lever): {type(e).__name__}")
+        return True
+    return not (isinstance(g, dict) and g.get("grounded") is False)
+
+
+def synthesize_opportunity(read: dict, vp, transcript, caption=None, thumb_text=None) -> dict:
+    """Replace a SILENT or boilerplate biggest_opportunity with one prioritized, broad-vocabulary,
+    grounded craft lever synthesized from the read's blind_spots + evidence. Two-pass: the synthesized
+    lever is verified against the evidence and dropped back to honest silence if it invents a detail,
+    builds on an unsupported premise, or is boilerplate. Leaves an already-genuine lever untouched.
+    Stamps opportunity_dimension (the craft dimension, or 'none'). Defensive: any failure keeps the read."""
+    if not read:
+        return read
+    bo = read.get("biggest_opportunity") or ""
+    # Only act when the current lever gives nothing — never overwrite a genuine, specific one.
+    if not (_is_silent(bo) or _ADVICE101.search(bo)):
+        return read
+    # Reliable subset: only synthesize when the read found its OWN blind_spots to promote — that
+    # lever is grounded by construction. A clean read (no blind_spots) stays honestly silent;
+    # inventing a lever from a terse text summary confabulates ~15% (measured), so we don't.
+    if not (read.get("blind_spots") or []):
+        read["opportunity_dimension"] = "none"  # clean read: honest silence, mark processed
+        return read
+    try:
+        g = _ground_post(_SYNTH_SYSTEM, _synth_evidence(read, vp, transcript, caption, thumb_text)
+                         + '\nReturn ONLY JSON {"lever": "...", "vocabulary": "..."}.')
+    except Exception as e:  # noqa: BLE001
+        logger.warning(f"opportunity synthesis failed (keeping read): {type(e).__name__}")
+        return read
+    if isinstance(g, dict):
+        lever = str(g.get("lever") or "").strip()
+        if lever and not _is_silent(lever) and _lever_grounded(lever, read, vp, transcript, caption, thumb_text):
+            read["biggest_opportunity"] = lever[:600]
+            read["opportunity_dimension"] = (g.get("vocabulary") or "")[:20]
+        else:
+            # ungrounded / boilerplate / model chose silence -> keep the honest fallback, mark processed
+            read["opportunity_dimension"] = "none"
+    return read
+
+
 def craft_read_from_frames(frames: list[str], ts: list[float], *, niche=None,
                            caption=None, duration_s=None) -> Optional[dict]:
     """Strong-VLM craft read over hi-res frames. Routes to Anthropic (forced tool-use) or

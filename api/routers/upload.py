@@ -206,6 +206,7 @@ def _run_job(job: _Job, mp4: Path) -> None:
                 # when we have a perception pass to contrast against (else it has no
                 # independent evidence and would no-op). Defensive: never fails the job.
                 if perception is not None:
+                    transcript = thumb_text = None
                     try:
                         from creative_director.advice.craft_xray import ground_and_gate
 
@@ -222,6 +223,16 @@ def _run_job(job: _Job, mp4: Path) -> None:
                             )
                     except Exception as e:  # noqa: BLE001
                         logger.warning(f"grounding gate failed for {vid}: {e}")
+                    # Prioritized opportunity — promote the read's most important blind_spot
+                    # into the headline lever (grounded by construction), so the creator gets
+                    # one clear thing to fix instead of an unranked pile. Kept reads only.
+                    if read.get("grounded") is not False:
+                        try:
+                            from creative_director.advice.craft_xray import synthesize_opportunity
+
+                            read = synthesize_opportunity(read, perception, transcript, caption, thumb_text)
+                        except Exception as e:  # noqa: BLE001
+                            logger.warning(f"opportunity synthesis failed for {vid}: {e}")
                 with session_scope() as s:
                     f = s.get(VideoFeatures, vid)
                     if f is not None:

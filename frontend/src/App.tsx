@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { Link, NavLink, Route, Routes } from 'react-router-dom'
+import { Link, NavLink, Route, Routes, useLocation } from 'react-router-dom'
 import BrowsePage from './pages/BrowsePage'
 import VideoPage from './pages/VideoPage'
 import UploadPage from './pages/UploadPage'
@@ -103,36 +103,45 @@ function Home() {
   return user ? <UploadPage /> : <LandingPage />
 }
 
+function AnimatedRoutes() {
+  const location = useLocation()
+  return (
+    <div key={location.pathname} className="page-in">
+      <Routes location={location}>
+        <Route path="/" element={<Home />} />
+        <Route
+          path="/analyze"
+          element={
+            <RequireAuth>
+              <UploadPage />
+            </RequireAuth>
+          }
+        />
+        <Route path="/browse" element={<BrowsePage />} />
+        <Route path="/video/:videoId" element={<VideoPage />} />
+        <Route
+          path="*"
+          element={
+            <div className="text-sm text-muted">
+              Page not found.{' '}
+              <Link to="/" className="text-accent hover:underline">
+                Go home
+              </Link>
+            </div>
+          }
+        />
+      </Routes>
+    </div>
+  )
+}
+
 export default function App() {
   return (
     <AuthProvider>
       <div className="flex min-h-screen flex-col">
         <Header />
-        <main className="mx-auto w-full max-w-6xl flex-1 px-5 py-7">
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route
-              path="/analyze"
-              element={
-                <RequireAuth>
-                  <UploadPage />
-                </RequireAuth>
-              }
-            />
-            <Route path="/browse" element={<BrowsePage />} />
-            <Route path="/video/:videoId" element={<VideoPage />} />
-            <Route
-              path="*"
-              element={
-                <div className="text-sm text-muted">
-                  Page not found.{' '}
-                  <Link to="/" className="text-accent hover:underline">
-                    Go home
-                  </Link>
-                </div>
-              }
-            />
-          </Routes>
+        <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-7 sm:px-5">
+          <AnimatedRoutes />
         </main>
         <footer className="border-t border-border">
           <div className="mx-auto max-w-6xl px-5 py-5">

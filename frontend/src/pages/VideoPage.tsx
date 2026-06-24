@@ -8,6 +8,7 @@ import CategoryPicker from '../components/CategoryPicker'
 import Collapsible from '../components/Collapsible'
 import CraftRead from '../components/CraftRead'
 import CraftScrubber, { type CraftMark } from '../components/CraftScrubber'
+import ShareCard from '../components/ShareCard'
 import CutPlanPanel from '../components/CutPlanPanel'
 import Scorecard from '../components/Scorecard'
 import Spinner from '../components/Spinner'
@@ -80,6 +81,7 @@ export default function VideoPage() {
   // The "winner cut" virtual edit: kept segments + a nonce to (re)start playback.
   const [edl, setEdl] = useState<CutSegment[] | undefined>(undefined)
   const [edlNonce, setEdlNonce] = useState(0)
+  const [showShare, setShowShare] = useState(false)
   const handleSeek = (second: number) => {
     setSeekTo(second)
     setSeekToken((t) => t + 1)
@@ -159,7 +161,34 @@ export default function VideoPage() {
           {/* The craft read is the hero: the first analysis after the video, and
               every timestamp is tap-verifiable against their own footage. */}
           {craft.data?.available && craft.data.read ? (
-            <CraftRead data={craft.data.read} onSeek={handleSeek} videoId={id} />
+            <>
+              <CraftRead data={craft.data.read} onSeek={handleSeek} videoId={id} />
+              <button
+                type="button"
+                onClick={() => setShowShare(true)}
+                className="flex w-full items-center justify-center gap-2 rounded-xl border border-border bg-surface py-2.5 text-sm font-semibold text-muted transition-colors hover:border-accent/50 hover:text-text"
+              >
+                <svg width="15" height="15" viewBox="0 0 16 16" fill="none">
+                  <path
+                    d="M11 5.5 8 2.5 5 5.5M8 2.5v8M3.5 9v3.5A1 1 0 0 0 4.5 13.5h7a1 1 0 0 0 1-1V9"
+                    stroke="currentColor"
+                    strokeWidth="1.4"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+                Share this read
+              </button>
+            </>
+          ) : null}
+
+          {showShare && craft.data?.read && b ? (
+            <ShareCard
+              read={craft.data.read}
+              title={b.title}
+              durationLabel={formatDuration(b.duration_seconds)}
+              onClose={() => setShowShare(false)}
+            />
           ) : null}
 
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted">

@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom'
 import { api } from '../api/client'
 import type { Fingerprint } from '../api/types'
 import CreatorFingerprint from '../components/CreatorFingerprint'
-import Spinner from '../components/Spinner'
 
 const NICHES = [
   { key: 'ig_fitness', label: 'Fitness' },
@@ -20,7 +19,104 @@ function fmtSize(bytes: number): string {
     : `${(bytes / (1024 * 1024)).toFixed(1)} MB`
 }
 
-/** Home: upload a reel -> full analysis vs the niche's winners. */
+function UploadIcon() {
+  return (
+    <svg width="22" height="22" viewBox="0 0 22 22" fill="none" className="text-white">
+      <path
+        d="M11 14.5V5m0 0L7.5 8.5M11 5l3.5 3.5M5 15.5v1A1.5 1.5 0 0 0 6.5 18h9a1.5 1.5 0 0 0 1.5-1.5v-1"
+        stroke="currentColor"
+        strokeWidth="1.7"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  )
+}
+
+function FilmIcon() {
+  return (
+    <svg width="30" height="30" viewBox="0 0 30 30" fill="none" className="text-white">
+      <rect x="5" y="6" width="20" height="18" rx="3" stroke="currentColor" strokeWidth="1.8" />
+      <path
+        d="M5 11h20M5 19h20M10 6v18M20 6v18"
+        stroke="currentColor"
+        strokeWidth="1.4"
+        opacity="0.85"
+      />
+    </svg>
+  )
+}
+
+const STAGES = ['Uploading', 'Reading every frame', 'Writing the read', 'Fact-checking it', 'Final touches']
+
+function stageIndex(message: string): number {
+  const m = message.toLowerCase()
+  if (m.includes('timeline') || m.includes('ready') || m.includes('final')) return 4
+  if (m.includes('fact-check') || m.includes('grounding')) return 3
+  if (m.includes('writing') || m.includes('craft read')) return 2
+  if (m.includes('frame') || m.includes('reading')) return 1
+  return 0
+}
+
+function StepDot({ state }: { state: 'done' | 'active' | 'todo' }) {
+  if (state === 'done') {
+    return (
+      <span className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-grad">
+        <svg width="11" height="11" viewBox="0 0 11 11" fill="none" className="text-white">
+          <path
+            d="M2.5 5.8 4.5 7.8 8.5 3.2"
+            stroke="currentColor"
+            strokeWidth="1.6"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      </span>
+    )
+  }
+  if (state === 'active') {
+    return <span className="h-5 w-5 shrink-0 rounded-full border-2 border-accent animate-pulse-glow" />
+  }
+  return <span className="h-5 w-5 shrink-0 rounded-full border border-border" />
+}
+
+/** Full-screen takeover for the ~2–3 min analysis — the wait is a moment to delight,
+ * not a tiny spinner. Shows the live stage, a scanning bar, and an animated stepper. */
+function AnalyzingView({ message, fileName }: { message: string; fileName?: string }) {
+  const idx = stageIndex(message)
+  return (
+    <div className="mx-auto max-w-md pt-8 sm:pt-12">
+      <div className="animate-rise glow rounded-3xl border border-border bg-surface p-7 text-center sm:p-9">
+        <div className="mx-auto grid h-20 w-20 place-items-center rounded-2xl bg-grad animate-pulse-glow">
+          <FilmIcon />
+        </div>
+        <h2 className="mt-6 text-2xl font-bold tracking-tight">Reading your reel</h2>
+        {fileName ? <p className="mt-1 truncate text-sm text-muted">{fileName}</p> : null}
+
+        <div className="mt-6 h-1.5 overflow-hidden rounded-full bg-surface-2">
+          <div className="h-full w-full bg-grad animate-scan" />
+        </div>
+
+        <p className="mt-5 text-[15px] font-medium">{message || 'working…'}</p>
+
+        <div className="mx-auto mt-6 max-w-[15rem] space-y-3 text-left">
+          {STAGES.map((s, i) => (
+            <div key={s} className="flex items-center gap-3">
+              <StepDot state={i < idx ? 'done' : i === idx ? 'active' : 'todo'} />
+              <span className={`text-sm ${i <= idx ? 'text-text' : 'text-muted'}`}>{s}</span>
+            </div>
+          ))}
+        </div>
+
+        <p className="mt-7 text-xs leading-relaxed text-muted">
+          Watching every frame, not just the thumbnail — keep this tab open.
+        </p>
+      </div>
+    </div>
+  )
+}
+
+/** Home: upload a reel -> full craft read vs the niche's winners. */
 export default function UploadPage() {
   const navigate = useNavigate()
   const inputRef = useRef<HTMLInputElement>(null)
@@ -41,9 +137,7 @@ export default function UploadPage() {
       .niches()
       .then((r) =>
         setCorpusTotal(
-          r.niches
-            .filter((n) => n.platform === 'instagram')
-            .reduce((sum, n) => sum + n.count, 0),
+          r.niches.filter((n) => n.platform === 'instagram').reduce((sum, n) => sum + n.count, 0),
         ),
       )
       .catch(() => {})
@@ -66,17 +160,12 @@ export default function UploadPage() {
   const submit = async () => {
     if (!file || phase !== 'idle') return
     setError(null)
+    cancelled.current = false
     setPhase('uploading')
     setMessage('uploading your reel…')
     try {
-      const job = await api.upload(
-        file,
-        niche,
-        caption,
-        followers ? parseInt(followers, 10) : undefined,
-      )
+      const job = await api.upload(file, niche, caption, followers ? parseInt(followers, 10) : undefined)
       setPhase('analyzing')
-      // Poll until done — extraction takes ~2-3 minutes.
       for (;;) {
         await new Promise((r) => setTimeout(r, 3000))
         if (cancelled.current) return
@@ -96,23 +185,26 @@ export default function UploadPage() {
     }
   }
 
-  const busy = phase !== 'idle'
+  if (phase !== 'idle') {
+    return <AnalyzingView message={message} fileName={file?.name} />
+  }
 
   return (
-    <div className="mx-auto max-w-2xl space-y-6">
-      <div className="space-y-2 pt-4 text-center">
-        <h1 className="text-2xl font-semibold leading-tight sm:text-3xl">
-          Get a craft read of your reel
+    <div className="mx-auto max-w-2xl space-y-7">
+      <div className="space-y-3 pt-6 text-center">
+        <h1 className="text-4xl font-extrabold leading-[1.04] tracking-tight sm:text-5xl">
+          Get a <span className="text-grad">craft read</span>
+          <br />
+          of your reel
         </h1>
-        <p className="mx-auto max-w-xl text-sm leading-relaxed text-muted">
-          Upload a reel — even a draft you haven&apos;t posted — and the model
-          watches it frame by frame: the hook, the payoff, pacing, framing, and
-          every on-screen text beat, then flags the craft blind spots you&apos;re
-          too close to notice.
+        <p className="mx-auto max-w-xl text-[15px] leading-relaxed text-muted">
+          Drop a reel — even an unposted draft — and the model watches it frame by frame: hook,
+          payoff, pacing, framing, every text beat. Then it hands you the one craft fix you&apos;re
+          too close to see.
           {corpusTotal ? (
             <>
               {' '}
-              Drawing on <span className="text-text">{corpusTotal.toLocaleString()}</span>{' '}
+              Trained on <span className="font-semibold text-text">{corpusTotal.toLocaleString()}</span>{' '}
               analyzed reels.
             </>
           ) : null}
@@ -121,8 +213,7 @@ export default function UploadPage() {
 
       {fingerprint?.ready ? <CreatorFingerprint fp={fingerprint} /> : null}
 
-      <div className="space-y-4 rounded-2xl border border-border bg-surface p-5 sm:p-6">
-        {/* Drop zone */}
+      <div className="space-y-5 rounded-2xl border border-border bg-surface p-5 sm:p-6">
         <button
           type="button"
           onClick={() => inputRef.current?.click()}
@@ -136,30 +227,42 @@ export default function UploadPage() {
             setDragging(false)
             pick(e.dataTransfer.files?.[0])
           }}
-          disabled={busy}
-          className={`flex w-full flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed px-4 py-10 text-center transition-colors disabled:opacity-60 ${
+          className={`flex w-full flex-col items-center justify-center gap-3.5 rounded-2xl border-2 border-dashed px-4 py-12 text-center transition-all ${
             dragging
-              ? 'border-accent bg-accent/10'
+              ? 'scale-[1.01] border-accent bg-accent/10'
               : file
-                ? 'border-good/50 bg-good/5'
-                : 'border-border bg-surface-2 hover:border-accent/60'
+                ? 'border-good/50 bg-good/[0.06]'
+                : 'border-border bg-surface-2/40 hover:border-accent/60 hover:bg-surface-2'
           }`}
         >
+          <div
+            className={`grid h-14 w-14 place-items-center rounded-2xl transition-transform ${
+              file ? 'bg-good' : 'bg-grad'
+            } ${dragging ? 'scale-110' : ''}`}
+          >
+            {file ? (
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="text-white">
+                <path
+                  d="M5 12.5 10 17.5 19 7"
+                  stroke="currentColor"
+                  strokeWidth="2.2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            ) : (
+              <UploadIcon />
+            )}
+          </div>
           {file ? (
             <>
-              <span className="text-sm font-semibold">{file.name}</span>
-              <span className="text-xs text-muted">
-                {fmtSize(file.size)} · click to swap it
-              </span>
+              <span className="text-[15px] font-semibold">{file.name}</span>
+              <span className="text-xs text-muted">{fmtSize(file.size)} · tap to swap it</span>
             </>
           ) : (
             <>
-              <span className="text-sm font-semibold">
-                Drop your reel here, or tap to choose
-              </span>
-              <span className="text-xs text-muted">
-                mp4 / mov · up to 3 minutes · stays private, never published
-              </span>
+              <span className="text-[15px] font-semibold">Drop your reel here, or tap to choose</span>
+              <span className="text-xs text-muted">mp4 / mov · up to 3 min · stays private, never published</span>
             </>
           )}
           <input
@@ -172,21 +275,17 @@ export default function UploadPage() {
           />
         </button>
 
-        {/* Niche picker */}
         <div>
-          <div className="mb-1.5 text-xs font-semibold uppercase tracking-widest text-muted">
-            Your niche
-          </div>
+          <div className="mb-2 text-xs font-semibold uppercase tracking-widest text-muted">Your niche</div>
           <div className="flex flex-wrap gap-2">
             {NICHES.map((n) => (
               <button
                 key={n.key}
                 type="button"
-                disabled={busy}
                 onClick={() => setNiche(n.key)}
-                className={`rounded-full border px-4 py-1.5 text-sm transition-colors disabled:opacity-60 ${
+                className={`rounded-full border px-4 py-1.5 text-sm font-medium transition-all ${
                   niche === n.key
-                    ? 'border-accent bg-accent/15 text-text'
+                    ? 'border-accent/50 bg-accent/15 text-text'
                     : 'border-border bg-surface-2 text-muted hover:text-text'
                 }`}
               >
@@ -196,71 +295,51 @@ export default function UploadPage() {
           </div>
         </div>
 
-        {/* Caption + followers */}
         <div className="grid gap-3 sm:grid-cols-[1fr_180px]">
           <div>
-            <div className="mb-1.5 text-xs font-semibold uppercase tracking-widest text-muted">
-              Caption <span className="font-normal normal-case">(optional — emoji &amp; hashtags affect the read)</span>
+            <div className="mb-2 text-xs font-semibold uppercase tracking-widest text-muted">
+              Caption{' '}
+              <span className="font-normal normal-case tracking-normal">(optional)</span>
             </div>
             <textarea
               value={caption}
               onChange={(e) => setCaption(e.target.value)}
-              disabled={busy}
               rows={2}
               placeholder="Paste the caption you'd post with it…"
-              className="w-full resize-none rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm outline-none transition-colors placeholder:text-muted/60 focus:border-accent disabled:opacity-60"
+              className="w-full resize-none rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm outline-none transition-colors placeholder:text-muted/60 focus:border-accent"
             />
           </div>
           <div>
-            <div className="mb-1.5 text-xs font-semibold uppercase tracking-widest text-muted">
-              Followers <span className="font-normal normal-case">(optional)</span>
+            <div className="mb-2 text-xs font-semibold uppercase tracking-widest text-muted">
+              Followers <span className="font-normal normal-case tracking-normal">(optional)</span>
             </div>
             <input
               value={followers}
               onChange={(e) => setFollowers(e.target.value.replace(/[^0-9]/g, ''))}
-              disabled={busy}
               inputMode="numeric"
               placeholder="e.g. 12000"
-              className="w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm outline-none transition-colors placeholder:text-muted/60 focus:border-accent disabled:opacity-60"
+              className="w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm outline-none transition-colors placeholder:text-muted/60 focus:border-accent"
             />
-            <div className="mt-1 text-[11px] leading-snug text-muted">
-              compares you to similar-size creators
-            </div>
           </div>
         </div>
 
-        {/* Submit / progress */}
-        {busy ? (
-          <div className="flex items-center gap-3 rounded-xl border border-accent/30 bg-accent/5 px-4 py-3">
-            <Spinner label="" />
-            <div className="min-w-0">
-              <div className="text-sm font-semibold">{message || 'working…'}</div>
-              <div className="text-xs text-muted">
-                full analysis takes ~2–3 minutes — keep this tab open
-              </div>
-            </div>
-          </div>
-        ) : (
-          <button
-            type="button"
-            onClick={() => void submit()}
-            disabled={!file}
-            className="w-full rounded-xl bg-accent px-4 py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
-          >
-            {file ? 'Analyze my reel' : 'Choose a reel to analyze'}
-          </button>
-        )}
+        <button
+          type="button"
+          onClick={() => void submit()}
+          disabled={!file}
+          className="w-full rounded-xl bg-grad px-4 py-3.5 text-[15px] font-bold text-white transition-all hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40 disabled:grayscale"
+        >
+          {file ? 'Read my reel' : 'Choose a reel to read'}
+        </button>
 
         {error ? (
-          <p className="rounded-xl border border-bad/40 bg-bad/10 px-4 py-3 text-sm text-bad">
-            {error}
-          </p>
+          <p className="rounded-xl border border-bad/40 bg-bad/10 px-4 py-3 text-sm text-bad">{error}</p>
         ) : null}
       </div>
 
       <p className="text-center text-xs leading-relaxed text-muted">
-        Your video is analyzed on the spot and never shared or published.
-        A craft read of your footage — no performance or virality predictions.
+        Analyzed on the spot, never shared or published. A craft read of your footage — no
+        performance or virality predictions.
       </p>
     </div>
   )

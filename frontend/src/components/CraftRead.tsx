@@ -16,6 +16,40 @@ function Check() {
   )
 }
 
+function Spark() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" className="shrink-0 text-accent">
+      <path
+        d="M7 1.5 8.4 5.6 12.5 7 8.4 8.4 7 12.5 5.6 8.4 1.5 7 5.6 5.6 7 1.5Z"
+        fill="currentColor"
+      />
+    </svg>
+  )
+}
+
+function CheckCircle() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" className="shrink-0 text-good">
+      <circle cx="10" cy="10" r="8.25" stroke="currentColor" strokeWidth="1.4" opacity="0.5" />
+      <path
+        d="M6.5 10.2 9 12.6 13.6 7.4"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  )
+}
+
+function PlayMini() {
+  return (
+    <svg width="11" height="11" viewBox="0 0 11 11" fill="currentColor" className="shrink-0">
+      <path d="M2.5 1.4v8.2a.5.5 0 0 0 .77.42l6.4-4.1a.5.5 0 0 0 0-.84L3.27.98A.5.5 0 0 0 2.5 1.4Z" />
+    </svg>
+  )
+}
+
 /** "m:ss" -> seconds, or null if it isn't a timestamp. */
 function tsToSeconds(ts: string): number | null {
   const m = ts.match(/^(\d{1,2}):(\d{2})$/)
@@ -89,6 +123,8 @@ const STRUCTURE: [string, (d: CraftReadData) => string][] = [
   ['Pacing', (d) => d.pacing],
 ]
 
+const SILENT_RE = /well-executed as is|no major craft change/i
+
 export default function CraftRead({
   data,
   onSeek,
@@ -110,37 +146,65 @@ export default function CraftRead({
   }
   const visibleSpots = spots.map((s, i) => ({ s, i })).filter(({ i }) => !dismissed.has(i))
 
-  return (
-    <div className="rounded-2xl border border-border bg-surface p-5 sm:p-6">
-      <h3 className="text-xs font-semibold uppercase tracking-widest text-muted">Craft read</h3>
-      <p className="mt-2 text-lg leading-relaxed">{linkify(data.verdict, onSeek)}</p>
+  const opp = data.biggest_opportunity ?? ''
+  const isSilent = !opp || SILENT_RE.test(opp)
+  const dimension =
+    data.opportunity_dimension && data.opportunity_dimension !== 'none'
+      ? data.opportunity_dimension
+      : ''
+  const jumpSec = data.lever_timestamp ? tsToSeconds(data.lever_timestamp) : null
 
-      {data.biggest_opportunity ? (
-        <div className="mt-4 rounded-xl border border-accent/30 bg-accent/10 p-4">
-          <div className="text-xs font-semibold uppercase tracking-widest text-accent">
-            Biggest opportunity
+  return (
+    <div className="animate-rise rounded-2xl border border-border bg-surface p-5 sm:p-6">
+      <div className="flex items-center gap-2">
+        <span className="h-1.5 w-1.5 rounded-full bg-accent" />
+        <h3 className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted">
+          Craft read
+        </h3>
+      </div>
+
+      {/* The verdict is the headline. */}
+      <p className="mt-3 text-xl font-medium leading-snug tracking-tight">
+        {linkify(data.verdict, onSeek)}
+      </p>
+
+      {/* The one prioritized lever — the visual anchor of the read. */}
+      {isSilent ? (
+        <div className="mt-5 flex items-center gap-3 rounded-xl border border-good/25 bg-good/[0.06] p-4">
+          <CheckCircle />
+          <p className="text-sm leading-relaxed">Nicely done — nothing major to change here.</p>
+        </div>
+      ) : opp ? (
+        <div className="mt-5 rounded-xl border border-accent/40 bg-accent/[0.08] p-4">
+          <div className="flex items-center gap-2">
+            <Spark />
+            <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-accent">
+              Fix this first
+            </span>
+            {dimension ? (
+              <span className="ml-auto rounded-full border border-accent/30 bg-accent/10 px-2.5 py-0.5 text-[11px] font-medium capitalize text-accent">
+                {dimension}
+              </span>
+            ) : null}
           </div>
-          <p className="mt-1.5 text-sm leading-relaxed">{linkify(data.biggest_opportunity, onSeek)}</p>
+          <p className="mt-2 text-[15px] leading-relaxed">{linkify(opp, onSeek)}</p>
+          {jumpSec != null && onSeek ? (
+            <button
+              type="button"
+              onClick={() => onSeek(jumpSec)}
+              className="mt-2.5 inline-flex items-center gap-1.5 text-xs font-medium text-accent transition-opacity hover:opacity-80"
+            >
+              <PlayMini />
+              Jump to {data.lever_timestamp}
+            </button>
+          ) : null}
         </div>
       ) : null}
-
-      {data.what_it_is ? (
-        <p className="mt-4 text-sm leading-relaxed text-muted">{data.what_it_is}</p>
-      ) : null}
-
-      <div className="mt-4 grid gap-2.5 sm:grid-cols-3">
-        {STRUCTURE.map(([k, get]) => (
-          <div key={k} className="rounded-lg border border-border bg-surface-2 p-3">
-            <div className="text-[11px] font-semibold uppercase tracking-wider text-muted">{k}</div>
-            <p className="mt-1 text-[13px] leading-snug">{linkify(get(data), onSeek)}</p>
-          </div>
-        ))}
-      </div>
 
       {/* Lead with what works — praise before critique on work they're proud of. */}
       {doneWell.length > 0 ? (
         <div className="mt-5">
-          <h4 className="text-sm font-semibold">What's working</h4>
+          <h4 className="text-sm font-semibold">What&apos;s working</h4>
           <ul className="mt-2.5 space-y-2">
             {doneWell.map((d, i) => (
               <li key={i} className="flex gap-2.5 text-sm leading-relaxed text-muted">
@@ -195,7 +259,44 @@ export default function CraftRead({
         </div>
       ) : null}
 
-      <div className="mt-5 border-t border-border pt-3 text-xs text-muted">
+      {/* Context demoted into a collapsible — the read leads with the action, not the anatomy. */}
+      <details className="group mt-5">
+        <summary className="flex cursor-pointer list-none items-center gap-1.5 text-xs font-medium text-muted transition-colors hover:text-text">
+          <svg
+            width="12"
+            height="12"
+            viewBox="0 0 12 12"
+            fill="none"
+            className="transition-transform group-open:rotate-90"
+          >
+            <path
+              d="M4.5 3 7.5 6 4.5 9"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+          The full read
+        </summary>
+        <div className="mt-3 space-y-3">
+          {data.what_it_is ? (
+            <p className="text-sm leading-relaxed text-muted">{data.what_it_is}</p>
+          ) : null}
+          <div className="grid gap-2.5 sm:grid-cols-3">
+            {STRUCTURE.map(([k, get]) => (
+              <div key={k} className="rounded-lg border border-border bg-surface-2 p-3">
+                <div className="text-[11px] font-semibold uppercase tracking-wider text-muted">
+                  {k}
+                </div>
+                <p className="mt-1 text-[13px] leading-snug">{linkify(get(data), onSeek)}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </details>
+
+      <div className="mt-5 border-t border-border pt-3 text-[11px] leading-relaxed text-muted">
         Read from your frames — tap any timestamp to check it. Craft observations only, no
         performance or virality claims.
       </div>

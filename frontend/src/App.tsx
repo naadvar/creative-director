@@ -26,13 +26,15 @@ function navClass({ isActive }: { isActive: boolean }) {
 function Header() {
   const { user, logout } = useAuth()
   return (
-    <header className="sticky top-0 z-20 border-b border-border bg-ink/85 backdrop-blur">
-      <div className="mx-auto flex h-14 max-w-6xl items-center gap-6 px-5">
-        <Link to="/" className="flex items-center gap-2.5">
+    <header className="sticky top-0 z-20 border-b border-border bg-ink/80 backdrop-blur-md">
+      <div className="mx-auto flex h-14 max-w-6xl items-center gap-3 px-4 sm:gap-6 sm:px-5">
+        <Link to="/" className="flex shrink-0 items-center gap-2">
           <Logo />
-          <span className="text-sm font-semibold tracking-tight">Creative Director</span>
+          <span className="hidden text-sm font-semibold tracking-tight sm:inline">
+            Creative Director
+          </span>
         </Link>
-        <nav className="flex items-center gap-4">
+        <nav className="flex items-center gap-3.5 sm:gap-4">
           <NavLink to="/analyze" className={navClass}>
             Analyze
           </NavLink>
@@ -40,7 +42,7 @@ function Header() {
             Examples
           </NavLink>
         </nav>
-        <div className="ml-auto flex items-center gap-3 text-sm">
+        <div className="ml-auto flex shrink-0 items-center gap-3 text-sm">
           {user ? (
             <>
               {user.email ? (

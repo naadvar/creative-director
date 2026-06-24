@@ -88,6 +88,11 @@ export interface CraftReadData {
   pacing: string
   verdict: string
   biggest_opportunity: string
+  // the craft dimension the opportunity targets (hook|pacing|cut|framing|payoff|…), set by the
+  // lever synthesis / vision re-read. Absent on older reads.
+  opportunity_dimension?: string
+  // a "m:ss" moment the opportunity points at, for tap-to-jump. Absent on older reads.
+  lever_timestamp?: string
   // each blind spot is one string shaped "m:ss - observation. Fix: ..."
   blind_spots: string[]
   done_well: string[]

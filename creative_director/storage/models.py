@@ -327,6 +327,31 @@ class NoteFeedback(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     video_id: Mapped[str] = mapped_column(String(64), index=True)
     user_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True, index=True)
-    note: Mapped[str] = mapped_column(Text)  # the dismissed blind_spot text
-    reason: Mapped[Optional[str]] = mapped_column(String(32), nullable=True)  # not_useful / not_in_reel
+    note: Mapped[str] = mapped_column(Text)  # the dismissed (or endorsed) note text
+    reason: Mapped[Optional[str]] = mapped_column(String(32), nullable=True)  # helpful / not_useful / not_in_reel
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class Upload(Base):
+    """A creator's uploaded reel + its craft read — the DURABLE record. Lives in the
+    separate writable userdata.db (bound via db.SessionLocal) so it SURVIVES corpus
+    re-deploys, which overwrite the read-only corpus DB. Self-contained: it holds
+    everything the read page + the 'My reads' gallery + the Creator DNA need, so an
+    upload renders even after its transient corpus videos/video_features rows are
+    wiped. The mp4 + thumbnail themselves live on the persistent volume (paths here)
+    and/or R2, which also survive."""
+
+    __tablename__ = "uploads"
+
+    video_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    user_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True, index=True)
+    niche: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+    title: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+    caption: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    duration_seconds: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    craft_read: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
+    video_file_path: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    thumbnail_path: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, default=datetime.utcnow, index=True
+    )

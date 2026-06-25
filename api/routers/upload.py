@@ -147,7 +147,7 @@ def _run_job(job: _Job, mp4: Path) -> None:
             persist_features,
         )
         from creative_director.storage.db import session_scope
-        from creative_director.storage.models import Video, VideoFeatures, VideoTimeline
+        from creative_director.storage.models import Upload, Video, VideoFeatures, VideoTimeline
 
         vid = job.video_id
 
@@ -278,6 +278,28 @@ def _run_job(job: _Job, mp4: Path) -> None:
             logger.warning(
                 f"timeline extraction skipped/failed for {vid}: {type(e).__name__}: {str(e)[:120]}"
             )
+
+        # 4. DURABLE record → userdata.db (separate writable store). Mirrors the
+        # finished upload + its read so it survives corpus redeploys (which overwrite
+        # the corpus videos/video_features rows). The mp4/thumbnail on the persistent
+        # volume survive too; their paths are captured here.
+        try:
+            with session_scope() as s:
+                v = s.get(Video, vid)
+                f = s.get(VideoFeatures, vid)
+                if v is not None:
+                    up = s.get(Upload, vid) or Upload(video_id=vid)
+                    up.user_id = v.uploaded_by_user_id
+                    up.niche = job.niche
+                    up.title = v.title
+                    up.caption = v.description
+                    up.duration_seconds = v.duration_seconds
+                    up.craft_read = f.craft_read if f is not None else None
+                    up.video_file_path = v.video_file_path
+                    up.thumbnail_path = v.thumbnail_path
+                    s.add(up)
+        except Exception as e:  # noqa: BLE001
+            logger.warning(f"durable upload record failed for {vid}: {type(e).__name__}: {e}")
 
         job.status = "done"
         job.message = "ready"

@@ -42,6 +42,44 @@ def my_fingerprint(user: dict = Depends(get_current_user)) -> dict:
     from creative_director.profile.fingerprint import compute_fingerprint
 
     return compute_fingerprint(user["id"])
+
+
+@router.get("/uploads")
+def my_uploads(user: dict = Depends(get_current_user)) -> dict:
+    """The creator's own uploaded reels + their reads — the durable 'My reads'
+    history. Reads from the writable userdata Upload store, so it survives corpus
+    redeploys."""
+    from creative_director.storage.models import Upload
+
+    with session_scope() as s:
+        rows = (
+            s.execute(
+                select(Upload)
+                .where(Upload.user_id == user["id"])
+                .order_by(Upload.created_at.desc())
+            )
+            .scalars()
+            .all()
+        )
+        cards = []
+        for u in rows:
+            read = u.craft_read if isinstance(u.craft_read, dict) else None
+            grounded = bool(read) and read.get("grounded") is not False
+            cards.append(
+                {
+                    "video_id": u.video_id,
+                    "title": u.title or "Your reel",
+                    "niche": u.niche,
+                    "created_at": u.created_at.isoformat() if u.created_at else None,
+                    "duration_seconds": u.duration_seconds,
+                    "thumbnail_url": f"/api/videos/{u.video_id}/thumbnail",
+                    "available": grounded,
+                    "verdict": read.get("verdict") if grounded else None,
+                    "biggest_opportunity": read.get("biggest_opportunity") if grounded else None,
+                    "dimension": read.get("opportunity_dimension") if grounded else None,
+                }
+            )
+    return {"count": len(cards), "uploads": cards}
 _DEMO_TOKEN = "DEMO"  # marks the dev demo account; served from the corpus
 
 

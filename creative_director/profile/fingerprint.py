@@ -14,7 +14,7 @@ from collections import Counter
 from sqlalchemy import select
 
 from creative_director.storage.db import session_scope
-from creative_director.storage.models import Channel, Video, VideoFeatures
+from creative_director.storage.models import Upload
 
 # change_type enum -> a friendly, creator-facing phrase (style, not a verdict).
 _CHANGE_FRIENDLY = {
@@ -41,14 +41,14 @@ def compute_fingerprint(user_id: int) -> dict:
     Returns {ready: False} until they've uploaded at least one analyzed reel."""
     with session_scope() as s:
         rows = s.execute(
-            select(VideoFeatures.craft_read, Channel.niche)
-            .join(Video, Video.id == VideoFeatures.video_id)
-            .join(Channel, Channel.id == Video.channel_id)
-            .where(Video.uploaded_by_user_id == user_id,
-                   VideoFeatures.craft_read.isnot(None))
+            select(Upload.craft_read, Upload.niche)
+            .where(Upload.user_id == user_id, Upload.craft_read.isnot(None))
         ).all()
 
-    reads = [r for r, _ in rows if isinstance(r, dict)]
+    # Style only from reads we'd actually show (a suppressed/ungrounded read is noise).
+    rows = [(r, niche) for r, niche in rows
+            if isinstance(r, dict) and r.get("grounded") is not False]
+    reads = [r for r, _ in rows]
     n = len(reads)
     if n == 0:
         return {"ready": False, "n_reels": 0,

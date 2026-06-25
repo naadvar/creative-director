@@ -10,6 +10,10 @@ class Settings(BaseSettings):
     youtube_api_key: str = ""
 
     database_url: str = "sqlite:///./data/creative_director.db"
+    # Separate WRITABLE store for user-generated data (users, feedback, uploads).
+    # Lives on the persistent volume and is NEVER re-fetched from R2, so a corpus
+    # redeploy (which overwrites database_url) can't wipe real signups/uploads.
+    userdata_url: str = "sqlite:///./data/userdata.db"
 
     thumbnail_dir: Path = Path("./data/thumbnails")
     temp_video_dir: Path = Path("./data/tmp")

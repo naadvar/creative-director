@@ -43,7 +43,7 @@ from api.config import api_settings
 from creative_director.config import settings
 from creative_director.storage import media
 from creative_director.storage.db import session_scope
-from creative_director.storage.models import Channel, NoteFeedback, Video, VideoFeatures
+from creative_director.storage.models import Channel, NoteFeedback, Upload, Video, VideoFeatures
 
 router = APIRouter(prefix="/videos", tags=["analysis"])
 
@@ -180,21 +180,34 @@ def craft_read(video_id: str) -> dict:
     Served from cache (VideoFeatures.craft_read); returns {available: false} when it
     hasn't been generated yet, so the frontend can show the card only when present.
     Carries lightweight video meta (title/duration/channel) so the read page needs
-    only this one call — the old scalar breakdown is no longer on the page."""
+    only this one call — the old scalar breakdown is no longer on the page.
+    Uploads are served from the durable userdata Upload row (survives corpus
+    redeploys); corpus videos from VideoFeatures."""
     with session_scope() as s:
-        f = s.query(VideoFeatures).filter(VideoFeatures.video_id == video_id).first()
-        read = getattr(f, "craft_read", None) if f else None
-        v = s.get(Video, video_id)
-        meta = None
-        if v is not None:
-            ch = s.get(Channel, v.channel_id) if v.channel_id else None
+        up = s.get(Upload, video_id)
+        if up is not None:
+            read = up.craft_read
             meta = {
-                "video_id": v.id,
-                "title": v.title or "Reel",
-                "channel": (ch.title if ch and ch.title else None),
-                "duration_seconds": v.duration_seconds,
-                "is_upload": bool(v.channel_id and v.channel_id.startswith("upch_")),
+                "video_id": video_id,
+                "title": up.title or "Your reel",
+                "channel": "Your upload",
+                "duration_seconds": up.duration_seconds,
+                "is_upload": True,
             }
+        else:
+            f = s.query(VideoFeatures).filter(VideoFeatures.video_id == video_id).first()
+            read = getattr(f, "craft_read", None) if f else None
+            v = s.get(Video, video_id)
+            meta = None
+            if v is not None:
+                ch = s.get(Channel, v.channel_id) if v.channel_id else None
+                meta = {
+                    "video_id": v.id,
+                    "title": v.title or "Reel",
+                    "channel": (ch.title if ch and ch.title else None),
+                    "duration_seconds": v.duration_seconds,
+                    "is_upload": bool(v.channel_id and v.channel_id.startswith("upch_")),
+                }
     if not read:
         return {"available": False, "meta": meta}
     # The grounding gate stamps grounded=false on a materially-fabricated read.
@@ -249,13 +262,21 @@ def video_file(video_id: str) -> Response:
     """
     with session_scope() as s:
         video = s.get(Video, video_id)
-        if video is None:
+        # Uploads live in the durable userdata store; the corpus Video row may be
+        # gone after a redeploy, but the mp4 persists on the volume.
+        up = s.get(Upload, video_id) if video is None else None
+        if video is None and up is None:
             raise HTTPException(status_code=404, detail=f"unknown video {video_id}")
+        up_path = up.video_file_path if up is not None else None
 
-    # Serve the local file when present (dev); otherwise fall back to the R2
-    # corpus (prod / ingest box where local copies are pruned after upload).
+    # Serve the local file when present (dev + uploads on the volume); otherwise
+    # fall back to the R2 corpus (prod / ingest box where local copies are pruned).
     archive = settings.video_archive_dir or Path("data/videos")
     path = archive / f"{video_id}.mp4"
+    if not path.exists() and up_path:
+        cand = Path(up_path)
+        if cand.exists():
+            path = cand
     if path.exists():
         return FileResponse(path, media_type="video/mp4", filename=path.name)
     if settings.r2_enabled:
@@ -278,9 +299,13 @@ def video_thumbnail(video_id: str) -> Response:
     """
     with session_scope() as s:
         video = s.get(Video, video_id)
-        if video is None:
-            raise HTTPException(status_code=404, detail=f"unknown video {video_id}")
-        path_str = video.thumbnail_path
+        if video is not None:
+            path_str = video.thumbnail_path
+        else:
+            up = s.get(Upload, video_id)  # durable upload record
+            if up is None:
+                raise HTTPException(status_code=404, detail=f"unknown video {video_id}")
+            path_str = up.thumbnail_path
 
     if path_str:
         path = Path(path_str)

@@ -52,8 +52,15 @@ workflows:
         script: |
           cd frontend/ios/App
           pod install
-      - name: Set up code signing
+      - name: Set up code signing (create cert + profile if missing)
+        # Uses the App Store Connect API key from the `codemagic` integration to
+        # fetch — and CREATE if absent — the distribution cert + provisioning
+        # profile, then apply them to the Xcode project. --create is what makes
+        # this work on a fresh account that has no profile yet.
         script: |
+          keychain initialize
+          app-store-connect fetch-signing-files "$BUNDLE_ID" --type IOS_APP_STORE --create
+          keychain add-certificates
           xcode-project use-profiles
       - name: Build the IPA
         script: |

@@ -35,15 +35,17 @@ _DIM = func.json_extract(VideoFeatures.craft_read, "$.opportunity_dimension")
 _SRC = func.json_extract(VideoFeatures.craft_read, "$.lever_source")
 
 
-def pick(niche: str, limit: int, all_reads: bool = False) -> list[tuple]:
+def pick(niche: str, limit: int, all_reads: bool = False, force: bool = False) -> list[tuple]:
     """Select reels to re-lever. Default (fitness-treatment) mode targets SILENT or
     text-legibility levers on the current schema. `all_reads=True` (untreated-niche
     backfill) targets EVERY grounded, not-yet-relevered read regardless of schema or
-    dimension — used to replace the original boilerplate/intent-fighting levers on
-    travel/food/fashion with grounded, reveal-respecting ones."""
+    dimension. `force=True` (re-treatment) RE-levers every grounded read that has not yet
+    been done at the current marker `reread_v2` — used to re-run an already-relevered niche
+    (e.g. fitness) through an improved lever prompt; resumable via the v2 marker."""
+    resume = or_(_SRC != "reread_v2", _SRC.is_(None)) if force else _SRC.is_(None)
     conds = [Channel.niche == niche, Channel.id.notlike("upch_%"),
-             VideoFeatures.craft_read.isnot(None), _GROUNDED != 0, _SRC.is_(None)]
-    if not all_reads:
+             VideoFeatures.craft_read.isnot(None), _GROUNDED != 0, resume]
+    if not (all_reads or force):
         conds += [func.json_extract(VideoFeatures.craft_read, "$.schema_version") == SCHEMA_VERSION,
                   or_(_BO.like("%well-executed as is%"), _DIM == "text")]
     with session_scope() as s:
@@ -64,7 +66,7 @@ def _fetch(vid: str, dest_dir: str) -> Path:
     return p
 
 
-def work(t: tuple, dump: bool, niche: str = "ig_fitness"):
+def work(t: tuple, dump: bool, niche: str = "ig_fitness", marker: str = "reread"):
     vid, title, dur, read = t
     old_bo = read.get("biggest_opportunity") or ""
     old_dim = read.get("opportunity_dimension") or ""
@@ -84,7 +86,7 @@ def work(t: tuple, dump: bool, niche: str = "ig_fitness"):
         if lev.get("timestamp"):
             read["lever_timestamp"] = lev["timestamp"]
         applied = True
-    read["lever_source"] = "reread"  # mark processed either way (resumable)
+    read["lever_source"] = marker  # mark processed either way (resumable)
     rec = None
     if dump:
         rec = {"video_id": vid, "caption": (title or "")[:160], "duration_s": dur,
@@ -109,16 +111,18 @@ def store(vid: str, read: dict) -> None:
 
 
 def main(limit: int, workers: int, niche: str, dump_path: str | None,
-         all_reads: bool = False) -> None:
-    targets = pick(niche, limit, all_reads=all_reads)
+         all_reads: bool = False, force: bool = False) -> None:
+    targets = pick(niche, limit, all_reads=all_reads, force=force)
+    marker = "reread_v2" if force else "reread"
     dump = dump_path is not None
-    logger.info(f"re-lever: {len(targets)} {'ALL-kept' if all_reads else 'silent/legibility'} "
-                f"{niche} reels (workers={workers}, mode={'DUMP' if dump else 'WRITE-DB'})")
+    mode = "RE-treat(v2)" if force else ("ALL-kept" if all_reads else "silent/legibility")
+    logger.info(f"re-lever: {len(targets)} {mode} {niche} reels "
+                f"(workers={workers}, mode={'DUMP' if dump else 'WRITE-DB'})")
     t0 = time.time()
     done = ok = fail = upgraded = 0
     records, vocab = [], {}
     with ThreadPoolExecutor(max_workers=workers) as ex:
-        futs = [ex.submit(work, t, dump, niche) for t in targets]
+        futs = [ex.submit(work, t, dump, niche, marker) for t in targets]
         for fu in as_completed(futs):
             r = fu.result()
             done += 1
@@ -150,6 +154,7 @@ if __name__ == "__main__":
     niche = next((a for a in args if a.startswith("ig_")), "ig_fitness")
     dump_path = next((a.split("=", 1)[1] for a in args if a.startswith("dump=")), None)
     all_reads = "all" in args  # untreated-niche backfill: re-lever EVERY kept read
+    force = "force" in args     # re-treatment: re-lever already-relevered reads (marker reread_v2)
     limit = nums[0] if nums else 20
     workers = nums[1] if len(nums) > 1 else 6
-    main(limit, workers, niche, dump_path, all_reads=all_reads)
+    main(limit, workers, niche, dump_path, all_reads=all_reads, force=force)

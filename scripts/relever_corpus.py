@@ -42,7 +42,9 @@ def pick(niche: str, limit: int, all_reads: bool = False, force: bool = False) -
     dimension. `force=True` (re-treatment) RE-levers every grounded read that has not yet
     been done at the current marker `reread_v2` — used to re-run an already-relevered niche
     (e.g. fitness) through an improved lever prompt; resumable via the v2 marker."""
-    resume = or_(_SRC != "reread_v2", _SRC.is_(None)) if force else _SRC.is_(None)
+    # force re-treatment: redo ONLY reads already relevered by the pre-guard vision pass
+    # (lever_source == 'reread'); once redone they become 'reread_v2' and drop out (resumable).
+    resume = (_SRC == "reread") if force else _SRC.is_(None)
     conds = [Channel.niche == niche, Channel.id.notlike("upch_%"),
              VideoFeatures.craft_read.isnot(None), _GROUNDED != 0, resume]
     if not (all_reads or force):

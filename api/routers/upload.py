@@ -88,18 +88,32 @@ def _rate_limited(ip: str) -> bool:
 
 
 def _probe_duration(path: Path) -> Optional[float]:
-    """Container duration in seconds via PyAV (None if unreadable)."""
-    import av
-
+    """Container duration in seconds (None if unreadable). PyAV when available (accurate),
+    else OpenCV — which is always present on the lean serve host (PyAV is not)."""
     try:
+        import av
+
         with av.open(str(path)) as container:
             if container.duration is not None:
                 return float(container.duration) / av.time_base
             vs = container.streams.video[0]
             if vs.duration is not None and vs.time_base is not None:
                 return float(vs.duration * vs.time_base)
+    except Exception as e:  # noqa: BLE001 — av is absent on lean hosts; fall back to OpenCV
+        logger.warning(f"PyAV duration probe unavailable for {path} ({type(e).__name__}); trying OpenCV")
+    try:
+        import cv2
+
+        cap = cv2.VideoCapture(str(path))
+        try:
+            fps = cap.get(cv2.CAP_PROP_FPS) or 0
+            frames = cap.get(cv2.CAP_PROP_FRAME_COUNT) or 0
+            if fps > 0 and frames > 0:
+                return float(frames) / float(fps)
+        finally:
+            cap.release()
     except Exception as e:  # noqa: BLE001
-        logger.warning(f"duration probe failed for {path}: {e}")
+        logger.warning(f"OpenCV duration probe failed for {path}: {e}")
     return None
 
 

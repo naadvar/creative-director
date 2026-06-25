@@ -750,12 +750,22 @@ def extract_craft_read(mp4_path: str, *, niche=None, caption=None,
 
 _LEVER_VLM_SYSTEM = (
     "You are a top short-form video editor giving a creator the ONE highest-leverage craft note on "
-    "their fitness Reel. You can SEE the actual frames (stamped with timestamps). Watch the whole clip, "
+    "their Reel. You can SEE the actual frames (stamped with timestamps). Watch the whole clip, "
     "then name the single change that would most improve it AS A VIDEO.\n"
     "Weigh ALL of these EQUALLY and pick the one that matters most FOR THIS SPECIFIC REEL — do not "
     "default to any single one: pacing and dead air, cut rhythm, shot and framing, the payoff/ending, "
     "structure and order, energy and delivery, clarity of the core message, the hook.\n"
     "Anti-patterns you MUST avoid:\n"
+    "- THE CARDINAL SIN — never tell the creator to front-load a deliberate reveal. Many reels "
+    "WITHHOLD something on purpose: a location/destination/product/price reveal at the end, a 'wait "
+    "for it' payoff, a transformation or before/after, a punchline, an open question answered later, "
+    "a brand or partner reveal in the final frame. If this reel is built on a withheld reveal or a "
+    "build-to-payoff, you must NEVER suggest moving it earlier, stating it at 0:00, adding an opening "
+    "title card that names it, or 'telegraphing' it — that would destroy the very thing that makes the "
+    "reel work. The momentary ambiguity in the first seconds is usually the MECHANISM, not a flaw. If "
+    "your instinct is 'add a title card naming X at the start' or 'reveal X sooner', STOP — X is almost "
+    "certainly the payoff, and your job is to sharpen the BUILD toward it (tighten the tease, clarify "
+    "the question, strengthen the final reveal), never to bypass it.\n"
     "- Do NOT reflexively call the hook weak. A reel that opens on the creator reacting to a phone or "
     "an embedded clip is usually an intentional reaction format, NOT a flaw. Only flag the hook if it "
     "is genuinely the single biggest problem and you can say specifically why for THIS reel.\n"
@@ -786,15 +796,23 @@ def _call_lever_vlm(ctx: str, frames) -> Optional[dict]:
 
 
 def craft_lever_from_frames(frames: list[str], ts: list[float], *, niche=None,
-                            caption=None, duration_s=None) -> Optional[dict]:
+                            caption=None, duration_s=None, payoff=None) -> Optional[dict]:
     """One grounded high-leverage craft lever from the actual frames (Qwen-VL). Returns
-    {lever, vocabulary, timestamp, confidence} or None. 'well-executed as is' is a valid lever."""
+    {lever, vocabulary, timestamp, confidence} or None. 'well-executed as is' is a valid lever.
+    `payoff` is the read's own description of this reel's payoff/ending; when present it is shown
+    to the model as the established intent so the lever cannot prescribe front-loading it."""
     if not frames or not _use_openai():
         return None  # the vision lever pass requires the Qwen-VL (openai-compatible) provider
+    payoff_note = ""
+    if payoff and str(payoff).strip():
+        payoff_note = (f" An earlier analysis identified THIS reel's payoff/ending as: "
+                       f"{json.dumps(str(payoff)[:280])}. Treat that as the deliberate intended "
+                       f"structure: your lever must NOT move it earlier, state it at 0:00, or add an "
+                       f"opening title card naming it — sharpen the build toward it instead.")
     ctx = (f"Context: niche={niche or 'unknown'}, duration={duration_s or '?'}s. "
-           f"Caption opening: {json.dumps(caption or '')[:200]}. {len(frames)} high-res frames span "
-           f"the whole clip; their stamped timestamps are: {ts}. Give the single highest-leverage "
-           f"craft lever for this reel.")
+           f"Caption opening: {json.dumps(caption or '')[:200]}.{payoff_note} {len(frames)} high-res "
+           f"frames span the whole clip; their stamped timestamps are: {ts}. Give the single "
+           f"highest-leverage craft lever for this reel.")
     try:
         g = _call_lever_vlm(ctx, frames)
     except Exception as e:  # noqa: BLE001
@@ -807,10 +825,11 @@ def craft_lever_from_frames(frames: list[str], ts: list[float], *, niche=None,
 
 
 def extract_craft_lever(mp4_path: str, *, niche=None, caption=None,
-                        duration_s=None) -> Optional[dict]:
+                        duration_s=None, payoff=None) -> Optional[dict]:
     """Entry point: sample hi-res frames from the mp4 and return one grounded craft lever."""
     if not _use_openai():
         return None
     with tempfile.TemporaryDirectory() as td:
         frames, ts = sample_frames_hires(mp4_path, Path(td))
-        return craft_lever_from_frames(frames, ts, niche=niche, caption=caption, duration_s=duration_s)
+        return craft_lever_from_frames(frames, ts, niche=niche, caption=caption,
+                                       duration_s=duration_s, payoff=payoff)

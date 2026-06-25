@@ -21,12 +21,18 @@ class ApiSettings(BaseSettings):
     port: int = 8000
 
     # Origins allowed to call the API from a browser — the React dev servers
-    # (Vite on 5173, Next on 3000) plus their 127.0.0.1 aliases.
+    # (Vite on 5173, Next on 3000) plus their 127.0.0.1 aliases, and the native
+    # Capacitor app webviews (iOS: capacitor://localhost, Android: http://localhost).
+    # The Vercel web app calls the API through its same-origin /api proxy, so it
+    # needs no CORS entry.
     cors_origins: list[str] = [
         "http://localhost:3000",
         "http://localhost:5173",
         "http://127.0.0.1:3000",
         "http://127.0.0.1:5173",
+        "capacitor://localhost",
+        "http://localhost",
+        "ionic://localhost",
     ]
 
     # The corpus the advice layer is built for. Only fitness is featurized;

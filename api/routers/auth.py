@@ -15,6 +15,7 @@ from api.auth import (
     get_optional_user,
     login_user,
     logout_user,
+    make_token,
     normalize_email,
     upsert_user_and_connection,
 )
@@ -44,8 +45,10 @@ def email_gate(body: EmailLoginBody, request: Request) -> dict:
     email = normalize_email(body.email)
     if email is None:
         raise HTTPException(status_code=422, detail="Enter a valid email address")
-    email_login(request, email)
-    return {"user": get_optional_user(request)}
+    uid = email_login(request, email)
+    # token: for native (Capacitor) clients that can't carry the session cookie.
+    # The web app ignores it and keeps using the cookie.
+    return {"user": get_optional_user(request), "token": make_token(uid)}
 
 
 @router.post("/logout")

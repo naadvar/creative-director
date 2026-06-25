@@ -11,12 +11,35 @@ from datetime import datetime
 from typing import Optional
 
 from fastapi import Depends, HTTPException, Request
+from itsdangerous import BadSignature, SignatureExpired, URLSafeTimedSerializer
 from sqlalchemy import func, select
 
+from api.config import api_settings
 from creative_director.storage.db import session_scope
 from creative_director.storage.models import ConnectedAccount, User
 
 SESSION_USER_KEY = "user_id"
+
+# Bearer token for native (Capacitor) clients: a WKWebView at capacitor://localhost
+# can't send the signed-cookie session cross-origin to the API, so the app stores a
+# token and sends it as `Authorization: Bearer`. Signed with the SAME secret as the
+# session, so it's no weaker than the web cookie.
+_TOKEN_MAX_AGE = 60 * 60 * 24 * 30  # 30 days
+
+
+def _token_serializer() -> URLSafeTimedSerializer:
+    return URLSafeTimedSerializer(api_settings.session_secret, salt="cd-bearer-auth")
+
+
+def make_token(user_id: int) -> str:
+    return _token_serializer().dumps(int(user_id))
+
+
+def _user_id_from_token(token: str) -> Optional[int]:
+    try:
+        return int(_token_serializer().loads(token, max_age=_TOKEN_MAX_AGE))
+    except (BadSignature, SignatureExpired, ValueError, TypeError):
+        return None
 
 # Pragmatic email shape check — not RFC-perfect, just enough to reject typos and
 # junk at the passwordless gate (the email IS the lead-capture signal).
@@ -38,6 +61,13 @@ def logout_user(request: Request) -> None:
 
 
 def _current_user_id(request: Request) -> Optional[int]:
+    # Native app: a Bearer token (cookies can't ride cross-origin from the webview).
+    auth = request.headers.get("Authorization") or ""
+    if auth[:7].lower() == "bearer ":
+        uid = _user_id_from_token(auth[7:].strip())
+        if uid is not None:
+            return uid
+    # Web: the signed-cookie session.
     uid = request.session.get(SESSION_USER_KEY)
     try:
         return int(uid) if uid is not None else None

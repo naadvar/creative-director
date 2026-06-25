@@ -22,12 +22,40 @@ export class ApiError extends Error {
   }
 }
 
+// Bearer token for the native (Capacitor) app, where the session cookie can't ride
+// cross-origin to the API. Stored on login, sent on every request. The web app also
+// gets the cookie, so the token is belt-and-suspenders there.
+const TOKEN_KEY = 'cd_auth_token'
+// Only the native (Capacitor) app needs the token — the web keeps using the httponly
+// cookie (no token in localStorage there, so no XSS-stealable credential on web).
+export function isNativeApp(): boolean {
+  return !!(globalThis as { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor?.isNativePlatform?.()
+}
+export function authToken(): string | null {
+  try {
+    return localStorage.getItem(TOKEN_KEY)
+  } catch {
+    return null
+  }
+}
+export function setAuthToken(t: string | null): void {
+  try {
+    if (t) localStorage.setItem(TOKEN_KEY, t)
+    else localStorage.removeItem(TOKEN_KEY)
+  } catch {
+    /* storage unavailable — fall back to cookie-only (web) */
+  }
+}
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  const headers = new Headers(init?.headers)
+  const tok = authToken()
+  if (tok) headers.set('Authorization', `Bearer ${tok}`)
   let res: Response
   try {
-    // credentials: 'include' so the session cookie rides along (same-origin
-    // via the Vite /api proxy in dev; real cookie domain in prod).
-    res = await fetch(`${BASE}${path}`, { credentials: 'include', ...init })
+    // credentials: 'include' so the session cookie rides along (web); the Bearer
+    // header carries auth for the native app.
+    res = await fetch(`${BASE}${path}`, { credentials: 'include', ...init, headers })
   } catch {
     throw new ApiError(0, 'Cannot reach the API — is the backend running?')
   }
@@ -126,16 +154,21 @@ export const api = {
     return request<{ user: AuthUser | null }>('/auth/me')
   },
 
-  /** Passwordless email gate — find-or-create the user, start a session. */
+  /** Passwordless email gate — find-or-create the user, start a session. Stores the
+   * bearer token (used by the native app; harmless on web). */
   emailLogin(email: string): Promise<{ user: AuthUser | null }> {
-    return request<{ user: AuthUser | null }>('/auth/email', {
+    return request<{ user: AuthUser | null; token?: string }>('/auth/email', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email }),
+    }).then((r) => {
+      if (r.token && isNativeApp()) setAuthToken(r.token) // web stays cookie-only
+      return r
     })
   },
 
   logout(): Promise<{ ok: boolean }> {
+    setAuthToken(null)
     return request<{ ok: boolean }>('/auth/logout', { method: 'POST' })
   },
 

@@ -16,10 +16,13 @@ workflows:
     integrations:
       app_store_connect: codemagic # <- the integration name you set in the UI
     environment:
-      # Signing is done explicitly in the scripts (fetch-signing-files --create).
-      # NOTE: the App Store Connect API key MUST have the Admin (or Developer) role —
-      # App Manager cannot create certificates/profiles via the API, which silently
-      # leaves the target unsigned.
+      # Codemagic MANAGED automatic signing: with the Admin App Store Connect API key,
+      # it generates the private key + creates the distribution cert AND provisioning
+      # profile for this bundle id, and sets up the keychain — all internally. (The
+      # manual CLI route failed because it can't manage the cert private key.)
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.creativedirector.app
       vars:
         BUNDLE_ID: "com.creativedirector.app"
         APP_NAME: "Creative Director"
@@ -59,23 +62,12 @@ workflows:
           else
             echo "No Podfile — Capacitor uses Swift Package Manager, skipping pod install."
           fi
-      - name: Set up code signing (create cert + profile if missing)
-        # Uses the App Store Connect API key from the `codemagic` integration to
-        # fetch — and CREATE if absent — the distribution cert + provisioning
-        # profile, then apply them to the Xcode project. --create is what makes
-        # this work on a fresh account that has no profile yet.
+      - name: Apply code signing to the Xcode project
+        # Codemagic's automatic signing (the ios_signing block above) has already
+        # created + downloaded the cert + profile; this points the Xcode project at
+        # them. Listing is just for debugging if anything's off.
         script: |
-          set -e
-          keychain initialize
-          # Create a distribution certificate if the account has none (needs Admin key).
-          app-store-connect create-certificate --type IOS_DISTRIBUTION --save || \
-            echo "create-certificate: a distribution cert may already exist (ok)"
-          # Create the provisioning profile for the bundle id (fails loudly if the API
-          # key lacks permission — that's the signal the role is too low).
-          app-store-connect fetch-signing-files "$BUNDLE_ID" --type IOS_APP_STORE --create
-          keychain add-certificates
           xcode-project use-profiles
-          echo "--- provisioning profiles on disk ---"
           ls -la "$HOME/Library/MobileDevice/Provisioning Profiles/" || true
       - name: Build the IPA
         # CocoaPods produces an .xcworkspace; an SPM-only Capacitor project has just

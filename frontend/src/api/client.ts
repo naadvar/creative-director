@@ -6,6 +6,7 @@ import type {
   Fingerprint,
   MyUploads,
   NicheList,
+  Progress,
   UploadJobStatus,
 } from './types'
 
@@ -146,5 +147,10 @@ export const api = {
   /** The creator's style fingerprint, built from their own uploaded reels. */
   myFingerprint(): Promise<Fingerprint> {
     return request<Fingerprint>('/me/fingerprint')
+  },
+
+  /** The creator's craft trend over their own reads (recurring vs moved-past). */
+  myProgress(): Promise<Progress> {
+    return request<Progress>('/me/progress')
   },
 }

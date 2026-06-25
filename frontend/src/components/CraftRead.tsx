@@ -139,6 +139,16 @@ export default function CraftRead({
   const doneWell = data.done_well ?? []
   const [dismissed, setDismissed] = useState<Set<number>>(new Set())
   const [leverFb, setLeverFb] = useState<'helpful' | 'not_useful' | null>(null)
+  const [copied, setCopied] = useState(false)
+  const copyFix = () => {
+    try {
+      void navigator.clipboard?.writeText(data.biggest_opportunity ?? '')
+    } catch {
+      /* clipboard unavailable — still give the user feedback */
+    }
+    setCopied(true)
+    setTimeout(() => setCopied(false), 1800)
+  }
 
   // Helpful / not-useful on the headline fix — the positive signal (👍) plus the
   // negative one, both labeled training data (helpful = keep this lever shape).
@@ -189,11 +199,21 @@ export default function CraftRead({
             <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-accent">
               Fix this first
             </span>
-            {dimension ? (
-              <span className="ml-auto rounded-full border border-accent/30 bg-accent/10 px-2.5 py-0.5 text-[11px] font-medium capitalize text-accent">
-                {dimension}
-              </span>
-            ) : null}
+            <div className="ml-auto flex items-center gap-2">
+              <button
+                type="button"
+                onClick={copyFix}
+                title="Copy this fix for your edit notes"
+                className="rounded-full border border-accent/30 bg-accent/10 px-2.5 py-0.5 text-[11px] font-medium text-accent transition-colors hover:bg-accent/20"
+              >
+                {copied ? 'Copied ✓' : 'Copy'}
+              </button>
+              {dimension ? (
+                <span className="rounded-full border border-accent/30 bg-accent/10 px-2.5 py-0.5 text-[11px] font-medium capitalize text-accent">
+                  {dimension}
+                </span>
+              ) : null}
+            </div>
           </div>
           <p className="mt-2 text-[15px] leading-relaxed">{linkify(opp, onSeek)}</p>
           {jumpSec != null && onSeek ? (

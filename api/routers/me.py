@@ -44,6 +44,15 @@ def my_fingerprint(user: dict = Depends(get_current_user)) -> dict:
     return compute_fingerprint(user["id"])
 
 
+@router.get("/progress")
+def my_progress(user: dict = Depends(get_current_user)) -> dict:
+    """The creator's craft trend over their own reads — recurring vs moved-past
+    notes + the reads timeline. The 'am I improving?' retention signal."""
+    from creative_director.profile.progress import compute_progress
+
+    return compute_progress(user["id"])
+
+
 @router.get("/uploads")
 def my_uploads(user: dict = Depends(get_current_user)) -> dict:
     """The creator's own uploaded reels + their reads — the durable 'My reads'

@@ -378,6 +378,31 @@ export interface MyUploads {
   uploads: UploadCard[]
 }
 
+// --- craft trend over the creator's own reads ("am I improving?") ---
+export interface ProgressRead {
+  video_id: string
+  title: string
+  date: string | null
+  dimension: string
+  dimension_label: string | null
+}
+
+export interface ProgressTrend {
+  dimension: string
+  label: string
+  count?: number
+  past_count?: number
+}
+
+export interface Progress {
+  ready: boolean
+  n: number
+  reads: ProgressRead[]
+  improving: ProgressTrend[]
+  recurring: ProgressTrend[]
+  headline: string
+}
+
 // --- upload-your-reel analysis job (POST /upload, poll GET /upload/{id}) ---
 export interface UploadJobStatus {
   job_id: string

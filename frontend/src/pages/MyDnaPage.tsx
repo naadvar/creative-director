@@ -1,11 +1,39 @@
 import { Link } from 'react-router-dom'
 import { api } from '../api/client'
 import { useAsync } from '../hooks/useAsync'
+import type { ProgressRead } from '../api/types'
 import Spinner from '../components/Spinner'
+
+function fmtDate(iso: string | null): string {
+  if (!iso) return ''
+  const d = new Date(iso)
+  return Number.isNaN(d.getTime()) ? '' : d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+}
+
+function ReadRow({ r }: { r: ProgressRead }) {
+  return (
+    <Link
+      to={`/video/${r.video_id}`}
+      className="flex items-center gap-3 rounded-xl border border-border bg-surface px-3.5 py-2.5 transition-colors hover:border-accent/50"
+    >
+      <span className="w-10 shrink-0 text-[11px] tabular-nums text-muted">{fmtDate(r.date)}</span>
+      <span className="min-w-0 flex-1 truncate text-[13px] font-medium">{r.title}</span>
+      {r.dimension_label ? (
+        <span className="shrink-0 rounded-full border border-border bg-surface-2 px-2.5 py-0.5 text-[11px] capitalize text-muted">
+          {r.dimension_label}
+        </span>
+      ) : (
+        <span className="shrink-0 text-[11px] text-good">clean</span>
+      )}
+    </Link>
+  )
+}
 
 export default function MyDnaPage() {
   const fp = useAsync(() => api.myFingerprint(), [])
+  const prog = useAsync(() => api.myProgress(), [])
   const data = fp.data
+  const p = prog.data
 
   return (
     <div className="mx-auto max-w-2xl space-y-6 py-2">
@@ -24,19 +52,15 @@ export default function MyDnaPage() {
           Your <span className="text-grad">Creator DNA</span>
         </h1>
         <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-muted">
-          Built only from the reels you’ve read here — your style and the craft notes that
-          keep coming up. It sharpens every time you read another reel.
+          Built only from the reels you’ve read here — your style and how your craft is trending.
         </p>
       </div>
 
       {fp.loading ? (
         <Spinner label="Building your DNA…" />
-      ) : fp.error ? (
-        <p className="rounded-xl border border-bad/40 bg-bad/10 px-4 py-3 text-sm text-bad">
-          {fp.error}
-        </p>
       ) : data?.ready ? (
         <div className="space-y-5">
+          {/* Identity */}
           <div className="rounded-2xl border border-accent/30 bg-accent/[0.06] p-5 sm:p-6">
             <div className="text-xs font-semibold uppercase tracking-widest text-accent">
               {data.n_reels} reel{data.n_reels === 1 ? '' : 's'} in your DNA
@@ -44,30 +68,54 @@ export default function MyDnaPage() {
             <p className="mt-2 text-lg font-medium leading-snug">{data.summary}</p>
           </div>
 
-          {data.recurring && data.recurring.length > 0 ? (
+          {/* The trend — the "am I improving?" signal */}
+          {p?.ready ? (
             <div className="rounded-2xl border border-border bg-surface p-5">
-              <h2 className="text-sm font-semibold">Patterns that recur in your reels</h2>
-              <ul className="mt-3 space-y-2.5">
-                {data.recurring.map((r) => (
-                  <li key={r.type} className="flex items-center gap-3">
-                    <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-accent/15 text-xs font-bold tabular-nums text-accent">
-                      ×{r.count}
+              <h2 className="text-sm font-semibold">Your craft trend</h2>
+              <p className="mt-2 text-[15px] leading-relaxed">{p.headline}</p>
+
+              {p.improving.length > 0 || p.recurring.length > 0 ? (
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {p.improving.map((t) => (
+                    <span
+                      key={`i-${t.dimension}`}
+                      className="inline-flex items-center gap-1.5 rounded-full border border-good/30 bg-good/[0.08] px-3 py-1 text-[12px] text-good"
+                      title={`Recurred ${t.past_count}× early, absent from your recent reads`}
+                    >
+                      ↑ moved past {t.label}
                     </span>
-                    <span className="text-sm leading-snug">{r.label}</span>
-                  </li>
-                ))}
-              </ul>
-              <p className="mt-4 text-[11px] leading-relaxed text-muted">
-                These are craft tendencies across your uploads — knowing them is half the fix.
+                  ))}
+                  {p.recurring.map((t) => (
+                    <span
+                      key={`r-${t.dimension}`}
+                      className="inline-flex items-center gap-1.5 rounded-full border border-accent/30 bg-accent/[0.08] px-3 py-1 text-[12px] text-accent"
+                      title={`Came up in ${t.count} of your reads`}
+                    >
+                      {t.label} <span className="opacity-70">×{t.count}</span>
+                    </span>
+                  ))}
+                </div>
+              ) : null}
+              <p className="mt-3 text-[11px] leading-relaxed text-muted">
+                A factual read of the notes across your reels over time — not a claim that you fixed
+                anything. You draw that conclusion.
               </p>
             </div>
-          ) : (
-            <div className="rounded-2xl border border-dashed border-border bg-surface-2/40 p-5 text-center text-sm text-muted">
-              Read a few more reels and we’ll surface the craft patterns that recur in your work.
-            </div>
-          )}
+          ) : null}
 
-          <div className="flex flex-wrap justify-center gap-2.5">
+          {/* The reads timeline */}
+          {p?.reads && p.reads.length > 0 ? (
+            <div>
+              <h2 className="mb-2.5 text-sm font-semibold">Your reads, newest first</h2>
+              <div className="space-y-2">
+                {p.reads.map((r) => (
+                  <ReadRow key={r.video_id} r={r} />
+                ))}
+              </div>
+            </div>
+          ) : null}
+
+          <div className="flex flex-wrap justify-center gap-2.5 pt-1">
             <Link
               to="/analyze"
               className="rounded-xl bg-grad px-5 py-2.5 text-sm font-bold text-white transition-all hover:brightness-110"

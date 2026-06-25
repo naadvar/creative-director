@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { api } from '../api/client'
 import type { CategoryCount, CorpusVideo, NicheInfo } from '../api/types'
 import Spinner from '../components/Spinner'
@@ -137,6 +138,22 @@ export default function BrowsePage() {
 
   return (
     <div className="space-y-5">
+      {/* Conversion off-ramp — turn an inspired browser into an upload. */}
+      <Link
+        to="/analyze"
+        className="flex items-center justify-between gap-3 rounded-2xl border border-accent/30 bg-accent/[0.06] px-4 py-3 transition-colors hover:border-accent/50"
+      >
+        <div className="min-w-0">
+          <p className="text-sm font-semibold">These are example reads — want one of your own?</p>
+          <p className="truncate text-xs text-muted">
+            Drop a reel and get the same craft read, tied to your own footage.
+          </p>
+        </div>
+        <span className="shrink-0 rounded-xl bg-grad px-4 py-2 text-sm font-bold text-white">
+          Read my reel →
+        </span>
+      </Link>
+
       {/* Niche switcher — the top-level selector */}
       {niches.length > 0 ? (
         <div className="flex flex-wrap items-center gap-1 rounded-lg border border-border bg-surface p-1">

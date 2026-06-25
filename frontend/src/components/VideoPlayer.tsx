@@ -124,7 +124,7 @@ export default function VideoPlayer({
         poster={poster}
         playsInline
         preload="metadata"
-        className="mx-auto block max-h-[70vh] w-auto max-w-full"
+        className="mx-auto block max-h-[48vh] w-auto max-w-full sm:max-h-[70vh]"
         onSeeked={() => {
           // Our own EDL hop seeks set the flag; anything else is the user
           // scrubbing, which exits the winner-cut preview.

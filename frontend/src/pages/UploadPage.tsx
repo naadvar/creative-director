@@ -134,16 +134,17 @@ export default function UploadPage() {
   const [corpusTotal, setCorpusTotal] = useState<number | null>(null)
   const [fingerprint, setFingerprint] = useState<Fingerprint | null>(null)
   const [gating, setGating] = useState(false)
+  const [nicheCounts, setNicheCounts] = useState<Record<string, number>>({})
   const cancelled = useRef(false)
 
   useEffect(() => {
     api
       .niches()
-      .then((r) =>
-        setCorpusTotal(
-          r.niches.filter((n) => n.platform === 'instagram').reduce((sum, n) => sum + n.count, 0),
-        ),
-      )
+      .then((r) => {
+        const ig = r.niches.filter((n) => n.platform === 'instagram')
+        setCorpusTotal(ig.reduce((sum, n) => sum + n.count, 0))
+        setNicheCounts(Object.fromEntries(ig.map((n) => [n.niche, n.count])))
+      })
       .catch(() => {})
     api.myFingerprint().then(setFingerprint).catch(() => {})
     return () => {
@@ -290,50 +291,32 @@ export default function UploadPage() {
         </button>
 
         <div>
-          <div className="mb-2 text-xs font-semibold uppercase tracking-widest text-muted">Your niche</div>
+          <div className="mb-2 text-xs font-semibold uppercase tracking-widest text-muted">
+            Your niche{' '}
+            <span className="font-normal normal-case tracking-normal text-muted/70">
+              — sets the reels you’re read against
+            </span>
+          </div>
           <div className="flex flex-wrap gap-2">
             {NICHES.map((n) => (
               <button
                 key={n.key}
                 type="button"
                 onClick={() => setNiche(n.key)}
-                className={`rounded-full border px-4 py-1.5 text-sm font-medium transition-all ${
+                className={`flex items-center gap-1.5 rounded-full border px-4 py-1.5 text-sm font-medium transition-all ${
                   niche === n.key
                     ? 'border-accent/50 bg-accent/15 text-text'
                     : 'border-border bg-surface-2 text-muted hover:text-text'
                 }`}
               >
                 {n.label}
+                {nicheCounts[n.key] ? (
+                  <span className="text-[11px] tabular-nums opacity-60">
+                    {nicheCounts[n.key].toLocaleString()}
+                  </span>
+                ) : null}
               </button>
             ))}
-          </div>
-        </div>
-
-        <div className="grid gap-3 sm:grid-cols-[1fr_180px]">
-          <div>
-            <div className="mb-2 text-xs font-semibold uppercase tracking-widest text-muted">
-              Caption{' '}
-              <span className="font-normal normal-case tracking-normal">(optional)</span>
-            </div>
-            <textarea
-              value={caption}
-              onChange={(e) => setCaption(e.target.value)}
-              rows={2}
-              placeholder="Paste the caption you'd post with it…"
-              className="w-full resize-none rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm outline-none transition-colors placeholder:text-muted/60 focus:border-accent"
-            />
-          </div>
-          <div>
-            <div className="mb-2 text-xs font-semibold uppercase tracking-widest text-muted">
-              Followers <span className="font-normal normal-case tracking-normal">(optional)</span>
-            </div>
-            <input
-              value={followers}
-              onChange={(e) => setFollowers(e.target.value.replace(/[^0-9]/g, ''))}
-              inputMode="numeric"
-              placeholder="e.g. 12000"
-              className="w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm outline-none transition-colors placeholder:text-muted/60 focus:border-accent"
-            />
           </div>
         </div>
 
@@ -349,6 +332,44 @@ export default function UploadPage() {
         {error ? (
           <p className="rounded-xl border border-bad/40 bg-bad/10 px-4 py-3 text-sm text-bad">{error}</p>
         ) : null}
+
+        {/* Optional context, tucked away so the default path is just file → read. */}
+        <details className="group">
+          <summary className="flex cursor-pointer list-none items-center gap-1.5 text-xs font-medium text-muted transition-colors hover:text-text">
+            <svg
+              width="12"
+              height="12"
+              viewBox="0 0 12 12"
+              fill="none"
+              className="transition-transform group-open:rotate-90"
+            >
+              <path
+                d="M4.5 3 7.5 6 4.5 9"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+            Add context (optional)
+          </summary>
+          <div className="mt-3 grid gap-3 sm:grid-cols-[1fr_160px]">
+            <textarea
+              value={caption}
+              onChange={(e) => setCaption(e.target.value)}
+              rows={2}
+              placeholder="Paste the caption you'd post with it…"
+              className="w-full resize-none rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm outline-none transition-colors placeholder:text-muted/60 focus:border-accent"
+            />
+            <input
+              value={followers}
+              onChange={(e) => setFollowers(e.target.value.replace(/[^0-9]/g, ''))}
+              inputMode="numeric"
+              placeholder="Followers (e.g. 12000)"
+              className="h-fit w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm outline-none transition-colors placeholder:text-muted/60 focus:border-accent"
+            />
+          </div>
+        </details>
       </div>
 
       <p className="text-center text-xs leading-relaxed text-muted">

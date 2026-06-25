@@ -15,6 +15,13 @@ class Settings(BaseSettings):
     # redeploy (which overwrites database_url) can't wipe real signups/uploads.
     userdata_url: str = "sqlite:///./data/userdata.db"
 
+    # Transactional email (the "your read is ready" nudge). No key set = no-op, so
+    # the feature is inert until a provider is configured. Resend is the default
+    # provider (simple HTTP API); set resend_api_key to enable.
+    resend_api_key: str = ""
+    email_from: str = "Creative Director <onboarding@resend.dev>"
+    app_base_url: str = "https://creative-director-psi.vercel.app"
+
     thumbnail_dir: Path = Path("./data/thumbnails")
     temp_video_dir: Path = Path("./data/tmp")
 

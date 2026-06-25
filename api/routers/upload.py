@@ -301,6 +301,23 @@ def _run_job(job: _Job, mp4: Path) -> None:
         except Exception as e:  # noqa: BLE001
             logger.warning(f"durable upload record failed for {vid}: {type(e).__name__}: {e}")
 
+        # 5. Re-engagement nudge: email the read link. Inert without a provider key,
+        # best-effort (a notification problem must never fail a finished upload).
+        try:
+            from creative_director.notify.email import send_read_ready
+            from creative_director.storage.models import User
+
+            with session_scope() as s:
+                up = s.get(Upload, vid)
+                read = up.craft_read if up is not None else None
+                grounded = isinstance(read, dict) and read.get("grounded") is not False
+                if up is not None and up.user_id and grounded:
+                    user = s.get(User, up.user_id)
+                    if user is not None and user.email:
+                        send_read_ready(user.email, up.title or "your reel", vid)
+        except Exception as e:  # noqa: BLE001
+            logger.warning(f"email nudge skipped for {vid}: {type(e).__name__}: {e}")
+
         job.status = "done"
         job.message = "ready"
     except Exception as e:  # noqa: BLE001

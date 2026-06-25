@@ -45,7 +45,7 @@ export default function CraftScrubber({
             onClick={() => onSeek?.(m.second)}
             title={`${fmt(m.second)} — ${m.label}`}
             aria-label={`Jump to ${fmt(m.second)}: ${m.label}`}
-            className="absolute top-1/2 h-4 w-4 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-ink bg-accent shadow transition-transform hover:scale-125"
+            className="absolute top-1/2 h-5 w-5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-ink bg-accent shadow transition-transform hover:scale-125 active:scale-110"
             style={{ left: pct(m.second) }}
           />
         ))}

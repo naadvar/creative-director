@@ -71,7 +71,7 @@ function TimeChip({ ts, onSeek }: { ts: string; onSeek?: (s: number) => void }) 
       type="button"
       onClick={() => onSeek(secs)}
       title="Jump to this moment"
-      className="rounded bg-accent/10 px-1 font-medium tabular-nums text-accent underline-offset-2 hover:bg-accent/20 hover:underline"
+      className="rounded bg-accent/10 px-1.5 py-0.5 font-medium tabular-nums text-accent underline-offset-2 hover:bg-accent/20 hover:underline active:bg-accent/30"
     >
       {ts}
     </button>

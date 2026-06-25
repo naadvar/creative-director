@@ -45,6 +45,8 @@ export default function VideoPage() {
   const { videoId } = useParams<{ videoId: string }>()
   const id = videoId ?? ''
   const craft = useAsync(() => api.craftRead(id), [id])
+  // Only an upload has a creator DNA worth nudging toward.
+  const fp = useAsync(() => (id.startsWith('up') ? api.myFingerprint() : Promise.resolve(null)), [id])
 
   const [currentSecond, setCurrentSecond] = useState(0)
   const [seekTo, setSeekTo] = useState<number | undefined>(undefined)
@@ -108,6 +110,20 @@ export default function VideoPage() {
               </div>
             ) : null}
           </div>
+
+          {isUpload ? (
+            <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1 rounded-2xl border border-accent/30 bg-accent/[0.07] px-4 py-3 text-center text-sm">
+              <span className="font-semibold">✨ Your craft read is ready</span>
+              {fp.data && fp.data.ready && fp.data.n_reels < 3 ? (
+                <span className="text-muted">
+                  · {fp.data.n_reels} of 3 read — {3 - fp.data.n_reels} more unlocks your{' '}
+                  <Link to="/my-dna" className="text-accent hover:underline">
+                    Creator DNA
+                  </Link>
+                </span>
+              ) : null}
+            </div>
+          ) : null}
 
           {read ? (
             <CraftRead data={read} onSeek={handleSeek} videoId={id} />

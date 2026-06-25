@@ -93,6 +93,12 @@ class Settings(BaseSettings):
     craft_read_base_url: Optional[str] = None
     craft_read_api_key: Optional[str] = None
 
+    # Transcription: when craft_read_api_key is set, transcribe via DeepInfra's Whisper
+    # inference API (it accepts the raw mp4 directly) instead of a local faster-whisper —
+    # so the serve host needs no torch/ffmpeg. Falls back to local whisper if no key.
+    transcript_model: str = "openai/whisper-large-v3-turbo"
+    transcript_api_base: str = "https://api.deepinfra.com/v1/inference"
+
     # Apify — public-data Instagram ingestion path (training-corpus bootstrap
     # only; not the permanent product foundation per the project kill-criterion).
     # Get a Personal API token at Apify Console > Settings > Integrations.

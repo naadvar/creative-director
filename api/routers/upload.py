@@ -157,8 +157,17 @@ def _run_job(job: _Job, mp4: Path) -> None:
                 raise RuntimeError("video row vanished")
             caption = v.description
             duration_s = v.duration_seconds
-            feats = extract_features_from_file(v, mp4, thumb if has_thumb else None)
-            persist_features(s, vid, feats)
+            try:
+                feats = extract_features_from_file(v, mp4, thumb if has_thumb else None)
+                persist_features(s, vid, feats)
+            except Exception as e:  # noqa: BLE001 — the heavy scalar stack can be absent on a lean serve host
+                logger.warning(
+                    f"feature extraction failed for {vid}, falling back to transcript only: "
+                    f"{type(e).__name__}: {str(e)[:120]}"
+                )
+                from creative_director.features.audio import extract_transcript
+
+                persist_features(s, vid, extract_transcript(mp4))
 
         # 2b. VLM rich-perception layer (grounded read + presenter gate). Opt-in
         # via ENABLE_VLM_PERCEPTION; defensive — a failure never fails the job.
@@ -243,11 +252,18 @@ def _run_job(job: _Job, mp4: Path) -> None:
             logger.warning(f"craft read failed for {vid}: {e}")
 
         # 3. Per-second timeline (cuts, vibes, faces, beats) for the strip + cut plan.
+        # Best-effort: the craft read is the product, so a timeline failure (its heavy
+        # stack may be absent on a lean serve host) must never error a good read.
         job.message = "building the per-second timeline (1-2 min)…"
-        timeline = extract_timeline(mp4, niche=job.niche)
-        with session_scope() as s:
-            for row in timeline:
-                s.add(VideoTimeline(video_id=vid, **row))
+        try:
+            timeline = extract_timeline(mp4, niche=job.niche)
+            with session_scope() as s:
+                for row in timeline:
+                    s.add(VideoTimeline(video_id=vid, **row))
+        except Exception as e:  # noqa: BLE001
+            logger.warning(
+                f"timeline extraction skipped/failed for {vid}: {type(e).__name__}: {str(e)[:120]}"
+            )
 
         job.status = "done"
         job.message = "ready"

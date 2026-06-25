@@ -33,14 +33,53 @@ def _load_whisper():
     return _whisper_model
 
 
+_EMPTY_TRANSCRIPT = {"transcript": None, "transcript_word_count": None, "transcript_first_3s": None}
+
+
+def _transcribe_api(path: Path) -> dict:
+    """Transcribe via DeepInfra's Whisper inference API (accepts the raw mp4) — keeps the
+    serve host free of torch/ffmpeg. Same return shape as the local path."""
+    import httpx
+
+    url = f"{settings.transcript_api_base.rstrip('/')}/{settings.transcript_model}"
+    with open(path, "rb") as fh:
+        r = httpx.post(
+            url,
+            headers={"Authorization": f"bearer {settings.craft_read_api_key}"},
+            files={"audio": (path.name, fh, "video/mp4")},
+            timeout=180,
+        )
+    r.raise_for_status()
+    d = r.json()
+    text = (d.get("text") or "").strip()
+    # first-3s slice: prefer word-level timestamps; fall back to the lead of segment 0.
+    words = d.get("words") or []
+    if words:
+        first3 = " ".join(
+            (w.get("word") or w.get("text") or "").strip()
+            for w in words
+            if (w.get("start") or 0) < 3.0
+        ).strip()
+    else:
+        segs = d.get("segments") or []
+        first3 = (segs[0].get("text", "").strip()[:80] if segs else "")
+    return {
+        "transcript": text or None,
+        "transcript_word_count": len(text.split()) if text else 0,
+        "transcript_first_3s": first3 or None,
+    }
+
+
 def extract_transcript(path: Path) -> dict:
     """Transcript text, word count, and first-3-seconds slice."""
     if not settings.enable_audio_transcript:
-        return {
-            "transcript": None,
-            "transcript_word_count": None,
-            "transcript_first_3s": None,
-        }
+        return dict(_EMPTY_TRANSCRIPT)
+    # Prefer the DeepInfra Whisper API (no local model needed) when a key is configured.
+    if settings.craft_read_api_key and settings.transcript_model:
+        try:
+            return _transcribe_api(path)
+        except Exception as e:  # noqa: BLE001 — fall back to local whisper
+            logger.warning(f"DeepInfra transcript failed, trying local: {type(e).__name__}: {str(e)[:120]}")
     try:
         model = _load_whisper()
         segments, _info = model.transcribe(str(path), beam_size=1, vad_filter=True)

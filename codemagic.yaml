@@ -16,10 +16,13 @@ workflows:
     integrations:
       app_store_connect: codemagic # <- the integration name you set in the UI
     environment:
-      # NOTE: no `ios_signing:` block on purpose. That triggers Codemagic's IMPLICIT
-      # auto-signing at build start, which FAILS ("no matching profiles") on a fresh
-      # account because it fetches but doesn't create. We do signing explicitly in
-      # the scripts below with --create, which makes the cert + profile if missing.
+      # ios_signing wires the fetched profile into the Xcode project (sets bundle id +
+      # team + profile on the target). The explicit `fetch-signing-files --create`
+      # script below ensures the cert + profile EXIST first, so this no longer fails
+      # with "no matching profiles" the way it did on the empty fresh account.
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.creativedirector.app
       vars:
         BUNDLE_ID: "com.creativedirector.app"
         APP_NAME: "Creative Director"

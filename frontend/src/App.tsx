@@ -75,7 +75,7 @@ function Header() {
               </button>
             </>
           ) : (
-            <NavLink to="/analyze" className="font-medium text-accent hover:opacity-90">
+            <NavLink to="/my-reads" className="font-medium text-accent hover:opacity-90">
               Sign in
             </NavLink>
           )}
@@ -85,9 +85,12 @@ function Header() {
   )
 }
 
-/** Route-level gate: render children if signed in, else show the email gate. */
+/** Route-level gate: render children if signed in, else show the email gate.
+ * After sign-in it returns to the page they were trying to reach (so "Sign in" →
+ * /my-reads lands on their reads, not a hardcoded page). */
 function RequireAuth({ children }: { children: ReactNode }) {
   const { user, loading } = useAuth()
+  const location = useLocation()
   if (loading) {
     return (
       <div className="grid min-h-[50vh] place-items-center">
@@ -98,7 +101,12 @@ function RequireAuth({ children }: { children: ReactNode }) {
   if (!user) {
     return (
       <div className="grid min-h-[50vh] place-items-center py-10">
-        <EmailGate redirectTo="/analyze" />
+        <EmailGate
+          redirectTo={location.pathname}
+          heading="Sign in"
+          sub="Enter your email — no password. We’ll pull up your reads."
+          cta="Sign in"
+        />
       </div>
     )
   }

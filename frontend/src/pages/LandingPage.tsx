@@ -1,5 +1,4 @@
 import { Link } from 'react-router-dom'
-import { INSTAGRAM_CONNECT_URL } from '../api/client'
 import EmailGate from '../components/EmailGate'
 
 function Step({ n, title, body }: { n: number; title: string; body: string }) {
@@ -69,22 +68,6 @@ export default function LandingPage() {
         predicts views. This reads the craft of the video in front of it, and
         flags what an editor would catch on a second watch.
       </p>
-
-      <div className="mt-8 flex flex-col items-center gap-3 text-xs text-muted">
-        <a
-          href={INSTAGRAM_CONNECT_URL}
-          className="underline-offset-2 hover:text-text hover:underline"
-        >
-          Have a Creator account? Connect Instagram to read your own reels
-        </a>
-        {/* Dev-only: gated by API_ALLOW_DEV_LOGIN on the backend. */}
-        <a
-          href="/api/auth/dev-login"
-          className="text-muted/50 underline-offset-2 hover:text-muted hover:underline"
-        >
-          Preview inside (demo data)
-        </a>
-      </div>
     </div>
   )
 }

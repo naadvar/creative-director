@@ -43,7 +43,7 @@ from api.config import api_settings
 from creative_director.config import settings
 from creative_director.storage import media
 from creative_director.storage.db import session_scope
-from creative_director.storage.models import NoteFeedback, Video, VideoFeatures
+from creative_director.storage.models import Channel, NoteFeedback, Video, VideoFeatures
 
 router = APIRouter(prefix="/videos", tags=["analysis"])
 
@@ -179,18 +179,30 @@ def craft_read(video_id: str) -> dict:
     """The Craft X-ray — the grounded craft critic read (advice/craft_xray.py).
     Served from cache (VideoFeatures.craft_read); returns {available: false} when it
     hasn't been generated yet, so the frontend can show the card only when present.
-    Additive: never touches the existing scalar summary/scorecard surface."""
+    Carries lightweight video meta (title/duration/channel) so the read page needs
+    only this one call — the old scalar breakdown is no longer on the page."""
     with session_scope() as s:
         f = s.query(VideoFeatures).filter(VideoFeatures.video_id == video_id).first()
         read = getattr(f, "craft_read", None) if f else None
+        v = s.get(Video, video_id)
+        meta = None
+        if v is not None:
+            ch = s.get(Channel, v.channel_id) if v.channel_id else None
+            meta = {
+                "video_id": v.id,
+                "title": v.title or "Reel",
+                "channel": (ch.title if ch and ch.title else None),
+                "duration_seconds": v.duration_seconds,
+                "is_upload": bool(v.channel_id and v.channel_id.startswith("upch_")),
+            }
     if not read:
-        return {"available": False}
+        return {"available": False, "meta": meta}
     # The grounding gate stamps grounded=false on a materially-fabricated read.
     # We'd rather say nothing than serve a hallucinated critique of the creator's
     # own footage — so a suppressed read is reported as not-available.
     if isinstance(read, dict) and read.get("grounded") is False:
-        return {"available": False, "suppressed": True}
-    return {"available": True, "read": read}
+        return {"available": False, "suppressed": True, "meta": meta}
+    return {"available": True, "read": read, "meta": meta}
 
 
 class NoteFeedbackBody(BaseModel):

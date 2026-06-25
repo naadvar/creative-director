@@ -1,23 +1,12 @@
 import type {
-  AnalyzeHandleJob,
   AuthUser,
-  UploadJobStatus,
-  AutoCut,
-  CategoryInfo,
   CorpusFacets,
   CorpusPage,
   CraftReadResponse,
-  CutPlan,
   Fingerprint,
+  MyUploads,
   NicheList,
-  ExampleList,
-  FrameBreakdown,
-  IngestResponse,
-  MyReels,
-  PlainSummary,
-  Timeline,
-  TrimRecompute,
-  VideoBreakdown,
+  UploadJobStatus,
 } from './types'
 
 // Defaults to the Vite dev proxy (see vite.config.ts); override with VITE_API_BASE.
@@ -39,7 +28,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     // via the Vite /api proxy in dev; real cookie domain in prod).
     res = await fetch(`${BASE}${path}`, { credentials: 'include', ...init })
   } catch {
-    throw new ApiError(0, 'Cannot reach the API — is the backend running on :8000?')
+    throw new ApiError(0, 'Cannot reach the API — is the backend running?')
   }
   if (!res.ok) {
     let detail = `${res.status} ${res.statusText}`
@@ -72,6 +61,7 @@ export function videoFileUrl(id: string): string {
 }
 
 export const api = {
+  // --- example corpus (browse) ---
   corpus(params: CorpusParams = {}): Promise<CorpusPage> {
     const qp = new URLSearchParams()
     if (params.tercile !== undefined) qp.set('tercile', String(params.tercile))
@@ -93,65 +83,22 @@ export const api = {
     return request<NicheList>('/niches')
   },
 
-  analyze(id: string): Promise<VideoBreakdown> {
-    return request<VideoBreakdown>(`/videos/${encodeURIComponent(id)}/analyze`)
-  },
-
-  summary(id: string): Promise<PlainSummary> {
-    return request<PlainSummary>(`/videos/${encodeURIComponent(id)}/summary`)
-  },
-
-  /** The Craft X-ray read (grounded craft critic). {available:false} when not generated. */
+  // --- the craft read (grounded craft critic) ---
+  /** The Craft X-ray read + lightweight video meta. {available:false} when not generated. */
   craftRead(id: string): Promise<CraftReadResponse> {
     return request<CraftReadResponse>(`/videos/${encodeURIComponent(id)}/craft-read`)
   },
 
-  frame(id: string): Promise<FrameBreakdown> {
-    return request<FrameBreakdown>(`/videos/${encodeURIComponent(id)}/frame`)
-  },
-
-  timeline(id: string): Promise<Timeline> {
-    return request<Timeline>(`/videos/${encodeURIComponent(id)}/timeline`)
-  },
-
-  examples(id: string, feature: string): Promise<ExampleList> {
-    return request<ExampleList>(
-      `/videos/${encodeURIComponent(id)}/examples/${encodeURIComponent(feature)}`,
-    )
-  },
-
-  /** Full CapCut-style cut plan (cuts, over-long holds, suggested intro trim). */
-  cutplan(id: string): Promise<CutPlan> {
-    return request<CutPlan>(`/videos/${encodeURIComponent(id)}/cutplan`)
-  },
-
-  /** Live recompute: which hook checks pass if the reel started at `trimStart`. */
-  cutplanTrim(id: string, trimStart: number): Promise<TrimRecompute> {
-    return request<TrimRecompute>(
-      `/videos/${encodeURIComponent(id)}/cutplan?trim_start=${trimStart}`,
-    )
-  },
-
-  /** Auto "winner cut" — kept segments (dead air removed) for virtual playback. */
-  autocut(id: string): Promise<AutoCut> {
-    return request<AutoCut>(`/videos/${encodeURIComponent(id)}/autocut`)
-  },
-
-  /** Current content category (creator-confirmed or classifier guess) + options. */
-  category(id: string): Promise<CategoryInfo> {
-    return request<CategoryInfo>(`/videos/${encodeURIComponent(id)}/category`)
-  },
-
-  /** Creator override: set (or clear with null) the content category. */
-  setCategory(id: string, category: string | null): Promise<CategoryInfo> {
-    return request<CategoryInfo>(`/videos/${encodeURIComponent(id)}/category`, {
+  /** Record helpful / not-useful / not-in-reel feedback on a craft-read note. */
+  noteFeedback(videoId: string, note: string, reason?: string): Promise<{ ok: boolean }> {
+    return request<{ ok: boolean }>(`/videos/${encodeURIComponent(videoId)}/note-feedback`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ category }),
+      body: JSON.stringify({ note, reason }),
     })
   },
 
-  /** Upload your own reel for analysis (multipart). Poll uploadStatus until done. */
+  // --- upload your own reel (POST /upload, poll GET /upload/{id}) ---
   upload(
     file: File,
     niche: string,
@@ -173,28 +120,6 @@ export const api = {
     return request<UploadJobStatus>(`/upload/${encodeURIComponent(jobId)}`)
   },
 
-  analyzeUrl(url: string, force = false): Promise<IngestResponse> {
-    return request<IngestResponse>('/analyze-url', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ url, force }),
-    })
-  },
-
-  /** Start scraping + featurising a creator's recent reels (background job). */
-  analyzeHandle(handle: string, niche: string, maxReels = 6): Promise<AnalyzeHandleJob> {
-    return request<AnalyzeHandleJob>('/analyze-handle', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ handle, niche, max_reels: maxReels }),
-    })
-  },
-
-  /** Poll a paste-handle job until status === 'done'. */
-  analyzeHandleStatus(jobId: string): Promise<AnalyzeHandleJob> {
-    return request<AnalyzeHandleJob>(`/analyze-handle/${encodeURIComponent(jobId)}`)
-  },
-
   // --- auth + creator ---
   me(): Promise<{ user: AuthUser | null }> {
     return request<{ user: AuthUser | null }>('/auth/me')
@@ -213,32 +138,13 @@ export const api = {
     return request<{ ok: boolean }>('/auth/logout', { method: 'POST' })
   },
 
-  myReels(): Promise<MyReels> {
-    return request<MyReels>('/me/reels')
+  /** The creator's own uploaded reels + their reads — the "My reads" history. */
+  myUploads(): Promise<MyUploads> {
+    return request<MyUploads>('/me/uploads')
   },
 
   /** The creator's style fingerprint, built from their own uploaded reels. */
   myFingerprint(): Promise<Fingerprint> {
     return request<Fingerprint>('/me/fingerprint')
   },
-
-  /** Record a one-tap dismissal of a craft-read note ("not useful" / "not in my reel"). */
-  noteFeedback(videoId: string, note: string, reason?: string): Promise<{ ok: boolean }> {
-    return request<{ ok: boolean }>(`/videos/${encodeURIComponent(videoId)}/note-feedback`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ note, reason }),
-    })
-  },
-
-  analyzeOwnReel(id: string): Promise<{ video_id: string }> {
-    return request<{ video_id: string }>(
-      `/me/reels/${encodeURIComponent(id)}/analyze`,
-      { method: 'POST' },
-    )
-  },
 }
-
-/** Full-page redirect to start Instagram OAuth (not an XHR — the browser must
- * navigate so the OAuth cookies/redirects work). */
-export const INSTAGRAM_CONNECT_URL = `${BASE}/auth/instagram/start`

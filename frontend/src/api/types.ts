@@ -98,9 +98,19 @@ export interface CraftReadData {
   done_well: string[]
 }
 
+export interface CraftReadMeta {
+  video_id: string
+  title: string
+  channel: string | null
+  duration_seconds: number | null
+  is_upload: boolean
+}
+
 export interface CraftReadResponse {
   available: boolean
+  suppressed?: boolean
   read?: CraftReadData
+  meta?: CraftReadMeta | null
 }
 
 export interface PlainSummary {
@@ -347,6 +357,25 @@ export interface MyReels {
   username: string | null
   count: number
   reels: ReelCard[]
+}
+
+// --- the creator's own uploaded reels + reads ("My reads" history) ---
+export interface UploadCard {
+  video_id: string
+  title: string
+  niche: string | null
+  created_at: string | null
+  duration_seconds: number | null
+  thumbnail_url: string | null
+  available: boolean // a grounded read exists (not suppressed/missing)
+  verdict: string | null
+  biggest_opportunity: string | null
+  dimension: string | null
+}
+
+export interface MyUploads {
+  count: number
+  uploads: UploadCard[]
 }
 
 // --- upload-your-reel analysis job (POST /upload, poll GET /upload/{id}) ---

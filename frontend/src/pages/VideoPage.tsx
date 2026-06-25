@@ -1,48 +1,13 @@
 import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { api, videoFileUrl } from '../api/client'
-import type { CutSegment } from '../api/types'
 import { useAsync } from '../hooks/useAsync'
-import { externalUrl, formatDuration, thumbnailUrl } from '../lib/format'
-import CategoryPicker from '../components/CategoryPicker'
-import Collapsible from '../components/Collapsible'
+import { formatDuration, thumbnailUrl } from '../lib/format'
 import CraftRead from '../components/CraftRead'
 import CraftScrubber, { type CraftMark } from '../components/CraftScrubber'
 import ShareCard from '../components/ShareCard'
-import CutPlanPanel from '../components/CutPlanPanel'
-import Scorecard from '../components/Scorecard'
 import Spinner from '../components/Spinner'
-import TheRead from '../components/TheRead'
-import TimelineStrip from '../components/TimelineStrip'
 import VideoPlayer from '../components/VideoPlayer'
-
-function BackLink() {
-  return (
-    <Link
-      to="/"
-      className="inline-flex items-center gap-1.5 text-sm text-muted transition-colors hover:text-text"
-    >
-      <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-        <path
-          d="M8.5 3 4.5 7l4 4"
-          stroke="currentColor"
-          strokeWidth="1.6"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-      </svg>
-      Back to corpus
-    </Link>
-  )
-}
-
-function ErrorBox({ message }: { message: string }) {
-  return (
-    <p className="rounded-xl border border-bad/40 bg-bad/10 px-4 py-3 text-sm text-bad">
-      {message}
-    </p>
-  )
-}
 
 /** Pull "m:ss" + observation out of each craft-read blind spot so they can be
  * placed as markers on the scrubber. */
@@ -60,177 +25,151 @@ function parseCraftMarks(blindSpots: string[] | undefined): CraftMark[] {
   return out
 }
 
+function ShareIcon() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 16 16" fill="none">
+      <path
+        d="M11 5.5 8 2.5 5 5.5M8 2.5v8M3.5 9v3.5A1 1 0 0 0 4.5 13.5h7a1 1 0 0 0 1-1V9"
+        stroke="currentColor"
+        strokeWidth="1.4"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  )
+}
+
+/** A read of one reel: the video with its flagged moments, the craft read, share,
+ * and a clear next step — never a dead end. */
 export default function VideoPage() {
   const { videoId } = useParams<{ videoId: string }>()
   const id = videoId ?? ''
-
-  const breakdown = useAsync(() => api.analyze(id), [id])
   const craft = useAsync(() => api.craftRead(id), [id])
-  const summary = useAsync(() => api.summary(id), [id])
-  const timeline = useAsync(() => api.timeline(id), [id])
 
-  // Bidirectional sync between the video player and the timeline strip.
-  // currentSecond is updated as the player advances; clicking a timeline
-  // segment increments seekToken so the player effect-jumps to seekTo.
   const [currentSecond, setCurrentSecond] = useState(0)
   const [seekTo, setSeekTo] = useState<number | undefined>(undefined)
   const [seekToken, setSeekToken] = useState(0)
-  // Bumped when the creator overrides the content category, so category-aware
-  // panels (the cut plan's "vs X winners") refetch against the new cohort.
-  const [categoryVersion, setCategoryVersion] = useState(0)
-  // The "winner cut" virtual edit: kept segments + a nonce to (re)start playback.
-  const [edl, setEdl] = useState<CutSegment[] | undefined>(undefined)
-  const [edlNonce, setEdlNonce] = useState(0)
   const [showShare, setShowShare] = useState(false)
   const handleSeek = (second: number) => {
     setSeekTo(second)
     setSeekToken((t) => t + 1)
   }
-  const handlePlayWinnerCut = (segments: CutSegment[]) => {
-    setEdl(segments)
-    setEdlNonce((n) => n + 1)
-  }
 
-  const b = breakdown.data
-  const marks = parseCraftMarks(craft.data?.read?.blind_spots)
+  const meta = craft.data?.meta ?? null
+  const read = craft.data?.available ? craft.data.read : undefined
+  const isUpload = meta?.is_upload ?? id.startsWith('up')
+  const marks = parseCraftMarks(read?.blind_spots)
+  const duration = meta?.duration_seconds ?? null
 
   return (
     <div className="space-y-5">
-      <BackLink />
+      {craft.loading ? <Spinner label="Loading your read…" /> : null}
+      {craft.error ? (
+        <p className="rounded-xl border border-bad/40 bg-bad/10 px-4 py-3 text-sm text-bad">
+          {craft.error}
+        </p>
+      ) : null}
 
-      {breakdown.loading ? <Spinner label="Analyzing video…" /> : null}
-      {breakdown.error ? <ErrorBox message={breakdown.error} /> : null}
-
-      {b ? (
+      {!craft.loading && !craft.error ? (
         <>
-          <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0">
-              <h1 className="text-xl font-bold leading-tight tracking-tight sm:text-2xl">
-                {b.title}
-              </h1>
-              <div className="mt-1 flex items-center gap-x-2 text-sm text-muted">
-                <span className="truncate">{b.channel}</span>
-                <span aria-hidden>·</span>
-                <span className="shrink-0 tabular-nums">{formatDuration(b.duration_seconds)}</span>
-              </div>
+          <div className="min-w-0">
+            <h1 className="text-xl font-bold leading-tight tracking-tight sm:text-2xl">
+              {meta?.title ?? 'Reel'}
+            </h1>
+            <div className="mt-1 flex items-center gap-x-2 text-sm text-muted">
+              {meta?.channel ? (
+                <>
+                  <span className="truncate">{meta.channel}</span>
+                  <span aria-hidden>·</span>
+                </>
+              ) : null}
+              <span className="shrink-0 tabular-nums">{formatDuration(duration)}</span>
             </div>
-            {externalUrl(b.video_id) ? (
-              <a
-                href={externalUrl(b.video_id)}
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex shrink-0 items-center gap-1 pt-1 text-xs text-muted transition-colors hover:text-text"
-              >
-                Original
-                <svg width="11" height="11" viewBox="0 0 12 12" fill="none">
-                  <path
-                    d="M4.5 2.5h5v5M9.5 2.5 4 8"
-                    stroke="currentColor"
-                    strokeWidth="1.3"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              </a>
+          </div>
+
+          {/* The video, with the craft read's flagged moments marked on the
+              scrubber — tap a dot (or any timestamp in the read) to jump there. */}
+          <div className="rounded-2xl border border-border bg-surface p-4 sm:p-5">
+            <VideoPlayer
+              src={videoFileUrl(id)}
+              poster={thumbnailUrl(id)}
+              seekToken={seekToken}
+              seekTo={seekTo}
+              onTimeUpdate={setCurrentSecond}
+            />
+            {marks.length > 0 ? (
+              <div className="mt-4">
+                <CraftScrubber
+                  durationSeconds={duration}
+                  marks={marks}
+                  currentSecond={currentSecond}
+                  onSeek={handleSeek}
+                />
+              </div>
             ) : null}
           </div>
 
-          {/* The centerpiece: the video, with the craft read's flagged moments
-              marked on the scrubber. Tap a dot (or any timestamp in the read) to
-              jump there — the read annotates the creator's own footage. */}
-          <div className="rounded-2xl border border-border bg-surface p-4 sm:p-5">
-            <VideoPlayer
-              src={videoFileUrl(b.video_id)}
-              poster={thumbnailUrl(b.video_id)}
-              seekToken={seekToken}
-              seekTo={seekTo}
-              edl={edl}
-              edlNonce={edlNonce}
-              onTimeUpdate={setCurrentSecond}
-            />
-            <div className="mt-4">
-              <CraftScrubber
-                durationSeconds={b.duration_seconds}
-                marks={marks}
-                currentSecond={currentSecond}
-                onSeek={handleSeek}
-              />
-            </div>
-          </div>
+          {read ? (
+            <CraftRead data={read} onSeek={handleSeek} videoId={id} />
+          ) : (
+            <p className="rounded-xl border border-border bg-surface px-4 py-3 text-sm text-muted">
+              {craft.data?.suppressed
+                ? 'No grounded read for this one — the model wasn’t confident enough to critique it honestly.'
+                : 'The read for this reel isn’t ready yet.'}
+            </p>
+          )}
 
-          {/* The craft read is the hero: the first analysis after the video, and
-              every timestamp is tap-verifiable against their own footage. */}
-          {craft.data?.available && craft.data.read ? (
-            <>
-              <CraftRead data={craft.data.read} onSeek={handleSeek} videoId={id} />
+          {/* Next step — never a dead end. */}
+          <div className="flex flex-wrap items-center gap-2.5 pt-1">
+            {read ? (
               <button
                 type="button"
                 onClick={() => setShowShare(true)}
-                className="flex w-full items-center justify-center gap-2 rounded-xl border border-border bg-surface py-2.5 text-sm font-semibold text-muted transition-colors hover:border-accent/50 hover:text-text"
+                className="inline-flex items-center gap-2 rounded-xl border border-border bg-surface px-4 py-2.5 text-sm font-semibold text-muted transition-colors hover:border-accent/50 hover:text-text"
               >
-                <svg width="15" height="15" viewBox="0 0 16 16" fill="none">
-                  <path
-                    d="M11 5.5 8 2.5 5 5.5M8 2.5v8M3.5 9v3.5A1 1 0 0 0 4.5 13.5h7a1 1 0 0 0 1-1V9"
-                    stroke="currentColor"
-                    strokeWidth="1.4"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
+                <ShareIcon />
                 Share this read
               </button>
-            </>
-          ) : null}
+            ) : null}
+            {isUpload ? (
+              <>
+                <Link
+                  to="/analyze"
+                  className="rounded-xl bg-grad px-4 py-2.5 text-sm font-bold text-white transition-all hover:brightness-110"
+                >
+                  Read another reel
+                </Link>
+                <Link
+                  to="/my-reads"
+                  className="rounded-xl border border-border bg-surface px-4 py-2.5 text-sm font-semibold text-muted transition-colors hover:text-text"
+                >
+                  My reads
+                </Link>
+                <Link
+                  to="/my-dna"
+                  className="rounded-xl border border-border bg-surface px-4 py-2.5 text-sm font-semibold text-muted transition-colors hover:text-text"
+                >
+                  My Creator DNA
+                </Link>
+              </>
+            ) : (
+              <Link
+                to="/browse"
+                className="rounded-xl border border-border bg-surface px-4 py-2.5 text-sm font-semibold text-muted transition-colors hover:text-text"
+              >
+                Browse more examples
+              </Link>
+            )}
+          </div>
 
-          {showShare && craft.data?.read && b ? (
+          {showShare && read && meta ? (
             <ShareCard
-              read={craft.data.read}
-              title={b.title}
-              durationLabel={formatDuration(b.duration_seconds)}
+              read={read}
+              title={meta.title}
+              durationLabel={formatDuration(duration)}
               onClose={() => setShowShare(false)}
             />
           ) : null}
-
-          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted">
-            <span className="text-[11px] font-semibold uppercase tracking-wider">Content type</span>
-            <CategoryPicker videoId={id} onChange={() => setCategoryVersion((v) => v + 1)} />
-            <span className="text-xs text-muted/70">— sets the winners it&apos;s compared to</span>
-          </div>
-
-          <CutPlanPanel
-            videoId={b.video_id}
-            categoryVersion={categoryVersion}
-            onSeek={handleSeek}
-            onPlayWinnerCut={handlePlayWinnerCut}
-            currentSecond={currentSecond}
-          />
-
-          <div className="space-y-2.5">
-            {/* The scalar scorecard + benchmark read — preserved, but demoted below
-                the craft read so the page speaks with one honest voice. */}
-            <Collapsible
-              title="Scorecard & benchmark read"
-              subtitle="how it compares to same-size winners — correlational, not a verdict"
-            >
-              <div className="space-y-4">
-                <Scorecard b={b} />
-                {summary.loading ? (
-                  <Spinner label="Writing the read…" />
-                ) : summary.error ? (
-                  <ErrorBox message={summary.error} />
-                ) : summary.data ? (
-                  <TheRead s={summary.data} />
-                ) : null}
-                {timeline.data ? (
-                  <TimelineStrip
-                    timeline={timeline.data}
-                    currentSecond={currentSecond}
-                    onSeek={handleSeek}
-                  />
-                ) : null}
-              </div>
-            </Collapsible>
-          </div>
         </>
       ) : null}
     </div>

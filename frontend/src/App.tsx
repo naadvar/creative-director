@@ -6,6 +6,7 @@ import UploadPage from './pages/UploadPage'
 import LandingPage from './pages/LandingPage'
 import MyUploadsPage from './pages/MyUploadsPage'
 import MyDnaPage from './pages/MyDnaPage'
+import PrivacyPage from './pages/PrivacyPage'
 import Disclaimer from './components/Disclaimer'
 import Spinner from './components/Spinner'
 import EmailGate from './components/EmailGate'
@@ -137,6 +138,7 @@ function AnimatedRoutes() {
             is deferred to the "Read my reel" tap (UploadPage handles it). */}
         <Route path="/analyze" element={<UploadPage />} />
         <Route path="/browse" element={<BrowsePage />} />
+        <Route path="/privacy" element={<PrivacyPage />} />
         <Route
           path="/my-reads"
           element={
@@ -179,8 +181,11 @@ export default function App() {
           <AnimatedRoutes />
         </main>
         <footer className="border-t border-border">
-          <div className="mx-auto max-w-6xl px-5 py-5">
+          <div className="mx-auto max-w-6xl space-y-2 px-5 py-5">
             <Disclaimer />
+            <Link to="/privacy" className="text-xs text-muted underline-offset-2 hover:text-text hover:underline">
+              Privacy
+            </Link>
           </div>
         </footer>
       </div>

@@ -23,6 +23,16 @@ body,
   height: 100%;
 }
 
+/* Native (Capacitor) safe areas — the notch / Dynamic Island and the home
+   indicator. The insets are 0 in a browser, so these are inert on the web and
+   only take effect inside the iOS/Android app (with viewport-fit=cover). */
+header {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+footer {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
 body {
   background-color: var(--color-ink);
   color: var(--color-text);

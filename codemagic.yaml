@@ -1,0 +1,68 @@
+# Codemagic CI — build + sign the Capacitor iOS app on a cloud Mac (you're on
+# Windows, so this is how iOS gets built). Set up once in the Codemagic UI:
+#   1. Connect this GitHub repo.
+#   2. Apps → Settings → Code signing identities → connect your App Store Connect
+#      API key (Apple Developer → Users and Access → Integrations → App Store Connect
+#      API → generate a key). Name the integration "codemagic" (or update below).
+#   3. Make sure the App (bundle id com.creativedirector.app — change it to one you
+#      own) exists in App Store Connect first.
+# Then push to main and Codemagic runs this workflow.
+
+workflows:
+  ios-app:
+    name: Creative Director iOS
+    instance_type: mac_mini_m2
+    max_build_duration: 60
+    integrations:
+      app_store_connect: codemagic # <- the integration name you set in the UI
+    environment:
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.creativedirector.app # <- your bundle id
+      vars:
+        BUNDLE_ID: "com.creativedirector.app"
+        APP_NAME: "Creative Director"
+      node: 20
+      xcode: latest
+      cocoapods: default
+    scripts:
+      - name: Install web dependencies
+        script: |
+          cd frontend
+          npm ci
+      - name: Build the web bundle (native mode → Railway API)
+        script: |
+          cd frontend
+          npm run build:app
+      - name: Generate + sync the iOS project
+        script: |
+          cd frontend
+          npx cap add ios || true   # generated fresh in CI (ios/ isn't committed)
+          npx cap sync ios
+      - name: Inject required Info.plist usage strings
+        # The photo-library string is REQUIRED — iOS kills the app on photo access
+        # without it, and App Review rejects apps that access without a reason.
+        script: |
+          PLIST="frontend/ios/App/App/Info.plist"
+          /usr/libexec/PlistBuddy -c "Add :NSPhotoLibraryUsageDescription string 'Creative Director needs access to your videos so you can pick a reel to get a craft read.'" "$PLIST" || \
+          /usr/libexec/PlistBuddy -c "Set :NSPhotoLibraryUsageDescription 'Creative Director needs access to your videos so you can pick a reel to get a craft read.'" "$PLIST"
+          /usr/libexec/PlistBuddy -c "Add :NSCameraUsageDescription string 'Creative Director can record a reel to analyze.'" "$PLIST" || \
+          /usr/libexec/PlistBuddy -c "Set :NSCameraUsageDescription 'Creative Director can record a reel to analyze.'" "$PLIST"
+      - name: Install CocoaPods
+        script: |
+          cd frontend/ios/App
+          pod install
+      - name: Set up code signing
+        script: |
+          xcode-project use-profiles
+      - name: Build the IPA
+        script: |
+          cd frontend/ios/App
+          xcode-project build-ipa --workspace App.xcworkspace --scheme App
+    artifacts:
+      - frontend/ios/App/build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true   # lands in TestFlight; flip on submit_to_app_store when ready

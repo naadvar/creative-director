@@ -138,6 +138,14 @@ export default function CraftRead({
   const spots = rawSpots.map(parseSpot)
   const doneWell = data.done_well ?? []
   const [dismissed, setDismissed] = useState<Set<number>>(new Set())
+  const [leverFb, setLeverFb] = useState<'helpful' | 'not_useful' | null>(null)
+
+  // Helpful / not-useful on the headline fix — the positive signal (👍) plus the
+  // negative one, both labeled training data (helpful = keep this lever shape).
+  const rateLever = (reason: 'helpful' | 'not_useful') => {
+    setLeverFb(reason)
+    if (videoId) api.noteFeedback(videoId, data.biggest_opportunity ?? '', reason).catch(() => {})
+  }
 
   // One-tap dismissal: hide the note and record it (trust affordance + training signal).
   const dismiss = (i: number, reason: string) => {
@@ -198,6 +206,32 @@ export default function CraftRead({
               Jump to {data.lever_timestamp}
             </button>
           ) : null}
+          {/* Helpful? — the one-tap signal that tunes the engine over time. */}
+          <div className="mt-3 flex items-center gap-2 border-t border-accent/15 pt-2.5 text-[12px]">
+            {leverFb ? (
+              <span className="text-muted">
+                {leverFb === 'helpful' ? 'Glad it helped — noted. 🙌' : 'Thanks — that helps us tune it.'}
+              </span>
+            ) : (
+              <>
+                <span className="text-muted">Was this fix helpful?</span>
+                <button
+                  type="button"
+                  onClick={() => rateLever('helpful')}
+                  className="rounded-full border border-border bg-surface px-2.5 py-1 font-medium text-muted transition-colors hover:border-good/50 hover:text-good"
+                >
+                  👍 Helpful
+                </button>
+                <button
+                  type="button"
+                  onClick={() => rateLever('not_useful')}
+                  className="rounded-full border border-border bg-surface px-2.5 py-1 font-medium text-muted transition-colors hover:border-bad/50 hover:text-bad"
+                >
+                  👎 Not quite
+                </button>
+              </>
+            )}
+          </div>
         </div>
       ) : null}
 

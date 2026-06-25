@@ -23,7 +23,7 @@ workflows:
       vars:
         BUNDLE_ID: "com.creativedirector.app"
         APP_NAME: "Creative Director"
-      node: 20
+      node: 22 # Capacitor 8 CLI requires Node >= 22
       xcode: latest
       cocoapods: default
     scripts:

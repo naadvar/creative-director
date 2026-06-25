@@ -16,13 +16,11 @@ workflows:
     integrations:
       app_store_connect: codemagic # <- the integration name you set in the UI
     environment:
-      # Codemagic MANAGED automatic signing: with the Admin App Store Connect API key,
-      # it generates the private key + creates the distribution cert AND provisioning
-      # profile for this bundle id, and sets up the keychain — all internally. (The
-      # manual CLI route failed because it can't manage the cert private key.)
-      ios_signing:
-        distribution_type: app_store
-        bundle_identifier: com.creativedirector.app
+      # No ios_signing block: Codemagic's automatic signing only FETCHES profiles, it
+      # doesn't create them, so it fails "no matching profiles" on a fresh account.
+      # We create everything explicitly in the scripts with fetch-signing-files
+      # --create (the canonical recipe), which generates the cert private key + cert +
+      # profile — provided the account has no dangling cert blocking it.
       vars:
         BUNDLE_ID: "com.creativedirector.app"
         APP_NAME: "Creative Director"
@@ -62,11 +60,15 @@ workflows:
           else
             echo "No Podfile — Capacitor uses Swift Package Manager, skipping pod install."
           fi
-      - name: Apply code signing to the Xcode project
-        # Codemagic's automatic signing (the ios_signing block above) has already
-        # created + downloaded the cert + profile; this points the Xcode project at
-        # them. Listing is just for debugging if anything's off.
+      - name: Set up code signing (canonical — creates cert + profile)
+        # The documented Codemagic recipe: fetch-signing-files --create generates the
+        # certificate private key + distribution cert + app-store profile in one shot
+        # (no separate create-certificate, which left a dangling key-less cert before).
         script: |
+          set -e
+          keychain initialize
+          app-store-connect fetch-signing-files "$BUNDLE_ID" --type IOS_APP_STORE --create
+          keychain add-certificates
           xcode-project use-profiles
           ls -la "$HOME/Library/MobileDevice/Provisioning Profiles/" || true
       - name: Build the IPA

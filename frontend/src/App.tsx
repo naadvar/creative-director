@@ -4,6 +4,8 @@ import BrowsePage from './pages/BrowsePage'
 import VideoPage from './pages/VideoPage'
 import UploadPage from './pages/UploadPage'
 import LandingPage from './pages/LandingPage'
+import MyUploadsPage from './pages/MyUploadsPage'
+import MyDnaPage from './pages/MyDnaPage'
 import Disclaimer from './components/Disclaimer'
 import Spinner from './components/Spinner'
 import EmailGate from './components/EmailGate'
@@ -35,9 +37,23 @@ function Header() {
           </span>
         </Link>
         <nav className="flex items-center gap-3.5 sm:gap-4">
-          <NavLink to="/analyze" className={navClass}>
-            Analyze
-          </NavLink>
+          {user ? (
+            <>
+              <NavLink to="/analyze" className={navClass}>
+                Read
+              </NavLink>
+              <NavLink to="/my-reads" className={navClass}>
+                My reads
+              </NavLink>
+              <NavLink to="/my-dna" className={navClass}>
+                My DNA
+              </NavLink>
+            </>
+          ) : (
+            <NavLink to="/analyze" className={navClass}>
+              Read a reel
+            </NavLink>
+          )}
           <NavLink to="/browse" className={navClass}>
             Examples
           </NavLink>
@@ -109,15 +125,26 @@ function AnimatedRoutes() {
     <div key={location.pathname} className="page-in">
       <Routes location={location}>
         <Route path="/" element={<Home />} />
+        {/* Public: a creator can pick a file before signing in; the email gate
+            is deferred to the "Read my reel" tap (UploadPage handles it). */}
+        <Route path="/analyze" element={<UploadPage />} />
+        <Route path="/browse" element={<BrowsePage />} />
         <Route
-          path="/analyze"
+          path="/my-reads"
           element={
             <RequireAuth>
-              <UploadPage />
+              <MyUploadsPage />
             </RequireAuth>
           }
         />
-        <Route path="/browse" element={<BrowsePage />} />
+        <Route
+          path="/my-dna"
+          element={
+            <RequireAuth>
+              <MyDnaPage />
+            </RequireAuth>
+          }
+        />
         <Route path="/video/:videoId" element={<VideoPage />} />
         <Route
           path="*"

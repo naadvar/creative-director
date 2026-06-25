@@ -1,5 +1,4 @@
 import { Link } from 'react-router-dom'
-import EmailGate from '../components/EmailGate'
 
 function Step({ n, title, body }: { n: number; title: string; body: string }) {
   return (
@@ -37,7 +36,15 @@ export default function LandingPage() {
       </div>
 
       <div className="mt-8 w-full max-w-md">
-        <EmailGate bare redirectTo="/analyze" cta="Read my reel" />
+        <Link
+          to="/analyze"
+          className="block w-full rounded-xl bg-grad px-5 py-3.5 text-center text-[15px] font-bold text-white transition-all hover:brightness-110"
+        >
+          Read my reel
+        </Link>
+        <p className="mt-2 text-center text-xs text-muted">
+          Drop a reel — no account needed to start. Free.
+        </p>
       </div>
 
       <Link to="/browse" className="mt-5 text-sm text-accent underline-offset-4 hover:underline">

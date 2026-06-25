@@ -14,6 +14,8 @@ interface Props {
   cta?: string
   /** Compact variant for embedding in a hero (no card chrome). */
   bare?: boolean
+  /** If set, called after sign-in instead of navigating (e.g. continue an upload in place). */
+  onAuthed?: () => void
 }
 
 /** Passwordless email gate: one field, no password. Submitting find-or-creates
@@ -24,6 +26,7 @@ export default function EmailGate({
   sub = 'Enter your email to get a grounded craft read of your own short.',
   cta = 'Continue',
   bare = false,
+  onAuthed,
 }: Props) {
   const { refresh } = useAuth()
   const navigate = useNavigate()
@@ -39,7 +42,8 @@ export default function EmailGate({
     try {
       await api.emailLogin(email)
       await refresh()
-      navigate(redirectTo)
+      if (onAuthed) onAuthed()
+      else navigate(redirectTo)
     } catch (e) {
       setErr(
         e instanceof ApiError && e.status === 422

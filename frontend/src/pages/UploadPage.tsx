@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import { api } from '../api/client'
 import type { Fingerprint } from '../api/types'
 import CreatorFingerprint from '../components/CreatorFingerprint'
+import EmailGate from '../components/EmailGate'
+import { useAuth } from '../hooks/useAuth'
 
 const NICHES = [
   { key: 'ig_fitness', label: 'Fitness' },
@@ -119,6 +121,7 @@ function AnalyzingView({ message, fileName }: { message: string; fileName?: stri
 /** Home: upload a reel -> full craft read vs the niche's winners. */
 export default function UploadPage() {
   const navigate = useNavigate()
+  const { user } = useAuth()
   const inputRef = useRef<HTMLInputElement>(null)
   const [file, setFile] = useState<File | null>(null)
   const [niche, setNiche] = useState<string>('ig_fitness')
@@ -130,6 +133,7 @@ export default function UploadPage() {
   const [error, setError] = useState<string | null>(null)
   const [corpusTotal, setCorpusTotal] = useState<number | null>(null)
   const [fingerprint, setFingerprint] = useState<Fingerprint | null>(null)
+  const [gating, setGating] = useState(false)
   const cancelled = useRef(false)
 
   useEffect(() => {
@@ -157,7 +161,17 @@ export default function UploadPage() {
     setFile(f)
   }
 
-  const submit = async () => {
+  // Gate is deferred to here: pick a file freely, sign in only at "Read my reel".
+  const submit = () => {
+    if (!file || phase !== 'idle') return
+    if (!user) {
+      setGating(true)
+      return
+    }
+    void doUpload()
+  }
+
+  const doUpload = async () => {
     if (!file || phase !== 'idle') return
     setError(null)
     cancelled.current = false
@@ -341,6 +355,26 @@ export default function UploadPage() {
         Analyzed on the spot, never shared or published. A craft read of your footage — no
         performance or virality predictions.
       </p>
+
+      {/* Deferred email gate — only appears at the moment of value (the submit tap). */}
+      {gating ? (
+        <div
+          className="fixed inset-0 z-40 grid place-items-center bg-ink/70 p-4 backdrop-blur-sm"
+          onClick={() => setGating(false)}
+        >
+          <div className="w-full max-w-md" onClick={(e) => e.stopPropagation()}>
+            <EmailGate
+              heading="Save your read"
+              sub="Drop your email so your read lands in your library — no password, no spam."
+              cta="Read my reel"
+              onAuthed={() => {
+                setGating(false)
+                void doUpload()
+              }}
+            />
+          </div>
+        </div>
+      ) : null}
     </div>
   )
 }

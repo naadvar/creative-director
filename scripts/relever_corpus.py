@@ -35,16 +35,23 @@ _DIM = func.json_extract(VideoFeatures.craft_read, "$.opportunity_dimension")
 _SRC = func.json_extract(VideoFeatures.craft_read, "$.lever_source")
 
 
-def pick(niche: str, limit: int) -> list[tuple]:
+def pick(niche: str, limit: int, all_reads: bool = False) -> list[tuple]:
+    """Select reels to re-lever. Default (fitness-treatment) mode targets SILENT or
+    text-legibility levers on the current schema. `all_reads=True` (untreated-niche
+    backfill) targets EVERY grounded, not-yet-relevered read regardless of schema or
+    dimension — used to replace the original boilerplate/intent-fighting levers on
+    travel/food/fashion with grounded, reveal-respecting ones."""
+    conds = [Channel.niche == niche, Channel.id.notlike("upch_%"),
+             VideoFeatures.craft_read.isnot(None), _GROUNDED != 0, _SRC.is_(None)]
+    if not all_reads:
+        conds += [func.json_extract(VideoFeatures.craft_read, "$.schema_version") == SCHEMA_VERSION,
+                  or_(_BO.like("%well-executed as is%"), _DIM == "text")]
     with session_scope() as s:
         rows = s.execute(
             select(Video.id, Video.title, Video.duration_seconds, VideoFeatures.craft_read)
             .join(Channel, Channel.id == Video.channel_id)
             .join(VideoFeatures, VideoFeatures.video_id == Video.id)
-            .where(Channel.niche == niche, Channel.id.notlike("upch_%"),
-                   func.json_extract(VideoFeatures.craft_read, "$.schema_version") == SCHEMA_VERSION,
-                   _GROUNDED != 0, _SRC.is_(None),
-                   or_(_BO.like("%well-executed as is%"), _DIM == "text"))
+            .where(*conds)
             .order_by(Video.id)  # ig ids are hash-like -> mixes creators, stable for resume
             .limit(limit)
         ).all()
@@ -57,14 +64,15 @@ def _fetch(vid: str, dest_dir: str) -> Path:
     return p
 
 
-def work(t: tuple, dump: bool):
+def work(t: tuple, dump: bool, niche: str = "ig_fitness"):
     vid, title, dur, read = t
     old_bo = read.get("biggest_opportunity") or ""
     old_dim = read.get("opportunity_dimension") or ""
     try:
         with tempfile.TemporaryDirectory() as td:
             mp4 = _fetch(vid, td)
-            lev = extract_craft_lever(str(mp4), niche="ig_fitness", caption=title, duration_s=dur)
+            lev = extract_craft_lever(str(mp4), niche=niche, caption=title, duration_s=dur,
+                                      payoff=read.get("payoff"))
     except Exception as e:  # noqa: BLE001
         logger.warning(f"{vid}: {type(e).__name__}: {str(e)[:90]}")
         return None
@@ -100,16 +108,17 @@ def store(vid: str, read: dict) -> None:
             time.sleep(0.5 * (attempt + 1))
 
 
-def main(limit: int, workers: int, niche: str, dump_path: str | None) -> None:
-    targets = pick(niche, limit)
+def main(limit: int, workers: int, niche: str, dump_path: str | None,
+         all_reads: bool = False) -> None:
+    targets = pick(niche, limit, all_reads=all_reads)
     dump = dump_path is not None
-    logger.info(f"re-lever: {len(targets)} silent/legibility {niche} reels "
-                f"(workers={workers}, mode={'DUMP' if dump else 'WRITE-DB'})")
+    logger.info(f"re-lever: {len(targets)} {'ALL-kept' if all_reads else 'silent/legibility'} "
+                f"{niche} reels (workers={workers}, mode={'DUMP' if dump else 'WRITE-DB'})")
     t0 = time.time()
     done = ok = fail = upgraded = 0
     records, vocab = [], {}
     with ThreadPoolExecutor(max_workers=workers) as ex:
-        futs = [ex.submit(work, t, dump) for t in targets]
+        futs = [ex.submit(work, t, dump, niche) for t in targets]
         for fu in as_completed(futs):
             r = fu.result()
             done += 1
@@ -140,6 +149,7 @@ if __name__ == "__main__":
     nums = [int(a) for a in args if a.isdigit()]
     niche = next((a for a in args if a.startswith("ig_")), "ig_fitness")
     dump_path = next((a.split("=", 1)[1] for a in args if a.startswith("dump=")), None)
+    all_reads = "all" in args  # untreated-niche backfill: re-lever EVERY kept read
     limit = nums[0] if nums else 20
     workers = nums[1] if len(nums) > 1 else 6
-    main(limit, workers, niche, dump_path)
+    main(limit, workers, niche, dump_path, all_reads=all_reads)

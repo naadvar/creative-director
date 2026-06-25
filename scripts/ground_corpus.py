@@ -30,8 +30,11 @@ def pick(niche: str, limit: int) -> list[tuple]:
                    VideoFeatures.thumb_text)
             .join(Channel, Channel.id == Video.channel_id)
             .join(VideoFeatures, VideoFeatures.video_id == Video.id)
+            # No schema_version filter: the untreated niches are schema_version=1 and
+            # still need gating. `grounded IS NULL` is the resumability + only-untreated
+            # key (already-gated fitness reads have grounded set, so they are skipped).
             .where(Channel.niche == niche, Channel.id.notlike("upch_%"),
-                   func.json_extract(VideoFeatures.craft_read, "$.schema_version") == SCHEMA_VERSION,
+                   VideoFeatures.craft_read.isnot(None),
                    func.json_extract(VideoFeatures.craft_read, "$.grounded").is_(None))
             .limit(limit)
         ).all()

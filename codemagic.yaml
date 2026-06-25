@@ -41,6 +41,12 @@ workflows:
           cd frontend
           npx cap add ios || true   # generated fresh in CI (ios/ isn't committed)
           npx cap sync ios
+      - name: Generate app icons + splash
+        # App Store REJECTS binaries with no app icon. Generate the iOS icon set +
+        # splash from frontend/resources/{icon.png,splash.png}.
+        script: |
+          cd frontend
+          npx @capacitor/assets@latest generate --ios
       - name: Inject required Info.plist usage strings
         # The photo-library string is REQUIRED — iOS kills the app on photo access
         # without it, and App Review rejects apps that access without a reason.
@@ -50,6 +56,10 @@ workflows:
           /usr/libexec/PlistBuddy -c "Set :NSPhotoLibraryUsageDescription 'Creative Director needs access to your videos so you can pick a reel to get a craft read.'" "$PLIST"
           /usr/libexec/PlistBuddy -c "Add :NSCameraUsageDescription string 'Creative Director can record a reel to analyze.'" "$PLIST" || \
           /usr/libexec/PlistBuddy -c "Set :NSCameraUsageDescription 'Creative Director can record a reel to analyze.'" "$PLIST"
+          # Export compliance: no non-exempt encryption — avoids the TestFlight
+          # "Missing Compliance" block + a manual prompt on every upload.
+          /usr/libexec/PlistBuddy -c "Add :ITSAppUsesNonExemptEncryption bool false" "$PLIST" || \
+          /usr/libexec/PlistBuddy -c "Set :ITSAppUsesNonExemptEncryption false" "$PLIST"
       - name: Install CocoaPods (only if the project uses Pods)
         # Capacitor 8 uses Swift Package Manager — no Podfile. Skip pod install when
         # there isn't one (xcodebuild resolves SPM deps during the build).

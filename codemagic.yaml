@@ -49,10 +49,16 @@ workflows:
           /usr/libexec/PlistBuddy -c "Set :NSPhotoLibraryUsageDescription 'Creative Director needs access to your videos so you can pick a reel to get a craft read.'" "$PLIST"
           /usr/libexec/PlistBuddy -c "Add :NSCameraUsageDescription string 'Creative Director can record a reel to analyze.'" "$PLIST" || \
           /usr/libexec/PlistBuddy -c "Set :NSCameraUsageDescription 'Creative Director can record a reel to analyze.'" "$PLIST"
-      - name: Install CocoaPods
+      - name: Install CocoaPods (only if the project uses Pods)
+        # Capacitor 8 uses Swift Package Manager — no Podfile. Skip pod install when
+        # there isn't one (xcodebuild resolves SPM deps during the build).
         script: |
           cd frontend/ios/App
-          pod install
+          if [ -f Podfile ]; then
+            pod install
+          else
+            echo "No Podfile — Capacitor uses Swift Package Manager, skipping pod install."
+          fi
       - name: Set up code signing (create cert + profile if missing)
         # Uses the App Store Connect API key from the `codemagic` integration to
         # fetch — and CREATE if absent — the distribution cert + provisioning
@@ -64,9 +70,15 @@ workflows:
           keychain add-certificates
           xcode-project use-profiles
       - name: Build the IPA
+        # CocoaPods produces an .xcworkspace; an SPM-only Capacitor project has just
+        # the .xcodeproj. Use whichever exists.
         script: |
           cd frontend/ios/App
-          xcode-project build-ipa --workspace App.xcworkspace --scheme App
+          if [ -d "App.xcworkspace" ]; then
+            xcode-project build-ipa --workspace "App.xcworkspace" --scheme App
+          else
+            xcode-project build-ipa --project "App.xcodeproj" --scheme App
+          fi
     artifacts:
       - frontend/ios/App/build/ios/ipa/*.ipa
       - /tmp/xcodebuild_logs/*.log

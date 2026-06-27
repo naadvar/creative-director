@@ -37,7 +37,7 @@ function Header() {
             Creative Director
           </span>
         </Link>
-        <nav className="flex items-center gap-3.5 sm:gap-4">
+        <nav className="hidden items-center gap-3.5 sm:flex sm:gap-4">
           {user ? (
             <>
               <NavLink to="/analyze" className={navClass}>
@@ -83,6 +83,67 @@ function Header() {
         </div>
       </div>
     </header>
+  )
+}
+
+function TabIcon({ d }: { d: string }) {
+  return (
+    <svg
+      width="22"
+      height="22"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d={d} />
+    </svg>
+  )
+}
+
+const TAB_ICONS = {
+  read: 'M12 15V4m0 0L8 8m4-4 4 4M5 15v3a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-3',
+  reads: 'M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z',
+  dna: 'M7 4c0 4 10 6 10 10M17 4c0 4-10 6-10 10M7 20c0-2 10-4 10-8',
+  examples: 'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM10.5 8.5l5 3.5-5 3.5z',
+}
+
+function BottomTab({ to, label, icon }: { to: string; label: string; icon: keyof typeof TAB_ICONS }) {
+  return (
+    <NavLink
+      to={to}
+      className={({ isActive }) =>
+        `flex flex-1 flex-col items-center justify-center gap-0.5 py-2 text-[10px] font-medium transition-colors active:bg-surface ${
+          isActive ? 'text-accent' : 'text-muted'
+        }`
+      }
+    >
+      <TabIcon d={TAB_ICONS[icon]} />
+      {label}
+    </NavLink>
+  )
+}
+
+/** Native-style bottom tab bar — the primary navigation on phones (the top header
+ * nav is hidden below sm). Hidden on desktop, which keeps the top nav. */
+function BottomNav() {
+  const { user } = useAuth()
+  return (
+    <nav
+      className="fixed inset-x-0 bottom-0 z-30 flex border-t border-border bg-ink/95 backdrop-blur-md sm:hidden"
+      style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+    >
+      <BottomTab to="/analyze" label="Read" icon="read" />
+      {user ? (
+        <>
+          <BottomTab to="/my-reads" label="My reads" icon="reads" />
+          <BottomTab to="/my-dna" label="DNA" icon="dna" />
+        </>
+      ) : null}
+      <BottomTab to="/browse" label="Examples" icon="examples" />
+    </nav>
   )
 }
 
@@ -177,10 +238,11 @@ export default function App() {
     <AuthProvider>
       <div className="flex min-h-screen flex-col">
         <Header />
-        <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-7 sm:px-5">
+        {/* pb-24 on mobile clears the fixed bottom tab bar. */}
+        <main className="mx-auto w-full max-w-6xl flex-1 px-4 pt-7 pb-24 sm:px-5 sm:py-7">
           <AnimatedRoutes />
         </main>
-        <footer className="border-t border-border">
+        <footer className="hidden border-t border-border sm:block">
           <div className="mx-auto max-w-6xl space-y-2 px-5 py-5">
             <Disclaimer />
             <Link to="/privacy" className="text-xs text-muted underline-offset-2 hover:text-text hover:underline">
@@ -188,6 +250,7 @@ export default function App() {
             </Link>
           </div>
         </footer>
+        <BottomNav />
       </div>
     </AuthProvider>
   )

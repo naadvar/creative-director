@@ -167,6 +167,27 @@ export const api = {
     })
   },
 
+  /** Native Sign in with Apple — verify the Apple identity token server-side and
+   * find-or-create the user by their Apple id. Native-only; web is unaffected.
+   * Same response shape as emailLogin, including the bearer token for the app. */
+  appleLogin(
+    identityToken: string,
+    opts?: { givenName?: string; familyName?: string },
+  ): Promise<{ user: AuthUser | null }> {
+    return request<{ user: AuthUser | null; token?: string }>('/auth/apple', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        identityToken,
+        givenName: opts?.givenName,
+        familyName: opts?.familyName,
+      }),
+    }).then((r) => {
+      if (r.token && isNativeApp()) setAuthToken(r.token) // web stays cookie-only
+      return r
+    })
+  },
+
   logout(): Promise<{ ok: boolean }> {
     setAuthToken(null)
     return request<{ ok: boolean }>('/auth/logout', { method: 'POST' })

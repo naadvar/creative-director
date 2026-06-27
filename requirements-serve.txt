@@ -47,5 +47,9 @@ yt-dlp>=2024.10.0
 # LLM advice narration
 anthropic>=0.69.0
 
+# Sign in with Apple — verify the RS256 identity token against Apple's JWKS.
+# The [crypto] extra pulls in `cryptography` for RSA signature verification.
+PyJWT[crypto]>=2.8.0
+
 # Cloudflare R2 (S3-compatible) — media serving + DB fetch at startup
 boto3>=1.34.0

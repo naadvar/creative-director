@@ -6,6 +6,8 @@ previewed against the existing corpus.
 """
 from __future__ import annotations
 
+from typing import Optional
+
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import RedirectResponse
 from pydantic import BaseModel
@@ -18,6 +20,7 @@ from api.auth import (
     make_token,
     normalize_email,
     upsert_user_and_connection,
+    verify_apple_identity_token,
 )
 from api.config import api_settings
 
@@ -26,6 +29,14 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 
 class EmailLoginBody(BaseModel):
     email: str
+
+
+class AppleLoginBody(BaseModel):
+    identityToken: str
+    # Apple returns the name only on the FIRST authorization, client-side (it is
+    # NOT in the token), so the app forwards it for us to store as the display name.
+    givenName: Optional[str] = None
+    familyName: Optional[str] = None
 
 # Sentinel token marking the demo account; /me/reels serves corpus reels for it.
 DEMO_TOKEN = "DEMO"
@@ -48,6 +59,33 @@ def email_gate(body: EmailLoginBody, request: Request) -> dict:
     uid = email_login(request, email)
     # token: for native (Capacitor) clients that can't carry the session cookie.
     # The web app ignores it and keeps using the cookie.
+    return {"user": get_optional_user(request), "token": make_token(uid)}
+
+
+@router.post("/apple")
+def apple_gate(body: AppleLoginBody, request: Request) -> dict:
+    """Native Sign in with Apple. Verify the identity token against Apple's public
+    keys, then find-or-create the user by their stable Apple `sub`. Returns the
+    same shape as /auth/email (so the frontend treats both logins identically)."""
+    claims = verify_apple_identity_token(body.identityToken)
+    sub = claims.get("sub")
+    if not sub:
+        raise HTTPException(status_code=422, detail="Apple token missing subject")
+    email = claims.get("email")
+    is_private = str(claims.get("is_private_email", "")).lower() == "true"
+    # Prefer the (first-login-only) name; else a non-relay email; else nothing.
+    name = " ".join(p for p in (body.givenName, body.familyName) if p).strip()
+    username = name or (email if email and not is_private else None)
+    uid = upsert_user_and_connection(
+        platform="apple",
+        platform_user_id=str(sub),
+        username=username,
+        account_type=None,
+        access_token=None,
+        token_expires_at=None,
+        scopes=None,
+    )
+    login_user(request, uid)
     return {"user": get_optional_user(request), "token": make_token(uid)}
 
 

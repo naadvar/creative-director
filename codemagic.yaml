@@ -60,6 +60,22 @@ workflows:
           # "Missing Compliance" block + a manual prompt on every upload.
           /usr/libexec/PlistBuddy -c "Add :ITSAppUsesNonExemptEncryption bool false" "$PLIST" || \
           /usr/libexec/PlistBuddy -c "Set :ITSAppUsesNonExemptEncryption false" "$PLIST"
+      - name: Enable Sign in with Apple (entitlement + project wiring)
+        # ios/ is regenerated every build, so the entitlement must be (re)created
+        # in CI each run. The provisioning profile fetched below (--create) includes
+        # this entitlement automatically BECAUSE the com.creativedirector.app App ID
+        # has the "Sign In with Apple" capability enabled in the Apple portal. If you
+        # ever see a "doesn't match the entitlements" signing error, that portal
+        # capability is the thing to check first.
+        script: |
+          set -e
+          ENT="frontend/ios/App/App/App.entitlements"
+          rm -f "$ENT"
+          /usr/libexec/PlistBuddy -c "Add :com.apple.developer.applesignin array" "$ENT"
+          /usr/libexec/PlistBuddy -c "Add :com.apple.developer.applesignin:0 string Default" "$ENT"
+          echo "--- App.entitlements ---"; /usr/libexec/PlistBuddy -c "Print" "$ENT"
+          gem install xcodeproj --no-document
+          ruby frontend/ci/set_entitlements.rb
       - name: Install CocoaPods (only if the project uses Pods)
         # Capacitor 8 uses Swift Package Manager — no Podfile. Skip pod install when
         # there isn't one (xcodebuild resolves SPM deps during the build).

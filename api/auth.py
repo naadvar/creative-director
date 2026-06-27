@@ -6,13 +6,21 @@ main.py). These helpers read it back and resolve the current ``User``.
 """
 from __future__ import annotations
 
+import os
 import re
 from datetime import datetime
 from typing import Optional
 
+import jwt
 from fastapi import Depends, HTTPException, Request
 from itsdangerous import BadSignature, SignatureExpired, URLSafeTimedSerializer
+from jwt import PyJWKClient
 from sqlalchemy import func, select
+
+try:  # PyJWT >= 2.8 distinguishes JWKS transport errors; older versions don't.
+    from jwt.exceptions import PyJWKClientConnectionError
+except ImportError:  # pragma: no cover
+    PyJWKClientConnectionError = None  # type: ignore[assignment, misc]
 
 from api.config import api_settings
 from creative_director.storage.db import session_scope
@@ -40,6 +48,58 @@ def _user_id_from_token(token: str) -> Optional[int]:
         return int(_token_serializer().loads(token, max_age=_TOKEN_MAX_AGE))
     except (BadSignature, SignatureExpired, ValueError, TypeError):
         return None
+
+
+# --- Sign in with Apple (native) -------------------------------------------------
+# The iOS app gets an identity token (a JWT) from Apple and POSTs it to /auth/apple.
+# We verify the RS256 signature against Apple's public keys plus the issuer, audience
+# (our bundle id), and expiry. Native verification needs only the public JWKS — no
+# Services ID or client secret (those are for web Apple login, which we don't do).
+APPLE_ISSUER = "https://appleid.apple.com"
+APPLE_JWKS_URL = "https://appleid.apple.com/auth/keys"
+APPLE_BUNDLE_ID = os.getenv("APPLE_BUNDLE_ID", "com.creativedirector.app")
+
+_apple_jwk_client: Optional[PyJWKClient] = None
+
+
+def _apple_jwks() -> PyJWKClient:
+    """Lazily-built JWKS client. PyJWKClient caches fetched signing keys (1h here)
+    so we don't hit Apple's key endpoint on every login."""
+    global _apple_jwk_client
+    if _apple_jwk_client is None:
+        _apple_jwk_client = PyJWKClient(APPLE_JWKS_URL, cache_keys=True, lifespan=3600)
+    return _apple_jwk_client
+
+
+def verify_apple_identity_token(identity_token: str) -> dict:
+    """Verify an Apple Sign-in identity token and return its claims.
+
+    Raises HTTPException(401) for any invalid/expired/forged token, and 502 if
+    Apple's key endpoint can't be reached (so the client can fall back to email).
+    """
+    try:
+        signing_key = _apple_jwks().get_signing_key_from_jwt(identity_token)
+        return jwt.decode(
+            identity_token,
+            signing_key.key,
+            algorithms=["RS256"],
+            audience=APPLE_BUNDLE_ID,
+            issuer=APPLE_ISSUER,
+            leeway=300,  # tolerate small clock skew on exp/iat
+            options={"verify_exp": True, "verify_aud": True, "verify_iss": True},
+        )
+    except jwt.PyJWKClientError as e:
+        # A transient JWKS fetch failure -> 502 (retryable); anything else (no
+        # matching key, malformed header) -> 401.
+        if PyJWKClientConnectionError is not None and isinstance(
+            e, PyJWKClientConnectionError
+        ):
+            raise HTTPException(
+                status_code=502, detail="Could not reach Apple to verify sign-in"
+            )
+        raise HTTPException(status_code=401, detail="Invalid Apple sign-in")
+    except jwt.InvalidTokenError:
+        raise HTTPException(status_code=401, detail="Invalid Apple sign-in")
 
 # Pragmatic email shape check — not RFC-perfect, just enough to reject typos and
 # junk at the passwordless gate (the email IS the lead-capture signal).

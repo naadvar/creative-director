@@ -1,33 +1,7 @@
 import { Link } from 'react-router-dom'
 import { api } from '../api/client'
 import { useAsync } from '../hooks/useAsync'
-import type { ProgressRead } from '../api/types'
 import Spinner from '../components/Spinner'
-
-function fmtDate(iso: string | null): string {
-  if (!iso) return ''
-  const d = new Date(iso)
-  return Number.isNaN(d.getTime()) ? '' : d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
-}
-
-function ReadRow({ r }: { r: ProgressRead }) {
-  return (
-    <Link
-      to={`/video/${r.video_id}`}
-      className="flex items-center gap-3 rounded-xl border border-border bg-surface px-3.5 py-2.5 transition-colors hover:border-accent/50"
-    >
-      <span className="w-10 shrink-0 text-[11px] tabular-nums text-muted">{fmtDate(r.date)}</span>
-      <span className="min-w-0 flex-1 truncate text-[13px] font-medium">{r.title}</span>
-      {r.dimension_label ? (
-        <span className="shrink-0 rounded-full border border-border bg-surface-2 px-2.5 py-0.5 text-[11px] capitalize text-muted">
-          {r.dimension_label}
-        </span>
-      ) : (
-        <span className="shrink-0 text-[11px] text-good">clean</span>
-      )}
-    </Link>
-  )
-}
 
 export default function MyDnaPage() {
   const fp = useAsync(() => api.myFingerprint(), [])
@@ -103,18 +77,6 @@ export default function MyDnaPage() {
             </div>
           ) : null}
 
-          {/* The reads timeline */}
-          {p?.reads && p.reads.length > 0 ? (
-            <div>
-              <h2 className="mb-2.5 text-sm font-semibold">Your reads, newest first</h2>
-              <div className="space-y-2">
-                {p.reads.map((r) => (
-                  <ReadRow key={r.video_id} r={r} />
-                ))}
-              </div>
-            </div>
-          ) : null}
-
           <div className="flex flex-wrap justify-center gap-2.5 pt-1">
             <Link
               to="/analyze"
@@ -126,7 +88,7 @@ export default function MyDnaPage() {
               to="/my-reads"
               className="rounded-xl border border-border bg-surface px-5 py-2.5 text-sm font-semibold text-muted transition-colors hover:text-text"
             >
-              My reads
+              See all in Library
             </Link>
           </div>
         </div>

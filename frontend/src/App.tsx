@@ -10,6 +10,7 @@ import PrivacyPage from './pages/PrivacyPage'
 import Disclaimer from './components/Disclaimer'
 import Spinner from './components/Spinner'
 import EmailGate from './components/EmailGate'
+import { isNativeApp } from './api/client'
 import { AuthProvider, useAuth } from './hooks/useAuth'
 
 function Logo() {
@@ -41,18 +42,18 @@ function Header() {
           {user ? (
             <>
               <NavLink to="/analyze" className={navClass}>
-                Read
+                New
               </NavLink>
               <NavLink to="/my-reads" className={navClass}>
-                My reads
+                Library
               </NavLink>
               <NavLink to="/my-dna" className={navClass}>
-                My DNA
+                Growth
               </NavLink>
             </>
           ) : (
             <NavLink to="/analyze" className={navClass}>
-              Read a reel
+              New
             </NavLink>
           )}
           <NavLink to="/browse" className={navClass}>
@@ -135,11 +136,11 @@ function BottomNav() {
       className="fixed inset-x-0 bottom-0 z-30 flex border-t border-border bg-ink/95 backdrop-blur-md sm:hidden"
       style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
     >
-      <BottomTab to="/analyze" label="Read" icon="read" />
+      <BottomTab to="/analyze" label="New" icon="read" />
       {user ? (
         <>
-          <BottomTab to="/my-reads" label="My reads" icon="reads" />
-          <BottomTab to="/my-dna" label="DNA" icon="dna" />
+          <BottomTab to="/my-reads" label="Library" icon="reads" />
+          <BottomTab to="/my-dna" label="Growth" icon="dna" />
         </>
       ) : null}
       <BottomTab to="/browse" label="Examples" icon="examples" />
@@ -175,8 +176,11 @@ function RequireAuth({ children }: { children: ReactNode }) {
   return <>{children}</>
 }
 
-/** Home: logged-out visitors get the marketing landing; signed-in users go
- * straight to the upload flow. */
+/** Home: signed-in users go straight to the upload flow. Logged-out, the first
+ * screen is platform-aware — the native app opens to a clean passwordless
+ * sign-in (an app shouldn't open to a marketing scroll), while the web keeps the
+ * value-prop landing (it converts visitors and reassures an App Store reviewer's
+ * logged-out web visit). After sign-in, native lands on the upload flow. */
 function Home() {
   const { user, loading } = useAuth()
   if (loading) {
@@ -186,7 +190,20 @@ function Home() {
       </div>
     )
   }
-  return user ? <UploadPage /> : <LandingPage />
+  if (user) return <UploadPage />
+  if (isNativeApp()) {
+    return (
+      <div className="grid min-h-[60vh] place-items-center">
+        <EmailGate
+          heading="Sign in"
+          sub="Enter your email — no password. We’ll save your reads."
+          cta="Sign in"
+          redirectTo="/analyze"
+        />
+      </div>
+    )
+  }
+  return <LandingPage />
 }
 
 function AnimatedRoutes() {

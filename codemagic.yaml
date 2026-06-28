@@ -103,6 +103,15 @@ workflows:
         script: |
           set -e
           keychain initialize
+          # Apple caps distribution certificates, and a prior build already created
+          # one whose private key was ephemeral (gone now, so it's useless to us).
+          # Delete existing distribution certs so `certificates create` below doesn't
+          # 409 "you already have a current certificate", then create a fresh cert
+          # with a private key we control. Keeps the active-cert count at 1.
+          for cid in $(app-store-connect certificates list --type IOS_DISTRIBUTION --json | python3 -c "import sys,json; d=json.load(sys.stdin); items=d.get('data',d) if isinstance(d,dict) else d; print(' '.join(c['id'] for c in items))"); do
+            echo "Deleting existing distribution certificate $cid"
+            app-store-connect certificates delete "$cid" --ignore-not-found
+          done
           openssl genrsa -out /tmp/cert_key.pem 2048
           app-store-connect certificates create \
             --type IOS_DISTRIBUTION \

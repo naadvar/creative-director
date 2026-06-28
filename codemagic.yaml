@@ -108,10 +108,17 @@ workflows:
             --type IOS_DISTRIBUTION \
             --certificate-key=@file:/tmp/cert_key.pem \
             --save
+          # --delete-stale-profiles: enabling "Sign In with Apple" on the App ID
+          # INVALIDATES the previous build's profile (Apple invalidates profiles when
+          # an App ID's capabilities change). Without this flag, --create would reuse
+          # that now-invalid profile (no applesignin entitlement) and the archive
+          # fails. This deletes the invalid one so --create regenerates a fresh
+          # profile that includes the entitlement.
           app-store-connect fetch-signing-files "$BUNDLE_ID" \
             --type IOS_APP_STORE \
             --certificate-key=@file:/tmp/cert_key.pem \
-            --create
+            --create \
+            --delete-stale-profiles
           keychain add-certificates
           xcode-project use-profiles
           ls -la "$HOME/Library/MobileDevice/Provisioning Profiles/" || true

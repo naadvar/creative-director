@@ -136,7 +136,12 @@ function BottomNav() {
       className="fixed inset-x-0 bottom-0 z-30 flex border-t border-border bg-ink/95 backdrop-blur-md sm:hidden"
       style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
     >
-      <BottomTab to="/analyze" label="New" icon="read" />
+      {/* Upload (New) is sign-in-gated in the native app — the app is sign-in-first,
+          so it only appears once you're logged in. On web it stays public (the
+          conversion funnel: try-before-you-sign-in, gate deferred to submit). */}
+      {!isNativeApp() || user ? (
+        <BottomTab to="/analyze" label="New" icon="read" />
+      ) : null}
       {user ? (
         <>
           <BottomTab to="/my-reads" label="Library" icon="reads" />
@@ -206,15 +211,42 @@ function Home() {
   return <LandingPage />
 }
 
+/** /analyze — the upload flow. Public on web (pick a file first, email gate
+ * deferred to the "Read my reel" tap = the conversion funnel). In the native app
+ * it's sign-in-gated: the app is sign-in-first, so you can't reach upload until
+ * you're logged in (matches the hidden "New" tab when logged out). */
+function AnalyzeRoute() {
+  const { user, loading } = useAuth()
+  if (isNativeApp() && !user) {
+    if (loading) {
+      return (
+        <div className="grid min-h-[50vh] place-items-center">
+          <Spinner label="Loading…" />
+        </div>
+      )
+    }
+    return (
+      <div className="grid min-h-[60vh] place-items-center">
+        <EmailGate
+          heading="Sign in"
+          sub="Enter your email — no password. We’ll save your reads."
+          cta="Sign in"
+          redirectTo="/analyze"
+        />
+      </div>
+    )
+  }
+  return <UploadPage />
+}
+
 function AnimatedRoutes() {
   const location = useLocation()
   return (
     <div key={location.pathname} className="page-in">
       <Routes location={location}>
         <Route path="/" element={<Home />} />
-        {/* Public: a creator can pick a file before signing in; the email gate
-            is deferred to the "Read my reel" tap (UploadPage handles it). */}
-        <Route path="/analyze" element={<UploadPage />} />
+        {/* Web: public (deferred gate). Native app: sign-in-gated (see AnalyzeRoute). */}
+        <Route path="/analyze" element={<AnalyzeRoute />} />
         <Route path="/browse" element={<BrowsePage />} />
         <Route path="/privacy" element={<PrivacyPage />} />
         <Route

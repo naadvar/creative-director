@@ -11,7 +11,11 @@ project.targets.each do |target|
     # CODE_SIGN_ENTITLEMENTS is resolved relative to the .xcodeproj's directory
     # (frontend/ios/App), so this points at frontend/ios/App/App/App.entitlements.
     config.build_settings['CODE_SIGN_ENTITLEMENTS'] = 'App/App.entitlements'
+    # iPhone only (1). Capacitor defaults to universal (1,2 = iPhone+iPad), which
+    # forces iPad screenshots + an iPad-quality review for a phone-first app. Drop
+    # iPad so the App Store treats it as iPhone-only.
+    config.build_settings['TARGETED_DEVICE_FAMILY'] = '1'
   end
 end
 project.save
-puts "Set CODE_SIGN_ENTITLEMENTS for targets: #{project.targets.map(&:name).join(', ')}"
+puts "Set CODE_SIGN_ENTITLEMENTS + TARGETED_DEVICE_FAMILY=1 for: #{project.targets.map(&:name).join(', ')}"

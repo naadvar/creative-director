@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { Link, NavLink, Route, Routes, useLocation } from 'react-router-dom'
+import { Link, NavLink, Navigate, Route, Routes, useLocation, useParams } from 'react-router-dom'
 import BrowsePage from './pages/BrowsePage'
 import VideoPage from './pages/VideoPage'
 import UploadPage from './pages/UploadPage'
@@ -131,6 +131,9 @@ function BottomTab({ to, label, icon }: { to: string; label: string; icon: keyof
  * nav is hidden below sm). Hidden on desktop, which keeps the top nav. */
 function BottomNav() {
   const { user } = useAuth()
+  const native = isNativeApp()
+  // Logged-out native = just the sign-in screen, no tab bar.
+  if (native && !user) return null
   return (
     <nav
       className="fixed inset-x-0 bottom-0 z-30 flex border-t border-border bg-ink/95 backdrop-blur-md sm:hidden"
@@ -139,16 +142,17 @@ function BottomNav() {
       {/* Upload (New) is sign-in-gated in the native app — the app is sign-in-first,
           so it only appears once you're logged in. On web it stays public (the
           conversion funnel: try-before-you-sign-in, gate deferred to submit). */}
-      {!isNativeApp() || user ? (
-        <BottomTab to="/analyze" label="New" icon="read" />
-      ) : null}
+      {!native || user ? <BottomTab to="/analyze" label="New" icon="read" /> : null}
       {user ? (
         <>
           <BottomTab to="/my-reads" label="Library" icon="reads" />
           <BottomTab to="/my-dna" label="Growth" icon="dna" />
         </>
       ) : null}
-      <BottomTab to="/browse" label="Examples" icon="examples" />
+      {/* Examples shows the example CORPUS (third-party reels). Web only — the native
+          app deliberately surfaces NO third-party content (App Store IP cleanliness),
+          so it's your-own-reels only. */}
+      {!native ? <BottomTab to="/browse" label="Examples" icon="examples" /> : null}
     </nav>
   )
 }
@@ -239,6 +243,14 @@ function AnalyzeRoute() {
   return <UploadPage />
 }
 
+/** On the native app, only the creator's OWN uploads (up_*) are viewable — never a
+ * corpus reel (third-party content). Anything else redirects home. */
+function NativeVideoGate() {
+  const { videoId } = useParams<{ videoId: string }>()
+  if (!videoId || !videoId.startsWith('up')) return <Navigate to="/" replace />
+  return <VideoPage />
+}
+
 function AnimatedRoutes() {
   const location = useLocation()
   return (
@@ -247,7 +259,13 @@ function AnimatedRoutes() {
         <Route path="/" element={<Home />} />
         {/* Web: public (deferred gate). Native app: sign-in-gated (see AnalyzeRoute). */}
         <Route path="/analyze" element={<AnalyzeRoute />} />
-        <Route path="/browse" element={<BrowsePage />} />
+        {/* Examples corpus = third-party reels. Web only; the native app redirects
+            away so it surfaces no third-party content (App Store IP cleanliness). */}
+        <Route
+          path="/browse"
+          element={isNativeApp() ? <Navigate to="/" replace /> : <BrowsePage />}
+        />
+        <Route path="/video/:videoId" element={isNativeApp() ? <NativeVideoGate /> : <VideoPage />} />
         <Route path="/privacy" element={<PrivacyPage />} />
         <Route
           path="/my-reads"
@@ -265,7 +283,6 @@ function AnimatedRoutes() {
             </RequireAuth>
           }
         />
-        <Route path="/video/:videoId" element={<VideoPage />} />
         <Route
           path="*"
           element={

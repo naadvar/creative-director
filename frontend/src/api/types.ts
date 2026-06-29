@@ -106,6 +106,19 @@ export interface CraftReadMeta {
   is_upload: boolean
 }
 
+// "Did my fix land?" — the result of re-checking a prior reel's flagged issue
+// against this revision's frames. Present only on an explicit re-check upload.
+export interface RevisionVerdict {
+  state: 'fixed' | 'still_there' | 'cant_verify'
+  prior_issue: string
+  prior_dimension?: string
+  prior_timestamp?: string
+  evidence?: string | null
+  prior_video_id?: string
+  prior_title?: string | null
+  checked_at?: string
+}
+
 export interface CraftReadResponse {
   available: boolean
   suppressed?: boolean
@@ -114,6 +127,7 @@ export interface CraftReadResponse {
   strengths?: string[]
   read?: CraftReadData
   meta?: CraftReadMeta | null
+  revision_verdict?: RevisionVerdict | null
 }
 
 export interface PlainSummary {

@@ -1,4 +1,5 @@
 import { useState, type ReactNode } from 'react'
+import { Link } from 'react-router-dom'
 import { api } from '../api/client'
 import type { CraftReadData } from '../api/types'
 
@@ -166,6 +167,9 @@ export default function CraftRead({
 
   const opp = data.biggest_opportunity ?? ''
   const isSilent = !opp || SILENT_RE.test(opp)
+  // Uploads (up_*) can be re-checked: the creator fixes this, re-uploads, and we
+  // verify whether the fix landed. Corpus reels (ig_*/yt) aren't the creator's, so no re-check.
+  const isUpload = (videoId ?? '').startsWith('up')
   const dimension =
     data.opportunity_dimension && data.opportunity_dimension !== 'none'
       ? data.opportunity_dimension
@@ -225,6 +229,14 @@ export default function CraftRead({
               <PlayMini />
               Jump to {data.lever_timestamp}
             </button>
+          ) : null}
+          {isUpload ? (
+            <Link
+              to={`/analyze?prior=${videoId}`}
+              className="mt-3 flex items-center justify-center gap-1.5 rounded-lg border border-accent/30 bg-accent/10 px-4 py-2 text-[13px] font-semibold text-accent transition-colors hover:bg-accent/20"
+            >
+              ↻ Fixed this? Re-upload to check
+            </Link>
           ) : null}
           {/* Helpful? — the one-tap signal that tunes the engine over time. */}
           <div className="mt-3 flex items-center gap-2 border-t border-accent/15 pt-2.5 text-[12px]">

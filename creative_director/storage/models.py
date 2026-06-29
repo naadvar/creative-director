@@ -355,3 +355,11 @@ class Upload(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime, default=datetime.utcnow, index=True
     )
+    # Revision loop — set only when the creator explicitly re-checks a fix. prior_video_id
+    # links this upload to the one it revises; revision_verdict is the self-contained
+    # "did my fix land?" result (snapshotted at compute time, so it survives the prior
+    # upload being deleted / the corpus rows being wiped). See docs/REVISION_LOOP_DESIGN.md.
+    prior_video_id: Mapped[Optional[str]] = mapped_column(
+        String(64), nullable=True, index=True
+    )
+    revision_verdict: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)

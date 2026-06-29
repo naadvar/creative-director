@@ -51,6 +51,7 @@ class _Job:
     message: str = "queued…"
     error: Optional[str] = None
     created: float = field(default_factory=time.time)
+    prior_video_id: Optional[str] = None  # set when this upload re-checks a prior reel's fix
 
 
 _JOBS: dict[str, _Job] = {}
@@ -287,6 +288,47 @@ def _run_job(job: _Job, mp4: Path) -> None:
                 f"timeline extraction skipped/failed for {vid}: {type(e).__name__}: {str(e)[:120]}"
             )
 
+        # 3.5 REVISION VERDICT — only when this upload explicitly re-checks a prior reel
+        # (the creator tapped "Re-check this fix"). A frames-only verifier judges whether the
+        # prior issue was fixed in THESE new frames; it never sees the new read's text, so the
+        # noisy read can't fabricate a "you fixed it". Self-contained (snapshots prior title)
+        # + best-effort (a verdict failure never fails the job, never suppresses the read).
+        revision_verdict = None
+        if job.prior_video_id and read is not None and read.get("grounded") is not False:
+            try:
+                from creative_director.advice.craft_xray import (
+                    _lever_timestamp,
+                    compare_revision,
+                    verify_fix_addressed,
+                )
+
+                with session_scope() as s:
+                    prior = s.get(Upload, job.prior_video_id)
+                    cur = s.get(Video, vid)
+                    new_user = cur.uploaded_by_user_id if cur is not None else None
+                    # Only re-check against the creator's OWN prior reel.
+                    own = (
+                        prior is not None
+                        and prior.user_id is not None
+                        and prior.user_id == new_user
+                    )
+                    prior_read = prior.craft_read if (own and isinstance(prior.craft_read, dict)) else None
+                    prior_title = prior.title if own else None
+                if isinstance(prior_read, dict) and prior_read.get("biggest_opportunity"):
+                    job.message = "checking whether your fix landed…"
+                    verifier = verify_fix_addressed(
+                        str(mp4),
+                        prior_read.get("biggest_opportunity") or "",
+                        _lever_timestamp(prior_read),
+                        niche=job.niche, caption=caption, duration_s=duration_s,
+                    )
+                    revision_verdict = compare_revision(prior_read, read, verifier)
+                    revision_verdict["prior_video_id"] = job.prior_video_id
+                    revision_verdict["prior_title"] = prior_title
+                    revision_verdict["checked_at"] = datetime.utcnow().isoformat()
+            except Exception as e:  # noqa: BLE001
+                logger.warning(f"revision verdict failed for {vid}: {type(e).__name__}: {e}")
+
         # 4. DURABLE record → userdata.db (separate writable store). Mirrors the
         # finished upload + its read so it survives corpus redeploys (which overwrite
         # the corpus videos/video_features rows). The mp4/thumbnail on the persistent
@@ -305,6 +347,8 @@ def _run_job(job: _Job, mp4: Path) -> None:
                     up.craft_read = f.craft_read if f is not None else None
                     up.video_file_path = v.video_file_path
                     up.thumbnail_path = v.thumbnail_path
+                    up.prior_video_id = job.prior_video_id
+                    up.revision_verdict = revision_verdict
                     s.add(up)
         except Exception as e:  # noqa: BLE001
             logger.warning(f"durable upload record failed for {vid}: {type(e).__name__}: {e}")
@@ -341,6 +385,7 @@ async def upload_reel(
     niche: str = Form(...),
     caption: str = Form(""),
     followers: Optional[int] = Form(None),
+    prior_video_id: Optional[str] = Form(None),  # set when re-checking a prior reel's fix
     user: dict = Depends(get_current_user),
 ) -> UploadJobStatus:
     """Accept a reel upload and start the analysis job. Requires a session
@@ -426,7 +471,10 @@ async def upload_reel(
         )
 
     _UPLOADS_BY_IP.setdefault(ip, []).append(time.time())
-    job = _Job(id=uuid.uuid4().hex[:12], video_id=video_id, niche=niche)
+    # Only honor a prior link that looks like our own upload id (sanity, not auth — the
+    # ownership check happens in _run_job against the new upload's user).
+    prior = prior_video_id if (prior_video_id or "").startswith("up_") else None
+    job = _Job(id=uuid.uuid4().hex[:12], video_id=video_id, niche=niche, prior_video_id=prior)
     _JOBS[job.id] = job
     threading.Thread(target=_run_job, args=(job, mp4), daemon=True).start()
     logger.info(f"upload job {job.id} started ({video_id}, niche={niche}, {size/1e6:.1f}MB, {duration:.0f}s)")

@@ -183,10 +183,12 @@ def craft_read(video_id: str) -> dict:
     only this one call — the old scalar breakdown is no longer on the page.
     Uploads are served from the durable userdata Upload row (survives corpus
     redeploys); corpus videos from VideoFeatures."""
+    revision_verdict = None
     with session_scope() as s:
         up = s.get(Upload, video_id)
         if up is not None:
             read = up.craft_read
+            revision_verdict = up.revision_verdict  # "did my fix land?" — None unless a re-check
             meta = {
                 "video_id": video_id,
                 "title": up.title or "Your reel",
@@ -209,17 +211,28 @@ def craft_read(video_id: str) -> dict:
                     "is_upload": bool(v.channel_id and v.channel_id.startswith("upch_")),
                 }
     if not read:
-        return {"available": False, "meta": meta}
+        return {"available": False, "meta": meta, "revision_verdict": revision_verdict}
     # The grounding gate stamps grounded=false on a materially-fabricated read.
     # We'd rather say nothing than serve a hallucinated critique of the creator's
     # own footage — so a suppressed read is reported as not-available.
     if isinstance(read, dict) and read.get("grounded") is False:
         # Suppressed: we won't assert the (ungrounded) critique, but the positive
-        # observations are low-risk encouragement — surface them so the creator
-        # isn't left with a dead-end instead of nothing.
-        strengths = [s for s in (read.get("strengths") or []) if isinstance(s, str)][:3]
-        return {"available": False, "suppressed": True, "strengths": strengths, "meta": meta}
-    return {"available": True, "read": read, "meta": meta}
+        # observations (done_well) are low-risk encouragement — surface them so the
+        # creator isn't left with a dead-end instead of nothing.
+        strengths = [s for s in (read.get("done_well") or []) if isinstance(s, str)][:3]
+        return {
+            "available": False,
+            "suppressed": True,
+            "strengths": strengths,
+            "meta": meta,
+            "revision_verdict": revision_verdict,
+        }
+    return {
+        "available": True,
+        "read": read,
+        "meta": meta,
+        "revision_verdict": revision_verdict,
+    }
 
 
 class NoteFeedbackBody(BaseModel):

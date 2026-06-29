@@ -4,6 +4,7 @@ import { api, videoFileUrl } from '../api/client'
 import { useAsync } from '../hooks/useAsync'
 import { formatDuration, thumbnailUrl } from '../lib/format'
 import CraftRead from '../components/CraftRead'
+import RevisionVerdict from '../components/RevisionVerdict'
 import CraftScrubber, { type CraftMark } from '../components/CraftScrubber'
 import ShareCard from '../components/ShareCard'
 import Spinner from '../components/Spinner'
@@ -156,6 +157,11 @@ export default function VideoPage() {
                 </span>
               ) : null}
             </div>
+          ) : null}
+
+          {/* "Did my fix land?" — first thing a returning creator sees on a re-upload. */}
+          {craft.data?.revision_verdict ? (
+            <RevisionVerdict verdict={craft.data.revision_verdict} onSeek={handleSeek} />
           ) : null}
 
           {read ? (

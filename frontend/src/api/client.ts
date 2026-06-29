@@ -142,6 +142,7 @@ export const api = {
     niche: string,
     caption: string,
     followers?: number,
+    priorVideoId?: string,
   ): Promise<UploadJobStatus> {
     const form = new FormData()
     form.append('file', file)
@@ -150,6 +151,8 @@ export const api = {
     if (followers != null && !Number.isNaN(followers)) {
       form.append('followers', String(followers))
     }
+    // Set when this upload re-checks a prior reel's fix → backend computes the verdict.
+    if (priorVideoId) form.append('prior_video_id', priorVideoId)
     // No Content-Type header — the browser sets the multipart boundary itself.
     return request<UploadJobStatus>('/upload', { method: 'POST', body: form })
   },

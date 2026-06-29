@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { api } from '../api/client'
 import type { Fingerprint } from '../api/types'
 import CreatorFingerprint from '../components/CreatorFingerprint'
@@ -121,6 +121,10 @@ function AnalyzingView({ message, fileName }: { message: string; fileName?: stri
 /** Home: upload a reel -> full craft read vs the niche's winners. */
 export default function UploadPage() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  // Set when the creator tapped "Re-check this fix" on a prior read — the backend
+  // then computes the "did my fix land?" verdict for this revision.
+  const priorVideoId = searchParams.get('prior') || undefined
   const { user } = useAuth()
   const inputRef = useRef<HTMLInputElement>(null)
   const [file, setFile] = useState<File | null>(null)
@@ -179,7 +183,13 @@ export default function UploadPage() {
     setPhase('uploading')
     setMessage('uploading your reel…')
     try {
-      const job = await api.upload(file, niche, caption, followers ? parseInt(followers, 10) : undefined)
+      const job = await api.upload(
+        file,
+        niche,
+        caption,
+        followers ? parseInt(followers, 10) : undefined,
+        priorVideoId,
+      )
       setPhase('analyzing')
       for (;;) {
         await new Promise((r) => setTimeout(r, 3000))
@@ -229,6 +239,16 @@ export default function UploadPage() {
       {fingerprint?.ready ? <CreatorFingerprint fp={fingerprint} /> : null}
 
       <div className="space-y-5 rounded-2xl border border-border bg-surface p-5 sm:p-6">
+        {priorVideoId ? (
+          <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-accent/30 bg-accent/[0.07] px-4 py-3 text-sm">
+            <span className="font-medium">
+              ↻ Re-checking your fix — upload the improved version to see if it landed.
+            </span>
+            <Link to={`/video/${priorVideoId}`} className="shrink-0 text-accent hover:underline">
+              see the original read
+            </Link>
+          </div>
+        ) : null}
         <button
           type="button"
           onClick={() => inputRef.current?.click()}

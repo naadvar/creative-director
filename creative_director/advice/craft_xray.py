@@ -839,3 +839,115 @@ def extract_craft_lever(mp4_path: str, *, niche=None, caption=None,
         frames, ts = sample_frames_hires(mp4_path, Path(td))
         return craft_lever_from_frames(frames, ts, niche=niche, caption=caption,
                                        duration_s=duration_s, payoff=payoff)
+
+
+# ---- Revision loop: "did my fix land?" — a FRAMES-ONLY re-check of a prior issue ----
+# Trust-critical: this verifier NEVER sees the new read's text, only the prior issue text +
+# the NEW reel's frames, so noisy run-to-run read variance cannot fabricate a "you fixed it".
+# See docs/REVISION_LOOP_DESIGN.md and [[creative-director-revision-loop]].
+
+_VERIFY_FIX_SYSTEM = (
+    "You are a short-form video editor checking whether ONE specific craft issue from a PREVIOUS "
+    "version of a reel has been fixed in the creator's NEW version. You can SEE the new version's "
+    "frames (each stamped with its timestamp). You'll be told the single issue the OLD version had. "
+    "Watching ONLY these new frames, judge whether THAT SPECIFIC issue is resolved.\n"
+    "Rules:\n"
+    "- Judge ONLY the named issue — not overall quality, not anything else.\n"
+    "- Ground every word in what you actually SEE in these frames. Invent nothing.\n"
+    "- The issue text describes the OLD version; the frames are the NEW version. If the new frames no "
+    "longer show that problem, it's resolved; if they still show it, it's still_there.\n"
+    "- If you genuinely can't tell from these frames (the relevant moment isn't clearly visible), say "
+    "cant_tell — do NOT guess.\n"
+    "- Be conservative: only 'resolved' with 'high' confidence when it's clearly fixed.\n"
+    'Return ONLY JSON {"status": "resolved|still_there|cant_tell", "confidence": "high|medium|low", '
+    '"evidence": "one sentence grounded in a timestamp you can see"}.'
+)
+
+
+def _call_verify_vlm(ctx: str, frames) -> Optional[dict]:
+    import httpx
+    base = settings.craft_read_base_url.rstrip("/")
+    user = ([{"type": "text", "text": ctx}]
+            + [{"type": "image_url", "image_url": {"url": _data_uri(p)}} for p in frames])
+    body = {"model": settings.craft_read_model, "max_tokens": 400, "temperature": 0,
+            "messages": [{"role": "system", "content": _VERIFY_FIX_SYSTEM},
+                         {"role": "user", "content": user}],
+            "response_format": {"type": "json_object"}}
+    r = httpx.post(f"{base}/chat/completions", json=body, timeout=240,
+                   headers={"Authorization": f"Bearer {settings.craft_read_api_key}"})
+    r.raise_for_status()
+    return _loads_robust(r.json()["choices"][0]["message"]["content"])
+
+
+def verify_fix_addressed(mp4_path: str, prior_issue_text: str, prior_timestamp: str = "",
+                         *, niche=None, caption=None, duration_s=None) -> Optional[dict]:
+    """Frames-only re-check of ONE prior craft issue against the NEW reel. Returns
+    {status: resolved|still_there|cant_tell, confidence, evidence} or None (no provider /
+    failure). NEVER sees the new read's text — anchored only to the snapshotted prior issue."""
+    if not _use_openai() or not (prior_issue_text or "").strip():
+        return None
+    with tempfile.TemporaryDirectory() as td:
+        frames, ts = sample_frames_hires(mp4_path, Path(td))
+        if not frames:
+            return None
+        ts_note = f" The issue was around {prior_timestamp} in the old version." if prior_timestamp else ""
+        ctx = (f"Context: niche={niche or 'unknown'}, duration={duration_s or '?'}s. These {len(frames)} "
+               f"high-res frames are the creator's NEW version of a reel; their stamped timestamps are: "
+               f"{ts}. The PREVIOUS version had this one craft issue: "
+               f"{json.dumps(str(prior_issue_text)[:400])}.{ts_note} Watching ONLY these new frames, is "
+               f"that specific issue resolved, still present, or can't-tell?")
+        try:
+            g = _call_verify_vlm(ctx, frames)
+        except Exception as e:  # noqa: BLE001
+            logger.warning(f"verify_fix call failed: {type(e).__name__}: {str(e)[:120]}")
+            return None
+    if not isinstance(g, dict):
+        return None
+    status = (g.get("status") or "").strip().lower()
+    if status not in ("resolved", "still_there", "cant_tell"):
+        return None
+    conf = (g.get("confidence") or "").strip().lower()
+    if conf not in ("high", "medium", "low"):
+        conf = "low"
+    return {"status": status, "confidence": conf, "evidence": str(g.get("evidence") or "")[:300]}
+
+
+_TS_RE = re.compile(r"(\d{1,2}:\d{2})")
+
+
+def _lever_timestamp(read: dict) -> str:
+    """Best-effort timestamp for the prior lever — from the lever text, else the top blind spot."""
+    for src in (read.get("biggest_opportunity"), *(read.get("blind_spots") or [])):
+        if isinstance(src, str):
+            m = _TS_RE.search(src)
+            if m:
+                return m.group(1)
+    return ""
+
+
+def compare_revision(prior_read: dict, new_read: dict, verifier: Optional[dict]) -> dict:
+    """Combine the absence gate (the new read no longer centers on the same dimension) with the
+    frames-only verifier into one of three honest states. 'fixed' requires BOTH the verifier
+    resolved+high AND the new read's headline to have moved off the prior dimension — so a single
+    noisy signal can never assert success. Self-contained (snapshots the prior issue)."""
+    prior_dim = (prior_read.get("opportunity_dimension") or "").strip()
+    new_dim = (new_read.get("opportunity_dimension") or "").strip()
+    absence = bool(prior_dim) and prior_dim != "none" and new_dim != prior_dim
+
+    if verifier is None or verifier.get("status") == "cant_tell":
+        state = "cant_verify"
+    elif verifier.get("status") == "still_there":
+        state = "still_there"
+    elif verifier.get("status") == "resolved" and verifier.get("confidence") == "high" and absence:
+        state = "fixed"
+    else:  # resolved but low/medium confidence, or the new read still flags the same dimension
+        state = "cant_verify"
+    return {
+        "state": state,  # fixed | still_there | cant_verify
+        "prior_issue": str(prior_read.get("biggest_opportunity") or "")[:600],
+        "prior_dimension": prior_dim,
+        "prior_timestamp": _lever_timestamp(prior_read),
+        "evidence": (verifier or {}).get("evidence"),
+        "verifier_status": (verifier or {}).get("status"),
+        "verifier_confidence": (verifier or {}).get("confidence"),
+    }

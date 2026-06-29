@@ -81,15 +81,26 @@ _RUNTIME_COLUMNS = (
     ("videos", "uploaded_by_user_id", "INTEGER"),
 )
 
+# Same, but for tables on the WRITABLE userdata engine (the uploads table).
+_USERDATA_RUNTIME_COLUMNS = (
+    ("uploads", "prior_video_id", "VARCHAR(64)"),
+    ("uploads", "revision_verdict", "JSON"),
+)
+
 
 def _ensure_runtime_columns() -> None:
-    if not str(settings.database_url).startswith("sqlite"):
-        return
-    with engine.begin() as conn:
-        for table, col, decl in _RUNTIME_COLUMNS:
-            have = {r[1] for r in conn.exec_driver_sql(f"PRAGMA table_info({table})")}
-            if col not in have:
-                conn.exec_driver_sql(f"ALTER TABLE {table} ADD COLUMN {col} {decl}")
+    if str(settings.database_url).startswith("sqlite"):
+        with engine.begin() as conn:
+            for table, col, decl in _RUNTIME_COLUMNS:
+                have = {r[1] for r in conn.exec_driver_sql(f"PRAGMA table_info({table})")}
+                if col not in have:
+                    conn.exec_driver_sql(f"ALTER TABLE {table} ADD COLUMN {col} {decl}")
+    if str(settings.userdata_url).startswith("sqlite"):
+        with userdata_engine.begin() as conn:
+            for table, col, decl in _USERDATA_RUNTIME_COLUMNS:
+                have = {r[1] for r in conn.exec_driver_sql(f"PRAGMA table_info({table})")}
+                if col not in have:
+                    conn.exec_driver_sql(f"ALTER TABLE {table} ADD COLUMN {col} {decl}")
 
 
 def _migrate_userdata_once() -> None:

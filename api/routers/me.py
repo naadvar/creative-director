@@ -89,6 +89,45 @@ def my_uploads(user: dict = Depends(get_current_user)) -> dict:
                 }
             )
     return {"count": len(cards), "uploads": cards}
+
+
+@router.delete("/uploads/{video_id}")
+def delete_upload(video_id: str, user: dict = Depends(get_current_user)) -> dict:
+    """Delete one of the creator's OWN uploaded reels. Removes the durable Upload
+    row (so it leaves Library, DNA and Growth, which all read from Upload), its
+    stored mp4/thumbnail files, and the (ephemeral) corpus rows so /video/{id}
+    stops resolving. Scoped to the owner — you can't delete someone else's."""
+    from creative_director.storage.models import (
+        Upload,
+        Video,
+        VideoFeatures,
+        VideoTimeline,
+    )
+
+    with session_scope() as s:
+        up = s.get(Upload, video_id)
+        if up is None or up.user_id != user["id"]:
+            raise HTTPException(status_code=404, detail="Upload not found")
+        # Best-effort: remove the stored files from the volume.
+        for p in (up.video_file_path, up.thumbnail_path):
+            try:
+                if p:
+                    Path(p).unlink(missing_ok=True)
+            except OSError as e:  # noqa: PERF203
+                logger.warning(f"could not delete file {p} for {video_id}: {e}")
+        s.delete(up)
+        # Best-effort: drop the corpus-side rows (only if this upload is theirs).
+        v = s.get(Video, video_id)
+        if v is not None and v.uploaded_by_user_id == user["id"]:
+            s.query(VideoTimeline).filter(VideoTimeline.video_id == video_id).delete()
+            f = s.get(VideoFeatures, video_id)
+            if f is not None:
+                s.delete(f)
+            s.delete(v)
+    logger.info(f"deleted upload {video_id} for user {user['id']}")
+    return {"ok": True}
+
+
 _DEMO_TOKEN = "DEMO"  # marks the dev demo account; served from the corpus
 
 

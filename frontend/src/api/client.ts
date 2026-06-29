@@ -89,6 +89,15 @@ export function videoFileUrl(id: string): string {
   return `${BASE}/videos/${encodeURIComponent(id)}/file`
 }
 
+/** Resolve a backend-relative media path (e.g. "/api/videos/{id}/thumbnail") to a
+ * loadable URL. These go straight into <img>/<video> src and bypass request(), so
+ * in the native app — where there's no Vercel "/api" proxy — the "/api" prefix must
+ * be rewritten to the real API origin (BASE). On web, BASE is "/api", so unchanged. */
+export function mediaUrl(path: string | null | undefined): string {
+  if (!path) return ''
+  return path.startsWith('/api/') ? `${BASE}${path.slice(4)}` : path
+}
+
 export const api = {
   // --- example corpus (browse) ---
   corpus(params: CorpusParams = {}): Promise<CorpusPage> {
@@ -196,6 +205,14 @@ export const api = {
   /** The creator's own uploaded reels + their reads — the "My reads" history. */
   myUploads(): Promise<MyUploads> {
     return request<MyUploads>('/me/uploads')
+  },
+
+  /** Delete one of the creator's own uploaded reels (removes it from Library,
+   * DNA and Growth, and frees its stored files). */
+  deleteUpload(videoId: string): Promise<{ ok: boolean }> {
+    return request<{ ok: boolean }>(`/me/uploads/${encodeURIComponent(videoId)}`, {
+      method: 'DELETE',
+    })
   },
 
   /** The creator's style fingerprint, built from their own uploaded reels. */

@@ -1,5 +1,6 @@
+import { useState, type MouseEvent } from 'react'
 import { Link } from 'react-router-dom'
-import { api } from '../api/client'
+import { api, mediaUrl } from '../api/client'
 import { useAsync } from '../hooks/useAsync'
 import type { UploadCard } from '../api/types'
 import CreatorFingerprint from '../components/CreatorFingerprint'
@@ -12,7 +13,27 @@ function fmtDate(iso: string | null): string {
   return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
 }
 
-function ReadTile({ u }: { u: UploadCard }) {
+function ReadTile({ u, onDeleted }: { u: UploadCard; onDeleted: (id: string) => void }) {
+  const [busy, setBusy] = useState(false)
+
+  async function del(e: MouseEvent) {
+    // The tile is a Link — don't navigate when deleting.
+    e.preventDefault()
+    e.stopPropagation()
+    if (busy) return
+    if (!window.confirm('Delete this read? It’s removed from your Library, DNA and Growth.')) {
+      return
+    }
+    setBusy(true)
+    try {
+      await api.deleteUpload(u.video_id)
+      onDeleted(u.video_id)
+    } catch {
+      setBusy(false)
+      window.alert('Couldn’t delete that — please try again.')
+    }
+  }
+
   return (
     <Link
       to={`/video/${u.video_id}`}
@@ -21,14 +42,30 @@ function ReadTile({ u }: { u: UploadCard }) {
       <div className="relative aspect-[9/16] bg-surface-2">
         {u.thumbnail_url ? (
           <img
-            src={u.thumbnail_url}
+            src={mediaUrl(u.thumbnail_url)}
             alt=""
             loading="lazy"
+            onError={(e) => {
+              // Hide a broken thumbnail so the dark placeholder shows instead of "?".
+              e.currentTarget.onerror = null
+              e.currentTarget.style.visibility = 'hidden'
+            }}
             className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
           />
         ) : (
           <div className="grid h-full place-items-center text-xs text-muted">no preview</div>
         )}
+        <button
+          type="button"
+          onClick={del}
+          disabled={busy}
+          aria-label="Delete this read"
+          className="absolute right-1.5 top-1.5 z-10 grid h-7 w-7 place-items-center rounded-full bg-black/55 text-white/90 backdrop-blur-sm transition hover:bg-black/80 active:scale-95 disabled:opacity-50"
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2m2 0v14a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V6" />
+          </svg>
+        </button>
         <div className="absolute inset-x-0 bottom-0 flex items-center justify-between bg-gradient-to-t from-black/75 to-transparent p-2.5 text-[11px] text-white/90">
           <span className="tabular-nums">{fmtDate(u.created_at)}</span>
           {u.dimension ? (
@@ -56,9 +93,12 @@ function ReadTile({ u }: { u: UploadCard }) {
 }
 
 export default function MyUploadsPage() {
-  const uploads = useAsync(() => api.myUploads(), [])
-  const fp = useAsync(() => api.myFingerprint(), [])
+  // Bump to refetch after a delete (so the grid + fingerprint update).
+  const [reload, setReload] = useState(0)
+  const uploads = useAsync(() => api.myUploads(), [reload])
+  const fp = useAsync(() => api.myFingerprint(), [reload])
   const list = uploads.data?.uploads ?? []
+  const onDeleted = () => setReload((n) => n + 1)
 
   return (
     <div className="mx-auto max-w-5xl space-y-6">
@@ -112,7 +152,7 @@ export default function MyUploadsPage() {
       ) : (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
           {list.map((u) => (
-            <ReadTile key={u.video_id} u={u} />
+            <ReadTile key={u.video_id} u={u} onDeleted={onDeleted} />
           ))}
         </div>
       )}

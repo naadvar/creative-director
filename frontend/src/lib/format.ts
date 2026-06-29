@@ -1,5 +1,6 @@
 // Display helpers shared across the UI.
 
+import { mediaUrl } from '../api/client'
 import type { Fixability, Tier } from '../api/types'
 
 export interface TercileStyle {
@@ -152,9 +153,10 @@ export function deviationColor(dev: number | null): string {
   return `#${hex(r)}${hex(g)}${hex(b)}`
 }
 
-/** URL for a video's cached thumbnail (works for YT + IG via the API). */
+/** URL for a video's cached thumbnail (works for YT + IG via the API). Routed
+ * through mediaUrl so it resolves to the real API origin in the native app. */
 export function thumbnailUrl(videoId: string): string {
-  return `/api/videos/${encodeURIComponent(videoId)}/thumbnail`
+  return mediaUrl(`/api/videos/${encodeURIComponent(videoId)}/thumbnail`)
 }
 
 /** External viewing URL — IG reels use the shortcode after the `ig_` prefix.

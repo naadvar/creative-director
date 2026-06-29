@@ -109,6 +109,9 @@ export interface CraftReadMeta {
 export interface CraftReadResponse {
   available: boolean
   suppressed?: boolean
+  // Positive observations surfaced even when the read is suppressed (so a
+  // suppressed read isn't a dead end). Often [].
+  strengths?: string[]
   read?: CraftReadData
   meta?: CraftReadMeta | null
 }

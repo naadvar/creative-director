@@ -36,6 +36,10 @@ ALLOWED_NICHES = {"ig_fitness", "ig_food", "ig_travel", "ig_fashion"}
 MAX_BYTES = 200 * 1024 * 1024  # 200 MB
 MAX_DURATION_S = 180  # 3 minutes — short-form only
 UPLOADS_PER_DAY = 10  # per client IP
+# The read pipeline is non-deterministic; a noisy single sample can falsely trip the
+# grounding gate. Regenerate a suppressed read up to this many times, keeping the first
+# grounded one (genuinely un-groundable reels suppress on every attempt).
+MAX_READ_ATTEMPTS = 2
 
 
 @dataclass
@@ -183,87 +187,91 @@ def _run_job(job: _Job, mp4: Path) -> None:
 
                 persist_features(s, vid, extract_transcript(mp4))
 
-        # 2b. VLM rich-perception layer (grounded read + presenter gate). Opt-in
-        # via ENABLE_VLM_PERCEPTION; defensive — a failure never fails the job.
-        # Kept in scope so the grounding gate (2c) can contrast the read against it.
+        # 2b+2c. Perception + craft read, WITH RETRY. The read pipeline is
+        # non-deterministic, so a single noisy perception/read sample can trip the
+        # grounding gate and falsely suppress a perfectly critique-able reel (creators
+        # found that simply re-uploading the same reel often produced a read). So when a
+        # read comes back suppressed, regenerate it — fresh perception + read — up to
+        # MAX_READ_ATTEMPTS times and keep the first grounded one. A genuinely
+        # un-groundable reel suppresses on every attempt, so this recovers false
+        # suppressions without ever forcing a hallucinated read through the gate.
+        # Defensive throughout — a read failure never fails the job (scorecard fallback).
+        read = None
         perception = None
-        if settings.enable_vlm_perception:
-            try:
-                from creative_director.features.vlm_perception import (
-                    extract_vlm_perception,
-                )
-
-                job.message = "reading the frames…"
-                perception = extract_vlm_perception(
-                    str(mp4),
-                    niche=job.niche,
-                    caption=caption,
-                    duration_s=duration_s,
-                )
-                if perception is not None:
-                    with session_scope() as s:
-                        f = s.get(VideoFeatures, vid)
-                        if f is not None:
-                            f.vlm_perception = perception
-                else:
-                    logger.info(f"vlm perception skipped/empty for {vid}")
-            except Exception as e:  # noqa: BLE001
-                logger.warning(f"vlm perception failed for {vid}: {e}")
-
-        # 2c. Craft read — the product's headline output ("a craft read of your
-        # reel"). Same strong-VLM engine as the corpus (Qwen via DeepInfra, per
-        # CRAFT_READ_* config). Defensive: a failure never fails the job — the
-        # page falls back to the scorecard, but we want this to be the hero.
         try:
-            from creative_director.advice.craft_xray import extract_craft_read
-
-            job.message = "writing your craft read…"
-            read = extract_craft_read(
-                str(mp4), niche=job.niche, caption=caption, duration_s=duration_s
+            from creative_director.advice.craft_xray import (
+                extract_craft_read,
+                ground_and_gate,
+                synthesize_opportunity,
             )
-            if read is not None:
-                # Grounding gate — the same trust check the corpus went through.
-                # Contrasts the read against the INDEPENDENT vlm_perception pass +
-                # transcript; stamps grounded=false (and suppresses) on a material
-                # fabrication, and fixes a redundant biggest_opportunity. Only fires
-                # when we have a perception pass to contrast against (else it has no
-                # independent evidence and would no-op). Defensive: never fails the job.
-                if perception is not None:
-                    transcript = thumb_text = None
+            from creative_director.features.vlm_perception import extract_vlm_perception
+
+            # Stable across attempts — read the transcript / thumb-text once.
+            transcript = thumb_text = None
+            with session_scope() as s:
+                f = s.get(VideoFeatures, vid)
+                transcript = getattr(f, "transcript", None) if f else None
+                thumb_text = getattr(f, "thumb_text", None) if f else None
+
+            for attempt in range(MAX_READ_ATTEMPTS):
+                retry = attempt > 0
+                # Independent perception pass — the gate's evidence.
+                a_perception = None
+                if settings.enable_vlm_perception:
                     try:
-                        from creative_director.advice.craft_xray import ground_and_gate
-
-                        with session_scope() as s:
-                            f = s.get(VideoFeatures, vid)
-                            transcript = getattr(f, "transcript", None) if f else None
-                            thumb_text = getattr(f, "thumb_text", None) if f else None
-                        job.message = "fact-checking the read against your footage…"
-                        read = ground_and_gate(read, perception, transcript, caption, thumb_text)
-                        if read.get("grounded") is False:
-                            logger.info(
-                                f"craft read suppressed (ungrounded) for {vid}: "
-                                f"{read.get('grounding_reason', '')[:120]}"
-                            )
+                        job.message = "re-reading the frames…" if retry else "reading the frames…"
+                        a_perception = extract_vlm_perception(
+                            str(mp4), niche=job.niche, caption=caption, duration_s=duration_s
+                        )
                     except Exception as e:  # noqa: BLE001
-                        logger.warning(f"grounding gate failed for {vid}: {e}")
-                    # Prioritized opportunity — promote the read's most important blind_spot
-                    # into the headline lever (grounded by construction), so the creator gets
-                    # one clear thing to fix instead of an unranked pile. Kept reads only.
-                    if read.get("grounded") is not False:
-                        try:
-                            from creative_director.advice.craft_xray import synthesize_opportunity
+                        logger.warning(f"vlm perception failed for {vid} (try {attempt + 1}): {e}")
+                # The craft read itself.
+                try:
+                    job.message = (
+                        "taking another pass at your read…" if retry else "writing your craft read…"
+                    )
+                    a_read = extract_craft_read(
+                        str(mp4), niche=job.niche, caption=caption, duration_s=duration_s
+                    )
+                except Exception as e:  # noqa: BLE001
+                    logger.warning(f"craft read failed for {vid} (try {attempt + 1}): {e}")
+                    a_read = None
+                if a_read is None:
+                    continue
+                # Grounding gate — only fires with a perception pass to contrast against.
+                if a_perception is not None:
+                    try:
+                        job.message = "fact-checking the read against your footage…"
+                        a_read = ground_and_gate(a_read, a_perception, transcript, caption, thumb_text)
+                    except Exception as e:  # noqa: BLE001
+                        logger.warning(f"grounding gate failed for {vid} (try {attempt + 1}): {e}")
+                read, perception = a_read, a_perception
+                if a_read.get("grounded") is not False:
+                    break  # grounded — keep this one
+                logger.info(
+                    f"craft read suppressed for {vid} (try {attempt + 1}/{MAX_READ_ATTEMPTS}): "
+                    f"{a_read.get('grounding_reason', '')[:120]}"
+                )
 
-                            read = synthesize_opportunity(read, perception, transcript, caption, thumb_text)
-                        except Exception as e:  # noqa: BLE001
-                            logger.warning(f"opportunity synthesis failed for {vid}: {e}")
+            # Prioritized opportunity — promote the read's top blind_spot into the
+            # headline lever (grounded by construction). Kept (grounded) reads only.
+            if read is not None and read.get("grounded") is not False:
+                try:
+                    read = synthesize_opportunity(read, perception, transcript, caption, thumb_text)
+                except Exception as e:  # noqa: BLE001
+                    logger.warning(f"opportunity synthesis failed for {vid}: {e}")
+
+            if read is not None:
                 with session_scope() as s:
                     f = s.get(VideoFeatures, vid)
                     if f is not None:
+                        if perception is not None:
+                            f.vlm_perception = perception
                         f.craft_read = read
             else:
-                logger.info(f"craft read skipped (no provider configured) for {vid}")
+                logger.info(f"craft read skipped (no read produced) for {vid}")
         except Exception as e:  # noqa: BLE001
-            logger.warning(f"craft read failed for {vid}: {e}")
+            logger.warning(f"craft read pipeline failed for {vid}: {type(e).__name__}: {e}")
 
         # 3. Per-second timeline (cuts, vibes, faces, beats) for the strip + cut plan.
         # Best-effort: the craft read is the product, so a timeline failure (its heavy

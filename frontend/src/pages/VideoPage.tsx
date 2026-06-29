@@ -39,6 +39,39 @@ function ShareIcon() {
   )
 }
 
+/** Shown when the read was suppressed (the gate couldn't confidently ground a
+ * critique across retries). Honest about the uncertainty, but never a dead end —
+ * surfaces the positive observations rather than a blank "no read". */
+function SuppressedRead({ strengths }: { strengths: string[] }) {
+  return (
+    <div className="space-y-4 rounded-2xl border border-border bg-surface p-5">
+      <div>
+        <p className="text-[15px] font-semibold">I couldn’t land a confident fix for this one.</p>
+        <p className="mt-1 text-sm leading-relaxed text-muted">
+          I went over it a couple of times but couldn’t pin a single craft change I’m confident
+          enough to stand behind — so I won’t invent one. Often that just means it’s already
+          working; sometimes a clearer clip (one strong subject, readable text) reads better.
+        </p>
+      </div>
+      {strengths.length > 0 ? (
+        <div>
+          <h3 className="text-xs font-semibold uppercase tracking-widest text-muted">
+            What looked good
+          </h3>
+          <ul className="mt-2 space-y-1.5">
+            {strengths.map((s, i) => (
+              <li key={i} className="flex gap-2 text-sm leading-relaxed">
+                <span className="mt-1 shrink-0 text-good">✓</span>
+                <span>{s}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+    </div>
+  )
+}
+
 /** A read of one reel: the video with its flagged moments, the craft read, share,
  * and a clear next step — never a dead end. */
 export default function VideoPage() {
@@ -111,7 +144,7 @@ export default function VideoPage() {
             ) : null}
           </div>
 
-          {isUpload ? (
+          {isUpload && read ? (
             <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1 rounded-2xl border border-accent/30 bg-accent/[0.07] px-4 py-3 text-center text-sm">
               <span className="font-semibold">✨ Your craft read is ready</span>
               {fp.data && fp.data.ready && fp.data.n_reels < 3 ? (
@@ -127,11 +160,11 @@ export default function VideoPage() {
 
           {read ? (
             <CraftRead data={read} onSeek={handleSeek} videoId={id} />
+          ) : craft.data?.suppressed ? (
+            <SuppressedRead strengths={craft.data.strengths ?? []} />
           ) : (
             <p className="rounded-xl border border-border bg-surface px-4 py-3 text-sm text-muted">
-              {craft.data?.suppressed
-                ? 'No grounded read for this one — the model wasn’t confident enough to critique it honestly.'
-                : 'The read for this reel isn’t ready yet.'}
+              The read for this reel isn’t ready yet.
             </p>
           )}
 

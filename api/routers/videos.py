@@ -214,7 +214,11 @@ def craft_read(video_id: str) -> dict:
     # We'd rather say nothing than serve a hallucinated critique of the creator's
     # own footage — so a suppressed read is reported as not-available.
     if isinstance(read, dict) and read.get("grounded") is False:
-        return {"available": False, "suppressed": True, "meta": meta}
+        # Suppressed: we won't assert the (ungrounded) critique, but the positive
+        # observations are low-risk encouragement — surface them so the creator
+        # isn't left with a dead-end instead of nothing.
+        strengths = [s for s in (read.get("strengths") or []) if isinstance(s, str)][:3]
+        return {"available": False, "suppressed": True, "strengths": strengths, "meta": meta}
     return {"available": True, "read": read, "meta": meta}
 
 

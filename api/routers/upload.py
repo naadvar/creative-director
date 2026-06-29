@@ -314,12 +314,21 @@ def _run_job(job: _Job, mp4: Path) -> None:
                     )
                     prior_read = prior.craft_read if (own and isinstance(prior.craft_read, dict)) else None
                     prior_title = prior.title if own else None
-                if isinstance(prior_read, dict) and prior_read.get("biggest_opportunity"):
+                    prior_mp4 = prior.video_file_path if own else None
+                # Only re-check when the prior read named a REAL issue — skip a clean
+                # ("well-executed as is", opportunity_dimension == "none") prior read,
+                # which has nothing to verify a fix against.
+                if (
+                    isinstance(prior_read, dict)
+                    and prior_read.get("biggest_opportunity")
+                    and prior_read.get("opportunity_dimension") != "none"
+                ):
                     job.message = "checking whether your fix landed…"
                     verifier = verify_fix_addressed(
                         str(mp4),
                         prior_read.get("biggest_opportunity") or "",
                         _lever_timestamp(prior_read),
+                        old_mp4=prior_mp4,  # compare OLD vs NEW — needed to ground a real change
                         niche=job.niche, caption=caption, duration_s=duration_s,
                     )
                     revision_verdict = compare_revision(prior_read, read, verifier)

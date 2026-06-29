@@ -847,31 +847,29 @@ def extract_craft_lever(mp4_path: str, *, niche=None, caption=None,
 # See docs/REVISION_LOOP_DESIGN.md and [[creative-director-revision-loop]].
 
 _VERIFY_FIX_SYSTEM = (
-    "You are a short-form video editor checking whether ONE specific craft issue from a PREVIOUS "
-    "version of a reel has been fixed in the creator's NEW version. You can SEE the new version's "
-    "frames (each stamped with its timestamp). You'll be told the single issue the OLD version had. "
-    "Watching ONLY these new frames, judge whether THAT SPECIFIC issue is resolved.\n"
+    "You are comparing TWO versions of the same short-form reel: the OLD version (which had a specific "
+    "craft issue) and the creator's NEW re-upload. You can SEE frames from BOTH, each labeled and "
+    "timestamp-stamped. Judge ONLY whether the NEW version was actually CHANGED to address the named "
+    "issue — you are detecting a real edit, not re-judging whether the issue ever existed.\n"
     "Rules:\n"
-    "- Judge ONLY the named issue — not overall quality, not anything else.\n"
-    "- Ground every word in what you actually SEE in these frames. Invent nothing.\n"
-    "- The issue text describes the OLD version; the frames are the NEW version. If the new frames no "
-    "longer show that problem, it's resolved; if they still show it, it's still_there.\n"
-    "- If you genuinely can't tell from these frames (the relevant moment isn't clearly visible), say "
-    "cant_tell — do NOT guess.\n"
-    "- Be conservative: only 'resolved' with 'high' confidence when it's clearly fixed.\n"
+    "- 'resolved' ONLY if you can see a concrete DIFFERENCE between OLD and NEW that fixes the issue — "
+    "and name that difference. Do NOT credit a fix you cannot see as a change.\n"
+    "- 'still_there' if the NEW version still has the same problem, OR if OLD and NEW look essentially "
+    "the SAME for this issue (no real change was made — this is the common case, default to it).\n"
+    "- 'cant_tell' if the relevant moment isn't clearly visible in BOTH versions to compare.\n"
+    "- Be CONSERVATIVE. If OLD and NEW look the same, it is still_there, never resolved. Judge ONLY the "
+    "named issue, grounded in what the frames actually show. Invent nothing.\n"
     'Return ONLY JSON {"status": "resolved|still_there|cant_tell", "confidence": "high|medium|low", '
-    '"evidence": "one sentence grounded in a timestamp you can see"}.'
+    '"evidence": "one sentence naming the concrete OLD->NEW difference, or its absence"}.'
 )
 
 
-def _call_verify_vlm(ctx: str, frames) -> Optional[dict]:
+def _call_verify_vlm(user_content: list) -> Optional[dict]:
     import httpx
     base = settings.craft_read_base_url.rstrip("/")
-    user = ([{"type": "text", "text": ctx}]
-            + [{"type": "image_url", "image_url": {"url": _data_uri(p)}} for p in frames])
     body = {"model": settings.craft_read_model, "max_tokens": 400, "temperature": 0,
             "messages": [{"role": "system", "content": _VERIFY_FIX_SYSTEM},
-                         {"role": "user", "content": user}],
+                         {"role": "user", "content": user_content}],
             "response_format": {"type": "json_object"}}
     r = httpx.post(f"{base}/chat/completions", json=body, timeout=240,
                    headers={"Authorization": f"Bearer {settings.craft_read_api_key}"})
@@ -879,25 +877,38 @@ def _call_verify_vlm(ctx: str, frames) -> Optional[dict]:
     return _loads_robust(r.json()["choices"][0]["message"]["content"])
 
 
-def verify_fix_addressed(mp4_path: str, prior_issue_text: str, prior_timestamp: str = "",
-                         *, niche=None, caption=None, duration_s=None) -> Optional[dict]:
-    """Frames-only re-check of ONE prior craft issue against the NEW reel. Returns
-    {status: resolved|still_there|cant_tell, confidence, evidence} or None (no provider /
-    failure). NEVER sees the new read's text — anchored only to the snapshotted prior issue."""
+def verify_fix_addressed(new_mp4: str, prior_issue_text: str, prior_timestamp: str = "",
+                         *, old_mp4=None, niche=None, caption=None, duration_s=None) -> Optional[dict]:
+    """Compare the OLD and NEW versions of a reel and judge whether the prior issue was
+    actually CHANGED/fixed. Returns {status, confidence, evidence} or None. Needs BOTH the
+    old and new mp4 — a one-sided check can't tell 'fixed' from 'was never broken' (the model
+    just re-litigates whether the issue existed and tends to wave it away). Never sees the new
+    read's text; grounded only in the two frame sets + the snapshotted prior issue."""
     if not _use_openai() or not (prior_issue_text or "").strip():
         return None
+    if not (old_mp4 and Path(str(old_mp4)).exists()):
+        return None  # without the old version we can't ground a real change -> caller -> cant_verify
     with tempfile.TemporaryDirectory() as td:
-        frames, ts = sample_frames_hires(mp4_path, Path(td))
-        if not frames:
+        new_frames, _ = sample_frames_hires(new_mp4, Path(td) / "new", n=8)
+        if not new_frames:
             return None
-        ts_note = f" The issue was around {prior_timestamp} in the old version." if prior_timestamp else ""
-        ctx = (f"Context: niche={niche or 'unknown'}, duration={duration_s or '?'}s. These {len(frames)} "
-               f"high-res frames are the creator's NEW version of a reel; their stamped timestamps are: "
-               f"{ts}. The PREVIOUS version had this one craft issue: "
-               f"{json.dumps(str(prior_issue_text)[:400])}.{ts_note} Watching ONLY these new frames, is "
-               f"that specific issue resolved, still present, or can't-tell?")
         try:
-            g = _call_verify_vlm(ctx, frames)
+            old_frames, _ = sample_frames_hires(str(old_mp4), Path(td) / "old", n=8)
+        except Exception:  # noqa: BLE001
+            old_frames = []
+        if not old_frames:
+            return None
+        ts_note = f" (around {prior_timestamp})" if prior_timestamp else ""
+        intro = (f"Two versions of a reel (niche={niche or 'unknown'}). The OLD version had this craft "
+                 f"issue{ts_note}: {json.dumps(str(prior_issue_text)[:400])}. Compare the OLD frames to "
+                 f"the NEW frames and judge whether the NEW version was changed to address it.")
+        user = [{"type": "text", "text": intro},
+                {"type": "text", "text": "OLD VERSION frames (the one with the issue):"}]
+        user += [{"type": "image_url", "image_url": {"url": _data_uri(p)}} for p in old_frames]
+        user.append({"type": "text", "text": "NEW VERSION frames (the creator's re-upload):"})
+        user += [{"type": "image_url", "image_url": {"url": _data_uri(p)}} for p in new_frames]
+        try:
+            g = _call_verify_vlm(user)
         except Exception as e:  # noqa: BLE001
             logger.warning(f"verify_fix call failed: {type(e).__name__}: {str(e)[:120]}")
             return None

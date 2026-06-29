@@ -2,8 +2,8 @@
 
 _Auto-generated from the adversarial review workflow. Paste each field as-is._
 
-> NOTE: written for the passwordless-email build. We are adding Sign in with Apple
-> before submitting, so the Description + Review Notes get a small edit to mention it.
+> NOTE: Sign in with Apple is now live alongside passwordless email. The Description,
+> What's New, privacy line, and Review Notes below have been updated to mention both.
 
 ## Listing fields
 
@@ -60,14 +60,14 @@ Built for creators who want an honest second watch, not a metrics dashboard.
 
 Honest by design. If the model is not confident it can critique a video honestly, it tells you so instead of inventing notes - so you will not always get a fix, but you will never get a fabricated one. And there are no virality promises: nothing observable reliably predicts views, so this reads the craft of the video in front of it, like an editor catching things on a second watch.
 
-Your privacy, plainly. Your uploads are private to your account. They are processed only to generate your own craft read, are never shown to other users, never published, and never used to train third-party models. There is no feed, no sharing surface, and no advertising or cross-app tracking. Sign-in is passwordless - just an email, used to save your reads to your account. You can request deletion of your account, uploads, and reads at any time by emailing naadvar@gmail.com.
+Your privacy, plainly. Your uploads are private to your account. They are processed only to generate your own craft read, are never shown to other users, never published, and never used to train third-party models. There is no feed, no sharing surface, and no advertising or cross-app tracking. Sign in with Apple, or passwordless email, used only to save your reads to your account. You can request deletion of your account, uploads, and reads at any time by emailing naadvar@gmail.com.
 ```
 
 **whats_new**
 ```
 First release.
 
-Sign in with just your email (no password), pick a reel from your photo library, and get a frame-by-frame craft read in about 2 minutes: your hook, pacing, framing, and payoff, plus the one fix to make first. Your reads are private to you and build a personal Creator DNA over time.
+Sign in with Apple or just your email (no password), pick a reel from your photo library, and get a frame-by-frame craft read in about 2 minutes: your hook, pacing, framing, and payoff, plus the one fix to make first. Your reads are private to you and build a personal Creator DNA over time.
 ```
 
 ## App Privacy nutrition label
@@ -99,7 +99,7 @@ Sign in with just your email (no password), pick a reel from your photo library,
 
 ```
 PASSWORDLESS SIGN-IN (please read first - this is the #1 thing reviewers miss)
-There is no password, no verification email, and no confirmation code. On the sign-in screen, type ANY email address (for example review@apple.com) and tap Sign in. The account is created on submit (find-or-create) and you are signed in immediately. No further setup is required.
+SIGN-IN OPTIONS — two ways, both instant: (1) tap "Sign in with Apple" and authenticate as usual; OR (2) passwordless email — there is no password, no verification email, and no confirmation code; type ANY email address (for example review@apple.com) and tap Sign in. Either way the account is created on submit (find-or-create) and you are signed in immediately. No further setup is required.
 
 SEE THE PRODUCT WITHOUT SIGNING IN
 You do not have to sign in to evaluate the core experience. Tap the \"Examples\" tab (bottom tab bar on iPhone) to view sample craft reads - real output, no email required. The /browse route is public and not behind the sign-in gate.
@@ -163,7 +163,7 @@ Net result: the questionnaire produces a 4+ rating because the app contains no o
 6. Version 1.0 page > Promotional Text, Description, Keywords, Support URL (https://creative-director-psi.vercel.app), Marketing/Privacy Policy URL: paste the listing fields. What's New: paste whats_new.
 7. Upload screenshots (6.7" and 6.5" iPhone): upload screen, a craft read with the 'Fix this first' lever, Library, Creator DNA/Growth.
 8. Build: select the latest TestFlight build (Capacitor, com.creativedirector.app).
-9. App Review Information: paste the review_note into 'Notes'. Provide contact email naadvar@gmail.com. Sign-In required = Yes; demo credentials: enter any email (e.g. review@apple.com), no password.
+9. App Review Information: paste the review_note into 'Notes'. Provide contact email naadvar@gmail.com. Sign-In required = Yes; demo credentials: use Sign in with Apple, OR enter any email (e.g. review@apple.com), no password.
 10. Export Compliance: answer 'Does your app use encryption?' = No (ITSAppUsesNonExemptEncryption = false).
 11. Save, then click 'Add for Review' / 'Submit for Review'.
 

@@ -220,15 +220,26 @@ def _use_openai() -> bool:
                 and settings.craft_read_api_key)
 
 
+_CJK_RE = re.compile(r"[぀-ヿ一-鿿가-힯]")
+
+
 def _incomplete(o: dict) -> bool:
     # verdict + what_it_is are load-bearing; the read needs SOME substance, but an
     # empty blind_spots is VALID — a clean reel earns a clean verdict + done_well,
     # and must not be retried into manufacturing nitpicks.
-    return not (
+    if not (
         o.get("verdict")
         and o.get("what_it_is")
         and (o.get("blind_spots") or o.get("done_well"))
-    )
+    ):
+        return True
+    # Qwen occasionally code-switches a CJK word into the English read (seen live:
+    # "洞穴" for "cave", likelier on out-of-distribution content). Treat it like an
+    # incomplete read so the existing single retry regenerates it in English. The
+    # on_screen_text transcription is exempt — the CREATOR's overlay text may
+    # legitimately be non-English.
+    body = {k: v for k, v in o.items() if k != "on_screen_text_found"}
+    return bool(_CJK_RE.search(json.dumps(body, ensure_ascii=False)))
 
 
 def _data_uri(p: str) -> str:

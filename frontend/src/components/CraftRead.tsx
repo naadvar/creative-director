@@ -141,15 +141,6 @@ export default function CraftRead({
   const [dismissed, setDismissed] = useState<Set<number>>(new Set())
   const [leverFb, setLeverFb] = useState<'helpful' | 'not_useful' | null>(null)
   const [copied, setCopied] = useState(false)
-  const copyFix = () => {
-    try {
-      void navigator.clipboard?.writeText(data.biggest_opportunity ?? '')
-    } catch {
-      /* clipboard unavailable — still give the user feedback */
-    }
-    setCopied(true)
-    setTimeout(() => setCopied(false), 1800)
-  }
 
   // Helpful / not-useful on the headline fix — the positive signal (👍) plus the
   // negative one, both labeled training data (helpful = keep this lever shape).
@@ -164,6 +155,24 @@ export default function CraftRead({
     if (videoId && rawSpots[i]) api.noteFeedback(videoId, rawSpots[i], reason).catch(() => {})
   }
   const visibleSpots = spots.map((s, i) => ({ s, i })).filter(({ i }) => !dismissed.has(i))
+
+  // Copy = a paste-ready edit checklist (for CapCut/notes), not a prose snippet:
+  // the lever first, then each remaining note as a checkbox line with its timestamp.
+  const copyFix = () => {
+    const lines = [`Fix first: ${data.biggest_opportunity ?? ''}`]
+    for (const { s } of visibleSpots) {
+      const where = s.where ? `${s.where} — ` : ''
+      const fix = s.fix ? ` → ${s.fix}` : ''
+      lines.push(`☐ ${where}${s.observation}${fix}`)
+    }
+    try {
+      void navigator.clipboard?.writeText(lines.join('\n'))
+    } catch {
+      /* clipboard unavailable — still give the user feedback */
+    }
+    setCopied(true)
+    setTimeout(() => setCopied(false), 1800)
+  }
 
   const opp = data.biggest_opportunity ?? ''
   const isSilent = !opp || SILENT_RE.test(opp)
@@ -190,6 +199,22 @@ export default function CraftRead({
         {linkify(data.verdict, onSeek)}
       </p>
 
+      {/* Coach before judge: lead with what's genuinely working — the creator is
+          showing us work they're proud of. The lever still gets the accent box. */}
+      {doneWell.length > 0 ? (
+        <div className="mt-5">
+          <h4 className="text-sm font-semibold">What&apos;s working</h4>
+          <ul className="mt-2.5 space-y-2">
+            {doneWell.map((d, i) => (
+              <li key={i} className="flex gap-2.5 text-sm leading-relaxed text-muted">
+                <Check />
+                <span>{linkify(d, onSeek)}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+
       {/* The one prioritized lever — the visual anchor of the read. */}
       {isSilent ? (
         <div className="mt-5 flex items-center gap-3 rounded-xl border border-good/25 bg-good/[0.06] p-4">
@@ -198,7 +223,7 @@ export default function CraftRead({
         </div>
       ) : opp ? (
         <div className="mt-5 rounded-xl border border-accent/40 bg-accent/[0.08] p-4">
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <Spark />
             <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-accent">
               Fix this first
@@ -207,7 +232,7 @@ export default function CraftRead({
               <button
                 type="button"
                 onClick={copyFix}
-                title="Copy this fix for your edit notes"
+                title="Copy the fix + notes as an edit checklist"
                 className="rounded-full border border-accent/30 bg-accent/10 px-2.5 py-0.5 text-[11px] font-medium text-accent transition-colors hover:bg-accent/20"
               >
                 {copied ? 'Copied ✓' : 'Copy'}
@@ -239,7 +264,7 @@ export default function CraftRead({
             </Link>
           ) : null}
           {/* Helpful? — the one-tap signal that tunes the engine over time. */}
-          <div className="mt-3 flex items-center gap-2 border-t border-accent/15 pt-2.5 text-[12px]">
+          <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-accent/15 pt-2.5 text-[12px]">
             {leverFb ? (
               <span className="text-muted">
                 {leverFb === 'helpful' ? 'Glad it helped — noted. 🙌' : 'Thanks — that helps us tune it.'}
@@ -264,21 +289,6 @@ export default function CraftRead({
               </>
             )}
           </div>
-        </div>
-      ) : null}
-
-      {/* Lead with what works — praise before critique on work they're proud of. */}
-      {doneWell.length > 0 ? (
-        <div className="mt-5">
-          <h4 className="text-sm font-semibold">What&apos;s working</h4>
-          <ul className="mt-2.5 space-y-2">
-            {doneWell.map((d, i) => (
-              <li key={i} className="flex gap-2.5 text-sm leading-relaxed text-muted">
-                <Check />
-                <span>{linkify(d, onSeek)}</span>
-              </li>
-            ))}
-          </ul>
         </div>
       ) : null}
 

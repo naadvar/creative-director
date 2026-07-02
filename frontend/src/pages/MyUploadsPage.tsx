@@ -84,7 +84,7 @@ function ReadTile({ u, onDeleted }: { u: UploadCard; onDeleted: (id: string) => 
           </p>
         ) : (
           <p className="mt-1 text-xs text-muted/70">
-            {u.available ? 'Read ready' : 'No grounded read'}
+            {u.available ? 'Read ready' : 'Watched closely — no single fix to push'}
           </p>
         )}
       </div>

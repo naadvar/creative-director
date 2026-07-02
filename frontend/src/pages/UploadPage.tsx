@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { api } from '../api/client'
-import type { Fingerprint } from '../api/types'
+import type { Fingerprint, UploadJobStatus } from '../api/types'
 import CreatorFingerprint from '../components/CreatorFingerprint'
 import EmailGate from '../components/EmailGate'
 import { useAuth } from '../hooks/useAuth'
@@ -54,10 +54,11 @@ const STAGES = ['Uploading', 'Reading every frame', 'Writing the read', 'Fact-ch
 function stageIndex(message: string): number {
   const m = message.toLowerCase()
   if (m.includes('timeline') || m.includes('ready') || m.includes('final')) return 4
-  if (m.includes('fact-check') || m.includes('grounding')) return 3
-  if (m.includes('writing') || m.includes('craft read')) return 2
-  if (m.includes('frame') || m.includes('reading')) return 1
-  return 0
+  if (m.includes('fact-check') || m.includes('grounding') || m.includes('fix landed')) return 3
+  if (m.includes('writing') || m.includes('craft read') || m.includes('another pass')) return 2
+  if (m.includes('frame') || m.includes('reading') || m.includes('transcrib')) return 1
+  if (m.includes('upload')) return 0
+  return -1 // unknown backend message — caller holds the current stage (never regress)
 }
 
 function StepDot({ state }: { state: 'done' | 'active' | 'todo' }) {
@@ -83,9 +84,22 @@ function StepDot({ state }: { state: 'done' | 'active' | 'todo' }) {
 }
 
 /** Full-screen takeover for the ~2–3 min analysis — the wait is a moment to delight,
- * not a tiny spinner. Shows the live stage, a scanning bar, and an animated stepper. */
-function AnalyzingView({ message, fileName }: { message: string; fileName?: string }) {
-  const idx = stageIndex(message)
+ * not a tiny spinner. Shows the live stage, a scanning bar, and an animated stepper.
+ * The stepper is MONOTONIC: an unrecognized backend message holds the current stage
+ * instead of regressing to 0 (which read as "it's stuck/starting over"). */
+function AnalyzingView({
+  message,
+  fileName,
+  slow,
+}: {
+  message: string
+  fileName?: string
+  slow?: boolean
+}) {
+  const last = useRef(0)
+  const mapped = stageIndex(message)
+  const idx = mapped < 0 ? last.current : Math.max(last.current, mapped)
+  last.current = idx
   return (
     <div className="mx-auto max-w-md pt-8 sm:pt-12">
       <div className="animate-rise glow rounded-3xl border border-border bg-surface p-7 text-center sm:p-9">
@@ -113,6 +127,12 @@ function AnalyzingView({ message, fileName }: { message: string; fileName?: stri
         <p className="mt-7 text-xs leading-relaxed text-muted">
           Watching every frame, not just the thumbnail — keep this tab open.
         </p>
+        {slow ? (
+          <p className="mt-3 rounded-lg border border-border bg-surface-2/60 px-3 py-2 text-xs leading-relaxed text-muted">
+            Taking longer than usual — still working. Busy clips just take a little more
+            watching.
+          </p>
+        ) : null}
       </div>
     </div>
   )
@@ -142,6 +162,8 @@ export default function UploadPage() {
   const [gating, setGating] = useState(false)
   const [nicheCounts, setNicheCounts] = useState<Record<string, number>>({})
   const cancelled = useRef(false)
+  // Honest wait states: reassure at ~4 min, give up (honestly) at ~9 min.
+  const [slow, setSlow] = useState(false)
 
   useEffect(() => {
     api
@@ -194,17 +216,41 @@ export default function UploadPage() {
         ideaId,
       )
       setPhase('analyzing')
+      setSlow(false)
+      const t0 = Date.now()
+      let misses = 0
       for (;;) {
         await new Promise((r) => setTimeout(r, 3000))
         if (cancelled.current) return
-        const st = await api.uploadStatus(job.job_id)
-        setMessage(st.message)
-        if (st.status === 'done') {
-          navigate(`/video/${st.video_id}`)
-          return
+        // A transient network blip must not kill the wait — the job keeps running
+        // server-side. Only surface an error after several consecutive misses.
+        let st: UploadJobStatus | null = null
+        try {
+          st = await api.uploadStatus(job.job_id)
+          misses = 0
+        } catch {
+          if (++misses >= 5) {
+            throw new Error(
+              'Lost connection while reading your reel — the read may still finish. Check your Library in a couple of minutes before uploading again.',
+            )
+          }
         }
-        if (st.status === 'error') {
-          throw new Error(st.error ?? 'analysis failed')
+        if (st) {
+          setMessage(st.message)
+          if (st.status === 'done') {
+            navigate(`/video/${st.video_id}`)
+            return
+          }
+          if (st.status === 'error') {
+            throw new Error(st.error ?? 'analysis failed')
+          }
+        }
+        const elapsed = Date.now() - t0
+        if (elapsed > 4 * 60_000) setSlow(true)
+        if (elapsed > 9 * 60_000) {
+          throw new Error(
+            'This is taking much longer than usual. The read may still finish in the background — check your Library in a few minutes before uploading again.',
+          )
         }
       }
     } catch (e) {
@@ -214,7 +260,7 @@ export default function UploadPage() {
   }
 
   if (phase !== 'idle') {
-    return <AnalyzingView message={message} fileName={file?.name} />
+    return <AnalyzingView message={message} fileName={file?.name} slow={slow} />
   }
 
   return (

@@ -11,6 +11,24 @@ import Spinner from '../components/Spinner'
 // the iOS app additionally needs a Codemagic build + App Store review to change.
 const SHOW_IDEAS = false
 
+/** Progress toward the 3-read trend unlock — makes the early sessions feel like
+ * accumulation instead of an empty room. */
+function ReadDots({ n }: { n: number }) {
+  return (
+    <div className="mt-3 flex items-center justify-center gap-1.5 sm:justify-start">
+      {[0, 1, 2].map((i) => (
+        <span
+          key={i}
+          className={`h-2 w-2 rounded-full ${i < n ? 'bg-grad' : 'border border-border'}`}
+        />
+      ))}
+      <span className="ml-1.5 text-[11px] text-muted">
+        {Math.min(n, 3)} of 3 reads to unlock your craft trend
+      </span>
+    </div>
+  )
+}
+
 export default function MyDnaPage() {
   const fp = useAsync(() => api.myFingerprint(), [])
   const prog = useAsync(() => api.myProgress(), [])
@@ -74,6 +92,11 @@ export default function MyDnaPage() {
               {data.n_reels} reel{data.n_reels === 1 ? '' : 's'} in your DNA
             </div>
             <p className="mt-2 text-lg font-medium leading-snug">{data.summary}</p>
+            {data.n_reels === 1 ? (
+              <p className="mt-2 text-sm text-muted">
+                ✨ Your Creator Fingerprint just unlocked — it sharpens with every read.
+              </p>
+            ) : null}
           </div>
 
           {/* The trend — the "am I improving?" signal */}
@@ -81,6 +104,7 @@ export default function MyDnaPage() {
             <div className="rounded-2xl border border-border bg-surface p-5">
               <h2 className="text-sm font-semibold">Your craft trend</h2>
               <p className="mt-2 text-[15px] leading-relaxed">{p.headline}</p>
+              {p.n < 3 ? <ReadDots n={p.n} /> : null}
 
               {p.improving.length > 0 || p.recurring.length > 0 ? (
                 <div className="mt-4 flex flex-wrap gap-2">
@@ -149,8 +173,15 @@ export default function MyDnaPage() {
         <div className="rounded-2xl border border-dashed border-border bg-surface-2/40 px-6 py-12 text-center">
           <p className="text-[15px] font-semibold">Your DNA is empty — for now</p>
           <p className="mx-auto mt-1 max-w-xs text-sm text-muted">
-            Read your first reel and your Creator DNA starts forming.
+            Your first read unlocks your Creator Fingerprint — your style, your strengths,
+            and the note that keeps coming up. Three reads unlock your craft trend.
           </p>
+          <div className="mt-4 flex items-center justify-center gap-1.5">
+            {[0, 1, 2].map((i) => (
+              <span key={i} className="h-2 w-2 rounded-full border border-border" />
+            ))}
+            <span className="ml-1.5 text-[11px] text-muted">0 of 3 reads</span>
+          </div>
           <Link
             to="/analyze"
             className="mt-5 inline-block rounded-xl bg-grad px-5 py-2.5 text-sm font-bold text-white transition-all hover:brightness-110"

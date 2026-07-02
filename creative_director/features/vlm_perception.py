@@ -193,8 +193,11 @@ def _img_block(path: str) -> dict:
 
 
 def _context_text(niche, caption, duration_s, timestamps) -> str:
+    # The niche is the creator's pick, not verified — asserted as fact, the model
+    # parrots it into descriptions even when the footage is something else.
     return (
-        f"Context: niche={niche or 'unknown'}, duration={duration_s or '?'}s. "
+        f"Context: duration={duration_s or '?'}s. The creator filed this under "
+        f"'{niche or 'unknown'}' — their pick, UNVERIFIED: describe only what the frames show. "
         f"Caption opening: {json.dumps(caption or '')[:200]}. "
         f"The frames below span the whole clip; stamped timestamps"
         + (f" are among: {timestamps}." if timestamps else ".")

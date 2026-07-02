@@ -686,7 +686,11 @@ def craft_read_from_frames(frames: list[str], ts: list[float], *, niche=None,
     openai = _use_openai()
     if not frames or (not openai and not settings.anthropic_api_key):
         return None
-    ctx = (f"Context: niche={niche or 'unknown'}, duration={duration_s or '?'}s. "
+    # The niche is the CREATOR'S PICK, not a verified fact — assert it and the model
+    # parrots it ("this fitness Reel...") even when the footage is something else.
+    ctx = (f"Context: duration={duration_s or '?'}s. The creator filed this under "
+           f"'{niche or 'unknown'}' — their pick, UNVERIFIED: judge only what the frames show, "
+           f"and never call the reel by the filed niche unless the footage itself shows it. "
            f"Caption opening: {json.dumps(caption or '')[:200]}. {len(frames)} high-res frames "
            f"span the whole clip; their stamped timestamps are: {ts}.")
     content = [{"type": "text", "text": ctx}] + [_img(p) for p in frames]
@@ -815,7 +819,8 @@ def craft_lever_from_frames(frames: list[str], ts: list[float], *, niche=None,
                        f"{json.dumps(str(payoff)[:280])}. Treat that as the deliberate intended "
                        f"structure: your lever must NOT move it earlier, state it at 0:00, or add an "
                        f"opening title card naming it — sharpen the build toward it instead.")
-    ctx = (f"Context: niche={niche or 'unknown'}, duration={duration_s or '?'}s. "
+    ctx = (f"Context: duration={duration_s or '?'}s. The creator filed this under "
+           f"'{niche or 'unknown'}' — their pick, UNVERIFIED: judge only what the frames show. "
            f"Caption opening: {json.dumps(caption or '')[:200]}.{payoff_note} {len(frames)} high-res "
            f"frames span the whole clip; their stamped timestamps are: {ts}. Give the single "
            f"highest-leverage craft lever for this reel.")
@@ -899,7 +904,7 @@ def verify_fix_addressed(new_mp4: str, prior_issue_text: str, prior_timestamp: s
         if not old_frames:
             return None
         ts_note = f" (around {prior_timestamp})" if prior_timestamp else ""
-        intro = (f"Two versions of a reel (niche={niche or 'unknown'}). The OLD version had this craft "
+        intro = (f"Two versions of a reel (filed under '{niche or 'unknown'}', unverified). The OLD version had this craft "
                  f"issue{ts_note}: {json.dumps(str(prior_issue_text)[:400])}. Compare the OLD frames to "
                  f"the NEW frames and judge whether the NEW version was changed to address it.")
         user = [{"type": "text", "text": intro},

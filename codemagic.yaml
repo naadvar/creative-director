@@ -66,9 +66,11 @@ workflows:
           # build would collide with the first. BUILD_NUMBER auto-increments per CI run.
           /usr/libexec/PlistBuddy -c "Set :CFBundleVersion ${BUILD_NUMBER}" "$PLIST" || \
           /usr/libexec/PlistBuddy -c "Add :CFBundleVersion string ${BUILD_NUMBER}" "$PLIST"
-          /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString 1.0" "$PLIST" || \
-          /usr/libexec/PlistBuddy -c "Add :CFBundleShortVersionString string 1.0" "$PLIST"
-          echo "Version 1.0 build ${BUILD_NUMBER}"
+          # Marketing version — MUST be bumped for each App Store update (you can't
+          # resubmit a version string that's already live; 1.0 shipped 2026-07-01).
+          /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString 1.0.1" "$PLIST" || \
+          /usr/libexec/PlistBuddy -c "Add :CFBundleShortVersionString string 1.0.1" "$PLIST"
+          echo "Version 1.0.1 build ${BUILD_NUMBER}"
       - name: Enable Sign in with Apple (entitlement + project wiring)
         # ios/ is regenerated every build, so the entitlement must be (re)created
         # in CI each run. The provisioning profile fetched below (--create) includes

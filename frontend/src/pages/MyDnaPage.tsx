@@ -6,6 +6,11 @@ import type { IdeaResponse } from '../api/types'
 import IdeaCard from '../components/IdeaCard'
 import Spinner from '../components/Spinner'
 
+// Feature flag: "Ideas from your DNA" is built + backend-live but held back from
+// users for now (owner's call — staged rollout). Flip to true to ship it on web;
+// the iOS app additionally needs a Codemagic build + App Store review to change.
+const SHOW_IDEAS = false
+
 export default function MyDnaPage() {
   const fp = useAsync(() => api.myFingerprint(), [])
   const prog = useAsync(() => api.myProgress(), [])
@@ -34,7 +39,7 @@ export default function MyDnaPage() {
     }
   }
   useEffect(() => {
-    void loadIdea(false)
+    if (SHOW_IDEAS) void loadIdea(false)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -107,7 +112,7 @@ export default function MyDnaPage() {
           ) : null}
 
           {/* Your next reel — ideation grounded in the DNA above it. */}
-          {ideaBusy ? (
+          {!SHOW_IDEAS ? null : ideaBusy ? (
             <div className="rounded-2xl border border-border bg-surface p-5">
               <Spinner label="Sketching your next reel…" />
             </div>

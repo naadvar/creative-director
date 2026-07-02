@@ -256,6 +256,20 @@ def _call_llm(system: str, user: str) -> Optional[dict]:
     return _loads_robust(r.json()["choices"][0]["message"]["content"])
 
 
+# Creative angles rotated across regenerates: temperature buys phrasing variety,
+# not structural variety — the angle forces "Show me another" to actually explore.
+_ANGLES = [
+    ("myth-bust", "take a common belief in their niche and visually disprove or complicate it"),
+    ("process reveal", "show the unglamorous middle of how something gets made/done — the part viewers never see"),
+    ("before/after contrast", "build the reel around a stark A/B contrast shown back to back"),
+    ("POV swap", "shoot from an unexpected point of view (the equipment, the food, the location, a bystander)"),
+    ("series opener", "design episode 1 of a repeatable series format they could sustain weekly"),
+    ("common-mistake autopsy", "dissect one mistake people in their niche make — shown, not told"),
+    ("constraint piece", "impose a creative constraint (one take, one location, no cuts, silence) and let the constraint carry the form"),
+    ("technique deep-dive", "zoom into ONE specific technique or detail from their world and make the whole reel about doing it right"),
+]
+
+
 # ----------------------------------------------------------------- validator
 _VID_RE = re.compile(r"up_[0-9a-f]{12}")
 # Performance/trend-speak is banned OUTPUT, not just banned input. "reach" only in
@@ -289,7 +303,9 @@ def _idea_text(idea: dict) -> str:
     return " ".join(parts)
 
 
-def _validate(idea: Optional[dict], dna: dict) -> tuple[bool, list[str]]:
+def _validate(
+    idea: Optional[dict], dna: dict, prior_premises: Optional[list[str]] = None
+) -> tuple[bool, list[str]]:
     reasons: list[str] = []
     if not isinstance(idea, dict):
         return False, ["no parseable JSON object"]
@@ -322,13 +338,18 @@ def _validate(idea: Optional[dict], dna: dict) -> tuple[bool, list[str]]:
     m = _MODEL_STATS.search(text)
     if m:
         reasons.append(f"model-authored statistic: '{m.group(0)}' (numbers are server-stamped only)")
-    # (e) remix rejection
+    # (e) remix rejection — vs their own reels AND vs previously generated ideas
+    # (a regenerate that lightly rephrases a prior idea is sameness, not variety).
     premise = str(idea.get("premise", ""))
     for r in dna["reads"]:
         if r["what_it_is"] and difflib.SequenceMatcher(
             None, premise.lower(), r["what_it_is"].lower()
         ).ratio() > 0.6:
             reasons.append(f"restates their existing reel {r['video_id']}")
+            break
+    for pp in prior_premises or []:
+        if pp and difflib.SequenceMatcher(None, premise.lower(), pp.lower()).ratio() > 0.6:
+            reasons.append("too similar to an idea already proposed — take a different angle")
             break
     # (f) gap echo
     gg = idea.get("gap_guardrail")
@@ -445,27 +466,45 @@ def compute_idea(user_id: int, fresh: bool = False) -> dict:
             }
 
     system, user = _SYSTEM, _build_user(dna, digest)
-    # "Show me another" should actually be another: tell the model what it already
-    # proposed for this DNA state so regenerates explore, not orbit.
+    # "Show me another" should actually be another. Three diversity mechanisms:
+    # a no-repeat list of prior concepts, a rotated MANDATORY creative angle, and a
+    # rotated primary-anchor reel — plus the validator's prior-premise similarity
+    # rejection. Temperature alone gives phrasing variety, not structural variety.
     with session_scope() as s:
-        prior_concepts = [
-            str((r.idea or {}).get("concept", "")).strip()
-            for r in s.execute(
+        prior_rows = (
+            s.execute(
                 select(CreatorIdea)
                 .where(CreatorIdea.user_id == user_id, CreatorIdea.cache_key == dna["cache_key"])
                 .order_by(CreatorIdea.created_at.desc())
-            ).scalars().all()
-        ]
+            )
+            .scalars()
+            .all()
+        )
+        n_prior = len(prior_rows)
+        prior_concepts = [str((r.idea or {}).get("concept", "")).strip() for r in prior_rows]
+        prior_premises = [str((r.idea or {}).get("premise", "")).strip() for r in prior_rows]
     prior_concepts = [c for c in prior_concepts if c][:5]
+    prior_premises = [p for p in prior_premises if p][:8]
     if prior_concepts:
         user += (
             "\n\nALREADY PROPOSED (do NOT repeat or lightly rephrase these — take a genuinely "
             "different angle): " + "; ".join(prior_concepts)
         )
+    if n_prior > 0:
+        name, desc = _ANGLES[(n_prior - 1) % len(_ANGLES)]
+        user += (
+            f"\n\nMANDATORY CREATIVE ANGLE for this idea — {name}: {desc}. The concept must "
+            f"genuinely embody this angle, not mention it in passing."
+        )
+        anchor = dna["reads"][n_prior % len(dna["reads"])]
+        user += (
+            f"\nPRIMARY ANCHOR: ground this concept primarily in {anchor['video_id']} "
+            f"({anchor['what_it_is'] or anchor['title']})."
+        )
     idea, reasons = None, ["not generated"]
     try:
         idea = _call_llm(system, user)
-        ok, reasons = _validate(idea, dna)
+        ok, reasons = _validate(idea, dna, prior_premises)
         if not ok:
             logger.info(f"idea rejected for user {user_id} (try 1): {reasons}")
             retry_user = (
@@ -475,7 +514,7 @@ def compute_idea(user_id: int, fresh: bool = False) -> dict:
                 + ". Produce a corrected idea that violates none of the rules."
             )
             idea = _call_llm(system, retry_user)
-            ok, reasons = _validate(idea, dna)
+            ok, reasons = _validate(idea, dna, prior_premises)
     except Exception as e:  # noqa: BLE001 — provider failure -> honest empty state
         logger.warning(f"idea generation failed for user {user_id}: {type(e).__name__}: {str(e)[:120]}")
         ok = False

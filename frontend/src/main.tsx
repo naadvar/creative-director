@@ -4,6 +4,18 @@ import { BrowserRouter } from 'react-router-dom'
 import '@fontsource-variable/inter/index.css'
 import './index.css'
 import App from './App.tsx'
+import { isNativeApp } from './api/client'
+
+// Native app: pin the webview's text zoom to 100%. iOS applies the user's system
+// text-size/page-zoom setting inside Capacitor webviews, which SCALES our CSS —
+// at 115-150% the layout overflows sideways ("Sign in/out cut off" on load, seen
+// in tester round 1) instead of adapting. Pinning keeps layout deterministic;
+// users can still enlarge via OS-level zoom gestures.
+if (isNativeApp()) {
+  import('@capacitor/text-zoom')
+    .then(({ TextZoom }) => TextZoom.set({ value: 1 }))
+    .catch(() => {})
+}
 
 // Keep an open tab / installed PWA current. The service worker (registerType
 // 'autoUpdate') already activates a new version and reloads automatically — but

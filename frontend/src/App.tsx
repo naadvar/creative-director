@@ -60,24 +60,31 @@ function Header() {
             Examples
           </NavLink>
         </nav>
-        <div className="ml-auto flex shrink-0 items-center gap-3 text-sm">
+        {/* min-w-0 (NOT shrink-0): this group must be able to shrink, or at 640-740px
+            (landscape phones / enlarged system text) "Sign out" gets pushed off-screen.
+            The email is the flexible part (truncates, and only shows >= md); the
+            Sign in/out control itself never shrinks and never leaves the viewport. */}
+        <div className="ml-auto flex min-w-0 items-center gap-3 text-sm">
           {user ? (
             <>
               {user.email ? (
-                <span className="hidden max-w-[12rem] truncate text-muted sm:inline">
+                <span className="hidden min-w-0 max-w-[12rem] truncate text-muted md:inline">
                   {user.email}
                 </span>
               ) : null}
               <button
                 type="button"
                 onClick={() => void logout()}
-                className="text-muted transition-colors hover:text-text"
+                className="shrink-0 text-muted transition-colors hover:text-text"
               >
                 Sign out
               </button>
             </>
           ) : (
-            <NavLink to="/my-reads" className="font-medium text-accent hover:opacity-90">
+            <NavLink
+              to="/my-reads"
+              className="shrink-0 font-medium text-accent hover:opacity-90"
+            >
               Sign in
             </NavLink>
           )}

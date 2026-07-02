@@ -28,7 +28,18 @@ from loguru import logger
 from starlette.middleware.sessions import SessionMiddleware
 
 from api.config import api_settings
-from api.routers import analyze_handle, auth, corpus, health, ingest, instagram, me, upload, videos
+from api.routers import (
+    analyze_handle,
+    auth,
+    corpus,
+    health,
+    ingest,
+    instagram,
+    me,
+    tools,
+    upload,
+    videos,
+)
 from creative_director.storage.db import init_db
 
 
@@ -90,6 +101,9 @@ def create_app() -> FastAPI:
     app.include_router(me.router)
     app.include_router(corpus.router)
     app.include_router(videos.router)
+    # Private tester utilities (reel grabber). Self-gating: 404 unless API_TOOLS_KEY
+    # is set, so including it unconditionally is inert in normal deploys.
+    app.include_router(tools.router)
     # Heavy on-demand ingest (/analyze-url) pulls in torch/CLIP/Whisper on first
     # call. Gate it so the light serve-only deploy (corpus + advice from the
     # precomputed DB) can omit it entirely: set ENABLE_INGEST=false on that host.

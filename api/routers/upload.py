@@ -123,6 +123,73 @@ def _probe_duration(path: Path) -> Optional[float]:
     return None
 
 
+def _transcode_h264(mp4: Path) -> None:
+    """Transcode to H.264/yuv420p mp4 in place via PyAV (bundled FFmpeg — no system
+    ffmpeg needed). Video is re-encoded (capped at 1280px, veryfast/crf23 so a 30s
+    reel takes ~seconds on the small CPU); audio is stream-COPIED when present
+    (iPhone .mov audio is AAC, mp4-compatible) so the transcript keeps its source."""
+    import av
+
+    tmp = mp4.with_name(mp4.stem + "_h264.mp4")
+    with av.open(str(mp4)) as inp, av.open(str(tmp), mode="w") as out:
+        vin = inp.streams.video[0]
+        rate = vin.average_rate or 30
+        w = vin.codec_context.width or 720
+        h = vin.codec_context.height or 1280
+        scale = min(1.0, 1280 / max(w, h))
+        vw, vh = max(2, (int(w * scale) // 2) * 2), max(2, (int(h * scale) // 2) * 2)
+        vout = out.add_stream("libx264", rate=rate)
+        vout.width, vout.height = vw, vh
+        vout.pix_fmt = "yuv420p"
+        vout.options = {"crf": "23", "preset": "veryfast"}
+        ain = next(iter(inp.streams.audio), None)
+        aout = None
+        if ain is not None:
+            try:
+                aout = out.add_stream(template=ain)  # packet copy, no re-encode
+            except Exception:  # noqa: BLE001 — exotic audio codec: keep video, drop audio
+                logger.warning(f"transcode: audio stream copy unsupported for {mp4.name}; dropping audio")
+        streams = [s for s in (vin, ain) if s is not None]
+        for packet in inp.demux(streams):
+            if packet.dts is None:
+                continue
+            if packet.stream is vin:
+                for frame in packet.decode():
+                    frame = frame.reformat(width=vw, height=vh, format="yuv420p")
+                    for p in vout.encode(frame):
+                        out.mux(p)
+            elif aout is not None and packet.stream is ain:
+                packet.stream = aout
+                out.mux(packet)
+        for p in vout.encode():  # flush the encoder
+            out.mux(p)
+    tmp.replace(mp4)
+
+
+def _ensure_decodable(mp4: Path, job: _Job) -> None:
+    """iPhones record .mov in HEVC by default — including the in-app camera — and
+    the lean host's OpenCV can't decode HEVC. Everything downstream (thumbnail,
+    frame sampling for the read, browser playback) assumes a cv2-decodable file,
+    so if cv2 can't read a first frame, transcode ONCE to H.264 and replace the
+    stored file. No-op for normal H.264 uploads. Raises on a failed transcode
+    (the job can't produce a read from an undecodable file anyway)."""
+    try:
+        import cv2
+
+        cap = cv2.VideoCapture(str(mp4))
+        try:
+            ok, _ = cap.read()
+        finally:
+            cap.release()
+        if ok:
+            return
+    except Exception as e:  # noqa: BLE001 — cv2 itself failing -> still try the transcode
+        logger.warning(f"cv2 decode check failed for {mp4.name}: {type(e).__name__}")
+    job.message = "converting your video…"
+    logger.info(f"{mp4.name}: not cv2-decodable (likely HEVC .mov) — transcoding to H.264")
+    _transcode_h264(mp4)
+
+
 def _first_frame_thumbnail(mp4: Path, out_jpg: Path) -> bool:
     """Grab a representative early frame (~0.5s in) as the thumbnail."""
     import cv2
@@ -156,6 +223,11 @@ def _run_job(job: _Job, mp4: Path) -> None:
         from creative_director.storage.models import Upload, Video, VideoFeatures, VideoTimeline
 
         vid = job.video_id
+
+        # 0. Normalize the container/codec: iPhone .mov (HEVC) — incl. in-app camera
+        # recordings — must become H.264 before anything downstream touches it.
+        job.message = "reading your video…"
+        _ensure_decodable(mp4, job)
 
         # 1. Thumbnail from the opening frame (so the header/player poster work).
         job.message = "reading your video…"
@@ -448,7 +520,7 @@ async def upload_reel(
     duration = _probe_duration(mp4)
     if duration is None:
         mp4.unlink(missing_ok=True)
-        raise HTTPException(422, "Could not read that file as a video — upload an mp4.")
+        raise HTTPException(422, "Couldn't read that file as a video — try an mp4 or mov.")
     if duration > MAX_DURATION_S:
         mp4.unlink(missing_ok=True)
         raise HTTPException(422, f"Video is {duration:.0f}s — max {MAX_DURATION_S}s (short-form only).")

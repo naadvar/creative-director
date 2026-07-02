@@ -6,6 +6,8 @@ collides with pipeline settings.
 """
 from __future__ import annotations
 
+from typing import Optional
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -50,6 +52,9 @@ class ApiSettings(BaseSettings):
     # Signed-cookie session secret. MUST be overridden in production
     # (API_SESSION_SECRET in .env). The dev default is intentionally obvious.
     session_secret: str = "dev-insecure-session-secret-change-me"
+    # Private tester tools (/tools/*). Unset = the routes 404. Set API_TOOLS_KEY
+    # to any secret string; share links as /tools/reel-grab?key=<that string>.
+    tools_key: Optional[str] = None
     # Where to send the browser after auth completes (the SPA).
     frontend_base_url: str = "http://localhost:5173"
     # Dev-only: enables /auth/dev-login, which signs in a demo creator (no

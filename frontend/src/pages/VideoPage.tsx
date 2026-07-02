@@ -109,7 +109,9 @@ export default function VideoPage() {
       {!craft.loading && !craft.error ? (
         <>
           <div className="min-w-0">
-            <h1 className="text-xl font-bold leading-tight tracking-tight sm:text-2xl">
+            {/* Titles are often FILENAMES (one unbreakable token) — force wrapping
+                or they overflow the viewport on narrow iPhones. */}
+            <h1 className="break-words text-xl font-bold leading-tight tracking-tight sm:text-2xl [overflow-wrap:anywhere]">
               {meta?.title ?? 'Reel'}
             </h1>
             <div className="mt-1 flex items-center gap-x-2 text-sm text-muted">

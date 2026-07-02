@@ -38,6 +38,12 @@ body {
   color: var(--color-text);
   font-family: var(--font-sans);
   font-feature-settings: "cv11", "ss01";
+  /* Some content is unbreakable tokens (filenames like ig_Ck...mp4 as titles) —
+     without this they overflow the viewport on narrow iPhones and the page stops
+     "auto-wrapping". overflow-wrap inherits, so this covers every text node; the
+     overflow-x clamp is the belt-and-suspenders against any horizontal bleed. */
+  overflow-wrap: break-word;
+  overflow-x: hidden;
   letter-spacing: -0.012em;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;

@@ -349,7 +349,9 @@ export default function UploadPage() {
           </div>
           {file ? (
             <>
-              <span className="text-[15px] font-semibold">{file.name}</span>
+              <span className="max-w-full break-words text-[15px] font-semibold [overflow-wrap:anywhere]">
+                {file.name}
+              </span>
               <span className="text-xs text-muted">{fmtSize(file.size)} · tap to swap it</span>
             </>
           ) : (

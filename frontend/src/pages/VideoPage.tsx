@@ -75,10 +75,20 @@ function SuppressedRead({ strengths }: { strengths: string[] }) {
 
 /** A read of one reel: the video with its flagged moments, the craft read, share,
  * and a clear next step — never a dead end. */
+const NICHE_LABEL: Record<string, string> = {
+  ig_fitness: 'Fitness',
+  ig_food: 'Food',
+  ig_travel: 'Travel',
+  ig_fashion: 'Fashion',
+}
+
 export default function VideoPage() {
   const { videoId } = useParams<{ videoId: string }>()
   const id = videoId ?? ''
-  const craft = useAsync(() => api.craftRead(id), [id])
+  // Bumped after a niche switch so the read (and its meta) refetch.
+  const [reload, setReload] = useState(0)
+  const [nicheBusy, setNicheBusy] = useState(false)
+  const craft = useAsync(() => api.craftRead(id), [id, reload])
   // Only an upload has a creator DNA worth nudging toward.
   const fp = useAsync(() => (id.startsWith('up') ? api.myFingerprint() : Promise.resolve(null)), [id])
 
@@ -158,6 +168,36 @@ export default function VideoPage() {
                   </Link>
                 </span>
               ) : null}
+            </div>
+          ) : null}
+
+          {/* Niche-mismatch chip: the read saw content that clearly belongs to a
+              different niche than the one picked at upload. Never switched silently —
+              the creator decides (comparisons/DNA re-key on switch). */}
+          {meta?.is_upload &&
+          meta.niche &&
+          read?.suspected_niche &&
+          read.suspected_niche !== meta.niche ? (
+            <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-mid/40 bg-mid/[0.08] px-4 py-3 text-sm">
+              <span className="min-w-0">
+                This looks more like <b>{NICHE_LABEL[read.suspected_niche] ?? read.suspected_niche}</b>{' '}
+                than <b>{NICHE_LABEL[meta.niche] ?? meta.niche}</b> — your niche comparisons may be off.
+              </span>
+              <button
+                type="button"
+                disabled={nicheBusy}
+                onClick={() => {
+                  setNicheBusy(true)
+                  api
+                    .setUploadNiche(id, read.suspected_niche!)
+                    .then(() => setReload((n) => n + 1))
+                    .catch(() => {})
+                    .finally(() => setNicheBusy(false))
+                }}
+                className="shrink-0 rounded-full border border-mid/50 bg-mid/15 px-3.5 py-1 text-[13px] font-semibold transition-colors hover:bg-mid/25 disabled:opacity-50"
+              >
+                {nicheBusy ? 'Switching…' : `Switch to ${NICHE_LABEL[read.suspected_niche] ?? 'it'}`}
+              </button>
             </div>
           ) : null}
 

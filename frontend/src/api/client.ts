@@ -222,6 +222,19 @@ export const api = {
     })
   },
 
+  /** Fix a mispicked niche on one of the creator's own uploads (offered by the
+   * suspected-mismatch chip on the read page). Re-keys DNA + comparisons. */
+  setUploadNiche(videoId: string, niche: string): Promise<{ ok: boolean; niche: string }> {
+    return request<{ ok: boolean; niche: string }>(
+      `/me/uploads/${encodeURIComponent(videoId)}/niche`,
+      {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ niche }),
+      },
+    )
+  },
+
   /** The creator's style fingerprint, built from their own uploaded reels. */
   myFingerprint(): Promise<Fingerprint> {
     return request<Fingerprint>('/me/fingerprint')

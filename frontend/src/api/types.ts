@@ -96,6 +96,9 @@ export interface CraftReadData {
   // each blind spot is one string shaped "m:ss - observation. Fix: ..."
   blind_spots: string[]
   done_well: string[]
+  // set when the read's content clearly belongs to a different niche than the one
+  // selected at upload — the read page offers a one-tap switch (never silent).
+  suspected_niche?: string
 }
 
 export interface CraftReadMeta {
@@ -104,6 +107,8 @@ export interface CraftReadMeta {
   channel: string | null
   duration_seconds: number | null
   is_upload: boolean
+  // The upload's selected niche (uploads only) — used by the mismatch chip.
+  niche?: string | null
 }
 
 // "Did my fix land?" — the result of re-checking a prior reel's flagged issue

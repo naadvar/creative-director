@@ -165,6 +165,50 @@ def delete_upload(video_id: str, user: dict = Depends(get_current_user)) -> dict
     return {"ok": True}
 
 
+class NicheBody(BaseModel):
+    niche: str
+
+
+@router.patch("/uploads/{video_id}/niche")
+def set_upload_niche(
+    video_id: str, body: NicheBody, user: dict = Depends(get_current_user)
+) -> dict:
+    """Creator override for a mispicked niche (offered by the suspected-mismatch chip
+    on the read page — never switched silently). Re-keys everything that reads the
+    Upload row: DNA wording, corpus comparisons, the ideas digest."""
+    from api.routers.upload import ALLOWED_NICHES
+    from creative_director.storage.models import Channel, Upload, Video
+
+    if body.niche not in ALLOWED_NICHES:
+        raise HTTPException(status_code=422, detail=f"niche must be one of {sorted(ALLOWED_NICHES)}")
+    with session_scope() as s:
+        up = s.get(Upload, video_id)
+        if up is None or up.user_id != user["id"]:
+            raise HTTPException(status_code=404, detail="Upload not found")
+        up.niche = body.niche
+        # The read JSON carries niche + the mismatch flag — update both (JSON columns
+        # need a reassignment, not a mutation, to persist).
+        if isinstance(up.craft_read, dict):
+            read = dict(up.craft_read)
+            read["niche"] = body.niche
+            read.pop("suspected_niche", None)
+            up.craft_read = read
+        # Best-effort: keep the (ephemeral) corpus rows consistent too.
+        v = s.get(Video, video_id)
+        if v is not None and v.uploaded_by_user_id == user["id"]:
+            f = s.query(VideoFeatures).filter(VideoFeatures.video_id == video_id).first()
+            if f is not None and isinstance(f.craft_read, dict):
+                fread = dict(f.craft_read)
+                fread["niche"] = body.niche
+                fread.pop("suspected_niche", None)
+                f.craft_read = fread
+            ch = s.get(Channel, v.channel_id) if v.channel_id else None
+            if ch is not None and (v.channel_id or "").startswith("upch_"):
+                ch.niche = body.niche
+    logger.info(f"upload {video_id}: niche switched to {body.niche} by user {user['id']}")
+    return {"ok": True, "niche": body.niche}
+
+
 _DEMO_TOKEN = "DEMO"  # marks the dev demo account; served from the corpus
 
 

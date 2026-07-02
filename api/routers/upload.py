@@ -335,6 +335,27 @@ def _run_job(job: _Job, mp4: Path) -> None:
                 except Exception as e:  # noqa: BLE001
                     logger.warning(f"opportunity synthesis failed for {vid}: {e}")
 
+            # Niche consistency: the selected niche drives the DNA wording + corpus
+            # comparisons, so a mispick makes personalized claims quietly wrong. A
+            # conservative keyword check over what the read actually SAW stamps
+            # suspected_niche — the read page then offers a one-tap switch. Never
+            # silent, never blocking (best-effort).
+            if read is not None and read.get("grounded") is not False:
+                try:
+                    from creative_director.advice.niche_guess import guess_mismatched_niche
+
+                    sus = guess_mismatched_niche(
+                        job.niche,
+                        read.get("what_it_is"), read.get("verdict"), caption, transcript,
+                    )
+                    if sus:
+                        read["suspected_niche"] = sus
+                        logger.info(
+                            f"niche mismatch suspected for {vid}: selected={job.niche} looks like {sus}"
+                        )
+                except Exception as e:  # noqa: BLE001
+                    logger.warning(f"niche check failed for {vid}: {type(e).__name__}: {e}")
+
             if read is not None:
                 with session_scope() as s:
                     f = s.get(VideoFeatures, vid)

@@ -195,6 +195,7 @@ def craft_read(video_id: str) -> dict:
                 "channel": "Your upload",
                 "duration_seconds": up.duration_seconds,
                 "is_upload": True,
+                "niche": up.niche,  # so the mismatch chip can say "fitness vs food"
             }
         else:
             f = s.query(VideoFeatures).filter(VideoFeatures.video_id == video_id).first()

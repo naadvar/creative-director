@@ -4,6 +4,7 @@ import type {
   CorpusPage,
   CraftReadResponse,
   Fingerprint,
+  IdeaResponse,
   MyUploads,
   NicheList,
   Progress,
@@ -143,6 +144,7 @@ export const api = {
     caption: string,
     followers?: number,
     priorVideoId?: string,
+    ideaId?: string,
   ): Promise<UploadJobStatus> {
     const form = new FormData()
     form.append('file', file)
@@ -153,6 +155,8 @@ export const api = {
     }
     // Set when this upload re-checks a prior reel's fix → backend computes the verdict.
     if (priorVideoId) form.append('prior_video_id', priorVideoId)
+    // Set when this upload shoots a generated DNA idea → joins idea → read for later.
+    if (ideaId) form.append('idea_id', ideaId)
     // No Content-Type header — the browser sets the multipart boundary itself.
     return request<UploadJobStatus>('/upload', { method: 'POST', body: form })
   },
@@ -226,5 +230,20 @@ export const api = {
   /** The creator's craft trend over their own reads (recurring vs moved-past). */
   myProgress(): Promise<Progress> {
     return request<Progress>('/me/progress')
+  },
+
+  /** One grounded idea for the creator's next reel, built from their own reads.
+   * fresh=true regenerates (daily-capped — a 429 carries the honest message). */
+  myIdea(fresh = false): Promise<IdeaResponse> {
+    return request<IdeaResponse>(`/me/idea${fresh ? '?fresh=1' : ''}`)
+  },
+
+  /** One-tap quality signal on a generated idea. */
+  ideaFeedback(ideaId: string, rating: 'helpful' | 'not_for_me'): Promise<{ ok: boolean }> {
+    return request<{ ok: boolean }>(`/me/idea/${encodeURIComponent(ideaId)}/feedback`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ rating }),
+    })
   },
 }

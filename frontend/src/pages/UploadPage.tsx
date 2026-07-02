@@ -125,6 +125,8 @@ export default function UploadPage() {
   // Set when the creator tapped "Re-check this fix" on a prior read — the backend
   // then computes the "did my fix land?" verdict for this revision.
   const priorVideoId = searchParams.get('prior') || undefined
+  // Set when the creator tapped "Plan this next" on a DNA idea — joins idea → read.
+  const ideaId = searchParams.get('idea') || undefined
   const { user } = useAuth()
   const inputRef = useRef<HTMLInputElement>(null)
   const [file, setFile] = useState<File | null>(null)
@@ -189,6 +191,7 @@ export default function UploadPage() {
         caption,
         followers ? parseInt(followers, 10) : undefined,
         priorVideoId,
+        ideaId,
       )
       setPhase('analyzing')
       for (;;) {
@@ -246,6 +249,15 @@ export default function UploadPage() {
             </span>
             <Link to={`/video/${priorVideoId}`} className="shrink-0 text-accent hover:underline">
               see the original read
+            </Link>
+          </div>
+        ) : ideaId ? (
+          <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-accent/30 bg-accent/[0.07] px-4 py-3 text-sm">
+            <span className="font-medium">
+              🎬 Shooting your DNA idea — upload it when it’s cut and we’ll read it.
+            </span>
+            <Link to="/my-dna" className="shrink-0 text-accent hover:underline">
+              see the idea
             </Link>
           </div>
         ) : null}

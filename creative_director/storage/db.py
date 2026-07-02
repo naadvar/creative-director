@@ -9,6 +9,7 @@ from creative_director.config import settings
 from creative_director.storage.models import (
     Base,
     ConnectedAccount,
+    CreatorIdea,
     NoteFeedback,
     Upload,
     User,
@@ -23,7 +24,7 @@ engine = create_engine(settings.database_url, echo=False, future=True)
 userdata_engine = create_engine(settings.userdata_url, echo=False, future=True)
 
 # Models whose rows are user-generated and must survive corpus redeploys.
-USER_MODELS = (User, NoteFeedback, ConnectedAccount, Upload)
+USER_MODELS = (User, NoteFeedback, ConnectedAccount, Upload, CreatorIdea)
 
 
 def _wal_pragmas(dbapi_conn) -> None:  # noqa: ANN001
@@ -85,6 +86,7 @@ _RUNTIME_COLUMNS = (
 _USERDATA_RUNTIME_COLUMNS = (
     ("uploads", "prior_video_id", "VARCHAR(64)"),
     ("uploads", "revision_verdict", "JSON"),
+    ("uploads", "idea_id", "VARCHAR(64)"),
 )
 
 

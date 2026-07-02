@@ -363,3 +363,31 @@ class Upload(Base):
         String(64), nullable=True, index=True
     )
     revision_verdict: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
+    # Ideation loop — set when the creator tapped "Plan this next" on a generated idea
+    # and shot it. Joins the upload (and its eventual read) back to the CreatorIdea row,
+    # so "did the planned guardrail hold?" is answerable later, same explicit-link
+    # pattern as prior_video_id (never inferred).
+    idea_id: Mapped[Optional[str]] = mapped_column(String(64), nullable=True, index=True)
+
+
+class CreatorIdea(Base):
+    """One generated 'Ideas from your DNA' concept — grounded reel ideation built
+    from the creator's OWN reads (never trends). Append-only history; userdata store
+    so it survives corpus redeploys. cache_key fingerprints the set of grounded reads
+    the idea was built from — a new read changes the key, which is what keeps Growth
+    always showing an idea that reflects the latest read."""
+
+    __tablename__ = "creator_ideas"
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)  # cdi_<hex>
+    user_id: Mapped[int] = mapped_column(Integer, index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
+    cache_key: Mapped[str] = mapped_column(String(64), index=True)
+    niche: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+    format: Mapped[Optional[str]] = mapped_column(String(32), nullable=True)
+    # The craft gap the idea pre-empts (change_type or opportunity_dimension key).
+    gap_dimension: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+    idea: Mapped[dict] = mapped_column(JSON)  # the validated model output
+    source_video_ids: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)  # cited upload ids
+    feedback: Mapped[Optional[str]] = mapped_column(String(32), nullable=True)  # helpful / not_for_me
+    feedback_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)

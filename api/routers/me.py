@@ -9,6 +9,7 @@ from typing import Optional
 
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, Request
+from pydantic import BaseModel
 from loguru import logger
 from sqlalchemy import select
 
@@ -51,6 +52,42 @@ def my_progress(user: dict = Depends(get_current_user)) -> dict:
     from creative_director.profile.progress import compute_progress
 
     return compute_progress(user["id"])
+
+
+@router.get("/idea")
+def my_idea(fresh: bool = False, user: dict = Depends(get_current_user)) -> dict:
+    """'Ideas from your DNA' — one grounded concept for the creator's next reel,
+    built from their own reads (never trends). Cached per DNA state; ?fresh=1
+    regenerates (daily-capped)."""
+    from creative_director.profile.ideas import compute_idea
+
+    out = compute_idea(user["id"], fresh=fresh)
+    if out.get("capped"):
+        raise HTTPException(status_code=429, detail=out.get("reason", "Daily idea limit reached."))
+    return out
+
+
+class IdeaFeedbackBody(BaseModel):
+    rating: str  # "helpful" | "not_for_me"
+
+
+@router.post("/idea/{idea_id}/feedback")
+def idea_feedback(
+    idea_id: str, body: IdeaFeedbackBody, user: dict = Depends(get_current_user)
+) -> dict:
+    """One-tap quality signal on a generated idea (mirrors the craft-note feedback
+    pattern). Owner-scoped."""
+    from creative_director.storage.models import CreatorIdea
+
+    if body.rating not in ("helpful", "not_for_me"):
+        raise HTTPException(status_code=422, detail="rating must be helpful|not_for_me")
+    with session_scope() as s:
+        row = s.get(CreatorIdea, idea_id)
+        if row is None or row.user_id != user["id"]:
+            raise HTTPException(status_code=404, detail="Idea not found")
+        row.feedback = body.rating
+        row.feedback_at = datetime.utcnow()
+    return {"ok": True}
 
 
 @router.get("/uploads")

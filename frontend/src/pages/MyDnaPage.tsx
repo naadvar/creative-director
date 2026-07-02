@@ -1,6 +1,9 @@
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { api } from '../api/client'
+import { ApiError, api } from '../api/client'
 import { useAsync } from '../hooks/useAsync'
+import type { IdeaResponse } from '../api/types'
+import IdeaCard from '../components/IdeaCard'
 import Spinner from '../components/Spinner'
 
 export default function MyDnaPage() {
@@ -8,6 +11,32 @@ export default function MyDnaPage() {
   const prog = useAsync(() => api.myProgress(), [])
   const data = fp.data
   const p = prog.data
+
+  // "Your next reel" — grounded ideation from the DNA above it. Custom state (not
+  // useAsync) so "Show me another" can refresh in place without unmounting the card.
+  const [idea, setIdea] = useState<IdeaResponse | null>(null)
+  const [ideaBusy, setIdeaBusy] = useState(true)
+  const [freshBusy, setFreshBusy] = useState(false)
+  const [freshError, setFreshError] = useState<string | null>(null)
+  const loadIdea = async (fresh: boolean) => {
+    if (fresh) setFreshBusy(true)
+    setFreshError(null)
+    try {
+      const r = await api.myIdea(fresh)
+      setIdea(r)
+    } catch (e) {
+      // 429 = the honest daily cap; anything else keeps the previous idea quietly.
+      if (e instanceof ApiError && e.status === 429) setFreshError(e.message)
+      else if (!idea) setIdea(null)
+    } finally {
+      setIdeaBusy(false)
+      setFreshBusy(false)
+    }
+  }
+  useEffect(() => {
+    void loadIdea(false)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   return (
     <div className="mx-auto max-w-2xl space-y-6 py-2">
@@ -74,6 +103,25 @@ export default function MyDnaPage() {
                 A factual read of the notes across your reels over time — not a claim that you fixed
                 anything. You draw that conclusion.
               </p>
+            </div>
+          ) : null}
+
+          {/* Your next reel — ideation grounded in the DNA above it. */}
+          {ideaBusy ? (
+            <div className="rounded-2xl border border-border bg-surface p-5">
+              <Spinner label="Sketching your next reel…" />
+            </div>
+          ) : idea?.ready && idea.idea ? (
+            <IdeaCard
+              data={idea}
+              onFresh={() => void loadIdea(true)}
+              freshBusy={freshBusy}
+              freshError={freshError}
+            />
+          ) : idea && !idea.ready ? (
+            <div className="rounded-2xl border border-dashed border-border bg-surface-2/40 px-5 py-6 text-center">
+              <p className="text-sm font-semibold">Your next reel</p>
+              <p className="mx-auto mt-1 max-w-sm text-sm text-muted">{idea.reason}</p>
             </div>
           ) : null}
 

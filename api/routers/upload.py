@@ -52,6 +52,7 @@ class _Job:
     error: Optional[str] = None
     created: float = field(default_factory=time.time)
     prior_video_id: Optional[str] = None  # set when this upload re-checks a prior reel's fix
+    idea_id: Optional[str] = None  # set when this upload shoots a generated DNA idea
 
 
 _JOBS: dict[str, _Job] = {}
@@ -358,6 +359,7 @@ def _run_job(job: _Job, mp4: Path) -> None:
                     up.thumbnail_path = v.thumbnail_path
                     up.prior_video_id = job.prior_video_id
                     up.revision_verdict = revision_verdict
+                    up.idea_id = job.idea_id
                     s.add(up)
         except Exception as e:  # noqa: BLE001
             logger.warning(f"durable upload record failed for {vid}: {type(e).__name__}: {e}")
@@ -395,6 +397,7 @@ async def upload_reel(
     caption: str = Form(""),
     followers: Optional[int] = Form(None),
     prior_video_id: Optional[str] = Form(None),  # set when re-checking a prior reel's fix
+    idea_id: Optional[str] = Form(None),  # set when shooting a generated DNA idea
     user: dict = Depends(get_current_user),
 ) -> UploadJobStatus:
     """Accept a reel upload and start the analysis job. Requires a session
@@ -480,10 +483,14 @@ async def upload_reel(
         )
 
     _UPLOADS_BY_IP.setdefault(ip, []).append(time.time())
-    # Only honor a prior link that looks like our own upload id (sanity, not auth — the
-    # ownership check happens in _run_job against the new upload's user).
+    # Only honor links that look like our own ids (sanity, not auth — the ownership
+    # check happens in _run_job against the new upload's user).
     prior = prior_video_id if (prior_video_id or "").startswith("up_") else None
-    job = _Job(id=uuid.uuid4().hex[:12], video_id=video_id, niche=niche, prior_video_id=prior)
+    idea = idea_id if (idea_id or "").startswith("cdi_") else None
+    job = _Job(
+        id=uuid.uuid4().hex[:12], video_id=video_id, niche=niche,
+        prior_video_id=prior, idea_id=idea,
+    )
     _JOBS[job.id] = job
     threading.Thread(target=_run_job, args=(job, mp4), daemon=True).start()
     logger.info(f"upload job {job.id} started ({video_id}, niche={niche}, {size/1e6:.1f}MB, {duration:.0f}s)")

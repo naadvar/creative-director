@@ -395,6 +395,55 @@ export interface MyUploads {
   uploads: UploadCard[]
 }
 
+// --- "Ideas from your DNA" — grounded ideation for the creator's next reel ---
+export interface IdeaBeat {
+  beat: string
+  time: string
+  direction: string
+}
+export interface IdeaGrounding {
+  video_id: string
+  why: string
+}
+export interface IdeaStrength {
+  video_id: string
+  strength: string
+  how: string
+}
+export interface IdeaGuardrail {
+  gap: string
+  plan: string
+}
+export interface CreatorIdeaData {
+  concept: string
+  premise: string
+  format: string
+  grounded_in: IdeaGrounding[]
+  strength_used: IdeaStrength
+  beat_sheet: IdeaBeat[]
+  gap_guardrail: IdeaGuardrail
+  shoot_notes: string
+}
+export interface IdeaCitation {
+  video_id: string
+  title: string
+  thumbnail_url: string
+}
+export interface IdeaResponse {
+  ready: boolean
+  n_reads: number
+  idea?: CreatorIdeaData
+  idea_id?: string
+  generated_at?: string
+  // Server-stamped lines — every number here is computed from real data, never model-authored.
+  gap_stat_line?: string
+  digest_line?: string | null
+  citations?: IdeaCitation[]
+  caveat?: string
+  feedback?: string | null
+  reason?: string
+}
+
 // --- craft trend over the creator's own reads ("am I improving?") ---
 export interface ProgressRead {
   video_id: string

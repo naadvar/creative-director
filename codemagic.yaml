@@ -56,6 +56,10 @@ workflows:
           /usr/libexec/PlistBuddy -c "Set :NSPhotoLibraryUsageDescription 'Creative Director needs access to your videos so you can pick a reel to get a craft read.'" "$PLIST"
           /usr/libexec/PlistBuddy -c "Add :NSCameraUsageDescription string 'Creative Director can record a reel to analyze.'" "$PLIST" || \
           /usr/libexec/PlistBuddy -c "Set :NSCameraUsageDescription 'Creative Director can record a reel to analyze.'" "$PLIST"
+          # Recording VIDEO uses the microphone — without this string iOS terminates
+          # the capture UI, which was tester round-1's "camera doesn't work".
+          /usr/libexec/PlistBuddy -c "Add :NSMicrophoneUsageDescription string 'The microphone records your reel’s audio when you capture video in the app.'" "$PLIST" || \
+          /usr/libexec/PlistBuddy -c "Set :NSMicrophoneUsageDescription 'The microphone records your reel’s audio when you capture video in the app.'" "$PLIST"
           # Export compliance: no non-exempt encryption — avoids the TestFlight
           # "Missing Compliance" block + a manual prompt on every upload.
           /usr/libexec/PlistBuddy -c "Add :ITSAppUsesNonExemptEncryption bool false" "$PLIST" || \

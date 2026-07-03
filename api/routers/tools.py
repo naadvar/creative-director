@@ -12,6 +12,8 @@ it back, so the phone never touches the CDN link.
 """
 from __future__ import annotations
 
+import urllib.parse
+
 import httpx
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import HTMLResponse, Response
@@ -24,6 +26,9 @@ from creative_director.config import settings
 router = APIRouter(prefix="/tools", tags=["tools"])
 
 _APIFY_SYNC = "https://api.apify.com/v2/acts/apify~instagram-scraper/run-sync-get-dataset-items"
+# The only hosts we'll download a reel from (Instagram/Facebook CDNs).
+_ALLOWED_CDN_DOMAINS = ("cdninstagram.com", "fbcdn.net", "instagram.com")
+_MAX_GRAB_BYTES = 300 * 1024 * 1024  # 300MB hard cap
 
 
 def _gate(key: str | None) -> None:
@@ -144,17 +149,30 @@ def reel_grab_fetch(body: GrabBody) -> Response:
         raise HTTPException(
             status_code=404, detail="No downloadable video found for that URL — is it a reel?"
         )
+    # SSRF guard: the video URL comes from Apify's response, not the user — but treat
+    # it as untrusted and only fetch from Instagram/Facebook CDNs, never an internal
+    # address. (Prevents a poisoned response pointing at 169.254.169.254 etc.)
+    host = (urllib.parse.urlparse(video_url).hostname or "").lower()
+    if not any(host == d or host.endswith("." + d) for d in _ALLOWED_CDN_DOMAINS):
+        logger.warning(f"reel-grab: refusing non-CDN host {host!r}")
+        raise HTTPException(status_code=502, detail="Video URL wasn't a recognized Instagram CDN")
+    # Stream with a hard size cap so a malicious/huge response can't exhaust memory.
+    buf = bytearray()
     try:
-        media = httpx.get(video_url, timeout=120, follow_redirects=True)
+        with httpx.stream("GET", video_url, timeout=120, follow_redirects=True) as media:
+            if media.status_code != 200:
+                raise HTTPException(status_code=502, detail="Couldn't download the video from the CDN — try again")
+            for chunk in media.iter_bytes():
+                buf.extend(chunk)
+                if len(buf) > _MAX_GRAB_BYTES:
+                    raise HTTPException(status_code=502, detail="Reel is unexpectedly large — aborting")
     except httpx.HTTPError as e:
         raise HTTPException(status_code=502, detail=f"CDN download failed: {type(e).__name__}")
-    if media.status_code != 200 or len(media.content) < 50_000:
-        raise HTTPException(
-            status_code=502, detail="Couldn't download the video from the CDN — try again"
-        )
-    logger.info(f"reel-grab: served {u} ({len(media.content)/1e6:.1f} MB)")
+    if len(buf) < 50_000:
+        raise HTTPException(status_code=502, detail="Couldn't download the video from the CDN — try again")
+    logger.info(f"reel-grab: served {u} ({len(buf)/1e6:.1f} MB)")
     return Response(
-        content=media.content,
+        content=bytes(buf),
         media_type="video/mp4",
         headers={"Content-Disposition": 'attachment; filename="reel.mp4"'},
     )

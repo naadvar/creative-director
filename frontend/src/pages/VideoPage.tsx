@@ -207,7 +207,7 @@ export default function VideoPage() {
           ) : null}
 
           {read ? (
-            <CraftRead data={read} onSeek={handleSeek} videoId={id} />
+            <CraftRead data={read} onSeek={handleSeek} videoId={id} isUpload={meta?.is_upload} />
           ) : craft.data?.suppressed ? (
             <SuppressedRead strengths={craft.data.strengths ?? []} />
           ) : (

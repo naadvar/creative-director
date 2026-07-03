@@ -102,9 +102,10 @@ def _probe_duration(path: Path) -> Optional[float]:
         with av.open(str(path)) as container:
             if container.duration is not None:
                 return float(container.duration) / av.time_base
-            vs = container.streams.video[0]
-            if vs.duration is not None and vs.time_base is not None:
-                return float(vs.duration * vs.time_base)
+            if container.streams.video:  # guard: audio-only files have no video[0]
+                vs = container.streams.video[0]
+                if vs.duration is not None and vs.time_base is not None:
+                    return float(vs.duration * vs.time_base)
     except Exception as e:  # noqa: BLE001 — av is absent on lean hosts; fall back to OpenCV
         logger.warning(f"PyAV duration probe unavailable for {path} ({type(e).__name__}); trying OpenCV")
     try:
@@ -123,47 +124,101 @@ def _probe_duration(path: Path) -> Optional[float]:
     return None
 
 
+def _source_rotation(mp4: Path) -> int:
+    """Display rotation (0/90/180/270) the container declares, read via OpenCV's
+    CAP_PROP_ORIENTATION_META — which comes from the container header, so it's
+    decoder-independent and works for HEVC even where frame DECODE fails on the lean
+    host. iPhone portrait video carries this; if we re-encode without baking it into
+    the pixels the output plays sideways and the read reasons about a sideways clip.
+    (Normal landscape H.264 uploads never reach the transcode — cv2 decodes them
+    directly, auto-orienting via the same metadata — so rotation only matters here.)"""
+    try:
+        import cv2
+
+        cap = cv2.VideoCapture(str(mp4))
+        try:
+            meta = cap.get(cv2.CAP_PROP_ORIENTATION_META) or 0
+        finally:
+            cap.release()
+        return int(round(float(meta))) % 360
+    except Exception:  # noqa: BLE001 — any failure -> treat as unrotated (no regression)
+        return 0
+
+
 def _transcode_h264(mp4: Path) -> None:
     """Transcode to H.264/yuv420p mp4 in place via PyAV (bundled FFmpeg — no system
     ffmpeg needed). Video is re-encoded (capped at 1280px, veryfast/crf23 so a 30s
     reel takes ~seconds on the small CPU); audio is stream-COPIED when present
-    (iPhone .mov audio is AAC, mp4-compatible) so the transcript keeps its source."""
+    (iPhone .mov audio is AAC, mp4-compatible) so the transcript keeps its source.
+    Container rotation is BAKED into the pixels (iPhone portrait is a landscape frame
+    + a 90° display flag) so every downstream consumer — player, thumbnail, cv2 frame
+    sampling — sees it upright."""
     import av
+    import cv2
+
+    rot = _source_rotation(mp4)
+    # OpenCV-consistent mapping (matches the auto-orient that already handles H.264
+    # uploads), so baking is consistent with the rest of the pipeline.
+    cv_rot = {
+        90: cv2.ROTATE_90_CLOCKWISE,
+        180: cv2.ROTATE_180,
+        270: cv2.ROTATE_90_COUNTERCLOCKWISE,
+    }.get(rot)
+    swap = rot in (90, 270)
 
     tmp = mp4.with_name(mp4.stem + "_h264.mp4")
-    with av.open(str(mp4)) as inp, av.open(str(tmp), mode="w") as out:
-        vin = inp.streams.video[0]
-        rate = vin.average_rate or 30
-        w = vin.codec_context.width or 720
-        h = vin.codec_context.height or 1280
-        scale = min(1.0, 1280 / max(w, h))
-        vw, vh = max(2, (int(w * scale) // 2) * 2), max(2, (int(h * scale) // 2) * 2)
-        vout = out.add_stream("libx264", rate=rate)
-        vout.width, vout.height = vw, vh
-        vout.pix_fmt = "yuv420p"
-        vout.options = {"crf": "23", "preset": "veryfast"}
-        ain = next(iter(inp.streams.audio), None)
-        aout = None
-        if ain is not None:
-            try:
-                aout = out.add_stream(template=ain)  # packet copy, no re-encode
-            except Exception:  # noqa: BLE001 — exotic audio codec: keep video, drop audio
-                logger.warning(f"transcode: audio stream copy unsupported for {mp4.name}; dropping audio")
-        streams = [s for s in (vin, ain) if s is not None]
-        for packet in inp.demux(streams):
-            if packet.dts is None:
-                continue
-            if packet.stream is vin:
-                for frame in packet.decode():
-                    frame = frame.reformat(width=vw, height=vh, format="yuv420p")
-                    for p in vout.encode(frame):
-                        out.mux(p)
-            elif aout is not None and packet.stream is ain:
-                packet.stream = aout
-                out.mux(packet)
-        for p in vout.encode():  # flush the encoder
-            out.mux(p)
-    tmp.replace(mp4)
+    try:
+        with av.open(str(mp4)) as inp, av.open(str(tmp), mode="w") as out:
+            if not inp.streams.video:  # audio-only upload: no frames to read
+                raise ValueError(f"no video stream in {mp4.name}")
+            vin = inp.streams.video[0]
+            rate = vin.average_rate or 30
+            w = vin.codec_context.width or 720
+            h = vin.codec_context.height or 1280
+            # Display dimensions AFTER rotation (swapped for 90/270), then scale-capped.
+            dw, dh = (h, w) if swap else (w, h)
+            scale = min(1.0, 1280 / max(dw, dh))
+            vw, vh = max(2, (int(dw * scale) // 2) * 2), max(2, (int(dh * scale) // 2) * 2)
+            vout = out.add_stream("libx264", rate=rate)
+            vout.width, vout.height = vw, vh
+            vout.pix_fmt = "yuv420p"
+            vout.options = {"crf": "23", "preset": "veryfast"}
+            ain = next(iter(inp.streams.audio), None)
+            aout = None
+            if ain is not None:
+                try:
+                    aout = out.add_stream(template=ain)  # packet copy, no re-encode
+                except Exception:  # noqa: BLE001 — exotic audio codec: keep video, drop audio
+                    logger.warning(f"transcode: audio stream copy unsupported for {mp4.name}; dropping audio")
+            streams = [s for s in (vin, ain) if s is not None]
+            for packet in inp.demux(streams):
+                if packet.dts is None:
+                    continue
+                if packet.stream is vin:
+                    for frame in packet.decode():
+                        if cv_rot is not None:
+                            # rotate pixels (bgr ndarray) then resize to the target
+                            arr = cv2.rotate(frame.to_ndarray(format="bgr24"), cv_rot)
+                            if (arr.shape[1], arr.shape[0]) != (vw, vh):
+                                arr = cv2.resize(arr, (vw, vh))
+                            nf = av.VideoFrame.from_ndarray(arr, format="bgr24").reformat(format="yuv420p")
+                            for p in vout.encode(nf):
+                                out.mux(p)
+                        else:
+                            f2 = frame.reformat(width=vw, height=vh, format="yuv420p")
+                            for p in vout.encode(f2):
+                                out.mux(p)
+                elif aout is not None and packet.stream is ain:
+                    packet.stream = aout
+                    out.mux(packet)
+            for p in vout.encode():  # flush the encoder
+                out.mux(p)
+        tmp.replace(mp4)
+    finally:
+        # On success replace() consumed tmp; on any exception it must not leak onto
+        # the persistent volume.
+        if tmp.exists():
+            tmp.unlink(missing_ok=True)
 
 
 def _ensure_decodable(mp4: Path, job: _Job) -> None:
@@ -409,6 +464,12 @@ def _run_job(job: _Job, mp4: Path) -> None:
                     prior_read = prior.craft_read if (own and isinstance(prior.craft_read, dict)) else None
                     prior_title = prior.title if own else None
                     prior_mp4 = prior.video_file_path if own else None
+                    # If the prior reel was deleted, its frames are gone — don't feed
+                    # a stale path to the two-version verifier (it would sample a
+                    # nonexistent file). Null it so the verifier returns None and the
+                    # verdict is an honest "cant_verify", not a fabricated compare.
+                    if prior_mp4 and not Path(prior_mp4).exists():
+                        prior_mp4 = None
                 # Only re-check when the prior read named a REAL issue — skip a clean
                 # ("well-executed as is", opportunity_dimension == "none") prior read,
                 # which has nothing to verify a fix against.

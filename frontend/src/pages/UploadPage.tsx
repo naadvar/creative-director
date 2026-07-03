@@ -221,7 +221,12 @@ export default function UploadPage() {
       let misses = 0
       for (;;) {
         await new Promise((r) => setTimeout(r, 3000))
-        if (cancelled.current) return
+        // Cancelled (navigated away) mid-wait: reset phase so a later return to the
+        // page isn't stuck on the analyzing takeover with no active job.
+        if (cancelled.current) {
+          setPhase('idle')
+          return
+        }
         // A transient network blip must not kill the wait — the job keeps running
         // server-side. Only surface an error after several consecutive misses.
         let st: UploadJobStatus | null = null

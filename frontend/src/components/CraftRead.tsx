@@ -130,10 +130,14 @@ export default function CraftRead({
   data,
   onSeek,
   videoId,
+  isUpload: isUploadProp,
 }: {
   data: CraftReadData
   onSeek?: (second: number) => void
   videoId?: string
+  // The backend's authoritative "this is the creator's own upload" flag. Prefer it
+  // over the id-prefix heuristic, which would misfire on any corpus id starting "up".
+  isUpload?: boolean
 }) {
   const rawSpots = data.blind_spots ?? []
   const spots = rawSpots.map(parseSpot)
@@ -176,9 +180,10 @@ export default function CraftRead({
 
   const opp = data.biggest_opportunity ?? ''
   const isSilent = !opp || SILENT_RE.test(opp)
-  // Uploads (up_*) can be re-checked: the creator fixes this, re-uploads, and we
-  // verify whether the fix landed. Corpus reels (ig_*/yt) aren't the creator's, so no re-check.
-  const isUpload = (videoId ?? '').startsWith('up')
+  // Uploads can be re-checked: the creator fixes this, re-uploads, and we verify
+  // whether the fix landed. Corpus reels aren't the creator's, so no re-check. Use
+  // the backend flag when provided; fall back to the id heuristic for safety.
+  const isUpload = isUploadProp ?? (videoId ?? '').startsWith('up_')
   const dimension =
     data.opportunity_dimension && data.opportunity_dimension !== 'none'
       ? data.opportunity_dimension

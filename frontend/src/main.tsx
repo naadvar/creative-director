@@ -32,6 +32,14 @@ if ('serviceWorker' in navigator) {
       document.addEventListener('visibilitychange', () => {
         if (document.visibilityState === 'visible') check()
       })
+      // Native app: iOS doesn't reliably fire visibilitychange on app resume, so a
+      // backgrounded app could serve a stale bundle. Also check on Capacitor's
+      // 'resume' event so reopening the app pulls the latest deploy.
+      if (isNativeApp()) {
+        import('@capacitor/app')
+          .then(({ App: CapApp }) => CapApp.addListener('resume', check))
+          .catch(() => {})
+      }
     })
     .catch(() => {})
 }

@@ -19,8 +19,12 @@ workflows:
       # No ios_signing block: Codemagic's automatic signing only FETCHES profiles, it
       # doesn't create them, so it fails "no matching profiles" on a fresh account.
       # We create everything explicitly in the scripts with fetch-signing-files
-      # --create (the canonical recipe), which generates the cert private key + cert +
-      # profile — provided the account has no dangling cert blocking it.
+      # --create (the canonical recipe) using a PERSISTENT certificate key stored as
+      # the CERTIFICATE_PRIVATE_KEY secure variable (group "signing") — so the same
+      # certificate is REUSED across builds instead of revoke+recreate every run
+      # (which spammed "Your Certificate Has Been Revoked" emails on every build).
+      groups:
+        - signing # holds CERTIFICATE_PRIVATE_KEY (secure) — set in the Codemagic UI
       vars:
         BUNDLE_ID: "com.creativedirector.app"
         APP_NAME: "Creative Director"
@@ -102,37 +106,27 @@ workflows:
           else
             echo "No Podfile — Capacitor uses Swift Package Manager, skipping pod install."
           fi
-      - name: Set up code signing (create cert + profile from scratch)
-        # The account has NO certificate, and the CLI won't invent the cert's private
-        # key. So: generate a private key, create the distribution cert WITH it, then
-        # create the app-store profile using the same key. Fully explicit — nothing
-        # relies on the CLI auto-generating a key.
+      - name: Set up code signing (persistent certificate, reused across builds)
+        # CERTIFICATE_PRIVATE_KEY is a secure env var (group "signing") holding a
+        # PEM RSA key generated once and kept forever. fetch-signing-files matches
+        # the existing distribution cert to this key and REUSES it; --create only
+        # makes one on the very first run (or if none matches). No delete/revoke —
+        # which is what used to fire an Apple "certificate revoked" email per build.
         script: |
           set -e
+          if [ -z "${CERTIFICATE_PRIVATE_KEY:-}" ]; then
+            echo "ERROR: CERTIFICATE_PRIVATE_KEY is not set."
+            echo "Codemagic UI -> app -> Environment variables -> add CERTIFICATE_PRIVATE_KEY"
+            echo "(paste the PEM from ios_dist_certificate_key.pem, group 'signing', check Secure)."
+            exit 1
+          fi
           keychain initialize
-          # Apple caps distribution certificates, and a prior build already created
-          # one whose private key was ephemeral (gone now, so it's useless to us).
-          # Delete existing distribution certs so `certificates create` below doesn't
-          # 409 "you already have a current certificate", then create a fresh cert
-          # with a private key we control. Keeps the active-cert count at 1.
-          for cid in $(app-store-connect certificates list --type IOS_DISTRIBUTION --json | python3 -c "import sys,json; d=json.load(sys.stdin); items=d.get('data',d) if isinstance(d,dict) else d; print(' '.join(c['id'] for c in items))"); do
-            echo "Deleting existing distribution certificate $cid"
-            app-store-connect certificates delete "$cid" --ignore-not-found
-          done
-          openssl genrsa -out /tmp/cert_key.pem 2048
-          app-store-connect certificates create \
-            --type IOS_DISTRIBUTION \
-            --certificate-key=@file:/tmp/cert_key.pem \
-            --save
-          # --delete-stale-profiles: enabling "Sign In with Apple" on the App ID
-          # INVALIDATES the previous build's profile (Apple invalidates profiles when
-          # an App ID's capabilities change). Without this flag, --create would reuse
-          # that now-invalid profile (no applesignin entitlement) and the archive
-          # fails. This deletes the invalid one so --create regenerates a fresh
-          # profile that includes the entitlement.
+          # --delete-stale-profiles: profiles invalidated by capability changes (e.g.
+          # enabling Sign In with Apple) or by the historical cert churn get cleaned
+          # up so --create regenerates a valid one that includes the entitlements.
           app-store-connect fetch-signing-files "$BUNDLE_ID" \
             --type IOS_APP_STORE \
-            --certificate-key=@file:/tmp/cert_key.pem \
+            --certificate-key=@env:CERTIFICATE_PRIVATE_KEY \
             --create \
             --delete-stale-profiles
           keychain add-certificates

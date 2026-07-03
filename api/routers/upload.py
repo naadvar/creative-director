@@ -31,7 +31,10 @@ router = APIRouter(tags=["upload"])
 
 # The niches with extracted benchmark corpora. Uploads must map to one so the
 # winner comparisons / vibe prompts / cohort wording all resolve.
-ALLOWED_NICHES = {"ig_fitness", "ig_food", "ig_travel", "ig_fashion"}
+# "other" = an honest catch-all for reels outside the four corpus niches: the read
+# runs on the frames as normal, but nothing niche-keyed (corpus comparison, DNA
+# "you're a X creator", population stats) is asserted for it.
+ALLOWED_NICHES = {"ig_fitness", "ig_food", "ig_travel", "ig_fashion", "other"}
 
 MAX_BYTES = 200 * 1024 * 1024  # 200 MB
 MAX_DURATION_S = 180  # 3 minutes — short-form only

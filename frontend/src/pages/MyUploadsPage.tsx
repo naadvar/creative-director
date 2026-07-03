@@ -106,7 +106,7 @@ export default function MyUploadsPage() {
         <div>
           <h1 className="text-2xl font-extrabold tracking-tight sm:text-3xl">Your reads</h1>
           <p className="mt-1 text-sm text-muted">
-            Every reel you’ve read here — watch your craft sharpen over time.
+            Every reel you’ve read. Watch your craft sharpen over time.
           </p>
         </div>
         <Link

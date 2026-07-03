@@ -61,17 +61,22 @@ def guess_mismatched_niche(
     different niche than the one selected — else None. Conservative by design:
     requires the other niche to hit >= 3 distinct terms while the selected niche
     hits <= 1, and a clear margin."""
-    if selected not in _LEXICON:
-        return None
     text = " ".join(t for t in texts if t)[:4000].lower()
     if len(text) < 40:
         return None  # not enough signal to second-guess the creator
     scores = _score(text)
-    sel = scores.get(selected, 0)
     best_other, best_score = None, 0
     for niche, s in scores.items():
         if niche != selected and s > best_score:
             best_other, best_score = niche, s
+    # "other" / unknown: no selected-niche baseline — suggest a niche only when one
+    # scores strongly on its own, so a genuinely-fitness reel filed as "Something
+    # else" can be re-keyed for real comparisons.
+    if selected not in _LEXICON:
+        return best_other if (best_other and best_score >= 4) else None
+    # A real mismatch: the other niche clearly wins AND the selected one barely
+    # registers (so crossover reels never get flagged).
+    sel = scores.get(selected, 0)
     if best_other and best_score >= 3 and sel <= 1 and best_score >= sel + 3:
         return best_other
     return None

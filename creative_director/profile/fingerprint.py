@@ -61,7 +61,10 @@ def compute_fingerprint(user_id: int) -> dict:
     )
 
     niche = niches.most_common(1)[0][0] if niches else None
-    niche_word = niche.replace("ig_", "") if niche else "short-form"
+    # Only name a niche the creator is actually filed under a corpus niche for —
+    # "other" / unknown must NOT become "You're a other creator".
+    _CORPUS = {"ig_fitness", "ig_food", "ig_travel", "ig_fashion"}
+    niche_word = niche.replace("ig_", "") if (niche in _CORPUS) else None
     fmt = fmts.most_common(1)[0][0] if fmts else None
     fmt_label = _FORMAT_LABEL.get(fmt)
 
@@ -70,7 +73,7 @@ def compute_fingerprint(user_id: int) -> dict:
         for c, cnt in changes.most_common(3) if c in _CHANGE_FRIENDLY
     ]
 
-    summary = f"You're a {niche_word} creator"
+    summary = f"You're a {niche_word} creator" if niche_word else "You're a creator"
     if fmt_label:
         summary += f" who mostly makes {fmt_label} reels"
     summary += "."

@@ -11,6 +11,9 @@ const NICHES = [
   { key: 'ig_food', label: 'Food' },
   { key: 'ig_travel', label: 'Travel' },
   { key: 'ig_fashion', label: 'Fashion' },
+  // Honest catch-all: the read still runs on the frames; we just don't compare it
+  // against a niche corpus or claim a niche in the DNA.
+  { key: 'other', label: 'Something else' },
 ]
 
 const MAX_BYTES = 200 * 1024 * 1024
@@ -157,7 +160,6 @@ export default function UploadPage() {
   const [phase, setPhase] = useState<'idle' | 'uploading' | 'analyzing'>('idle')
   const [message, setMessage] = useState('')
   const [error, setError] = useState<string | null>(null)
-  const [corpusTotal, setCorpusTotal] = useState<number | null>(null)
   const [fingerprint, setFingerprint] = useState<Fingerprint | null>(null)
   const [gating, setGating] = useState(false)
   const [nicheCounts, setNicheCounts] = useState<Record<string, number>>({})
@@ -170,7 +172,6 @@ export default function UploadPage() {
       .niches()
       .then((r) => {
         const ig = r.niches.filter((n) => n.platform === 'instagram')
-        setCorpusTotal(ig.reduce((sum, n) => sum + n.count, 0))
         setNicheCounts(Object.fromEntries(ig.map((n) => [n.niche, n.count])))
       })
       .catch(() => {})
@@ -270,23 +271,15 @@ export default function UploadPage() {
 
   return (
     <div className="mx-auto max-w-2xl space-y-7">
-      <div className="space-y-3 pt-6 text-center">
+      <div className="space-y-2.5 pt-6 text-center">
         <h1 className="text-4xl font-extrabold leading-[1.04] tracking-tight sm:text-5xl">
           Get a <span className="text-grad">craft read</span>
           <br />
           of your reel
         </h1>
-        <p className="mx-auto max-w-xl text-[15px] leading-relaxed text-muted">
-          Drop a reel — even an unposted draft — and the model watches it frame by frame: hook,
-          payoff, pacing, framing, every text beat. Then it hands you the one craft fix you&apos;re
-          too close to see.
-          {corpusTotal ? (
-            <>
-              {' '}
-              Trained on <span className="font-semibold text-text">{corpusTotal.toLocaleString()}</span>{' '}
-              analyzed reels.
-            </>
-          ) : null}
+        <p className="mx-auto max-w-md text-[15px] leading-relaxed text-muted">
+          Even an unposted draft. It watches every frame and finds the one fix you&apos;re too
+          close to see.
         </p>
       </div>
 
@@ -362,7 +355,7 @@ export default function UploadPage() {
           ) : (
             <>
               <span className="text-[15px] font-semibold">Drop your reel here, or tap to choose</span>
-              <span className="text-xs text-muted">mp4 / mov · up to 3 min · stays private, never published</span>
+              <span className="text-xs text-muted">mp4 or mov, up to 3 min. Stays private.</span>
             </>
           )}
           <input
@@ -377,10 +370,7 @@ export default function UploadPage() {
 
         <div>
           <div className="mb-2 text-xs font-semibold uppercase tracking-widest text-muted">
-            Your niche{' '}
-            <span className="font-normal normal-case tracking-normal text-muted/70">
-              — sets the reels you’re read against
-            </span>
+            Your niche
           </div>
           <div className="flex flex-wrap gap-2">
             {NICHES.map((n) => (
@@ -458,8 +448,7 @@ export default function UploadPage() {
       </div>
 
       <p className="text-center text-xs leading-relaxed text-muted">
-        Analyzed on the spot, never shared or published. A craft read of your footage — no
-        performance or virality predictions.
+        Private, never published. No performance or virality predictions.
       </p>
 
       {/* Deferred email gate — only appears at the moment of value (the submit tap). */}

@@ -28,7 +28,7 @@ export default function CreatorFingerprint({ fp }: { fp: Fingerprint }) {
         </div>
       ) : null}
       <p className="mt-3 text-[11px] text-muted">
-        Built from your own uploads — your style, never a performance prediction.
+        Built from your own uploads. Never a performance prediction.
       </p>
     </div>
   )

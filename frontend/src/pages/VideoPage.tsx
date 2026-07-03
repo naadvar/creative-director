@@ -80,6 +80,7 @@ const NICHE_LABEL: Record<string, string> = {
   ig_food: 'Food',
   ig_travel: 'Travel',
   ig_fashion: 'Fashion',
+  other: 'Something else',
 }
 
 export default function VideoPage() {

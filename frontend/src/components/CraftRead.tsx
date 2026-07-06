@@ -145,6 +145,17 @@ export default function CraftRead({
   const [dismissed, setDismissed] = useState<Set<number>>(new Set())
   const [leverFb, setLeverFb] = useState<'helpful' | 'not_useful' | null>(null)
   const [copied, setCopied] = useState(false)
+  const [capCopied, setCapCopied] = useState(false)
+  const copyCaption = () => {
+    try {
+      void navigator.clipboard?.writeText(data.caption_suggestion?.text ?? '')
+    } catch {
+      /* clipboard unavailable — still confirm the tap */
+    }
+    api.track('copy_caption', videoId)
+    setCapCopied(true)
+    setTimeout(() => setCapCopied(false), 1800)
+  }
 
   // Helpful / not-useful on the headline fix — the positive signal (👍) plus the
   // negative one, both labeled training data (helpful = keep this lever shape).
@@ -295,6 +306,31 @@ export default function CraftRead({
               </>
             )}
           </div>
+        </div>
+      ) : null}
+
+      {/* Caption-as-remedy (v1.2): present only when the read implicated the
+          caption — one voice-matched suggestion, copy-ready. */}
+      {data.caption_suggestion?.text ? (
+        <div className="mt-5 rounded-xl border border-border bg-surface-2/60 p-4">
+          <div className="flex flex-wrap items-center gap-2">
+            <h4 className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted">
+              Caption for this one
+            </h4>
+            <button
+              type="button"
+              onClick={copyCaption}
+              className="ml-auto rounded-full border border-border bg-surface px-2.5 py-0.5 text-[11px] font-medium text-muted transition-colors hover:text-text"
+            >
+              {capCopied ? 'Copied ✓' : 'Copy'}
+            </button>
+          </div>
+          <p className="mt-2 whitespace-pre-wrap text-[15px] leading-relaxed">
+            {data.caption_suggestion.text}
+          </p>
+          <p className="mt-2 text-[11px] text-muted">
+            Written in your voice, from what&apos;s on screen. Edit before posting.
+          </p>
         </div>
       ) : null}
 

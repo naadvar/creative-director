@@ -99,6 +99,9 @@ export interface CraftReadData {
   // set when the read's content clearly belongs to a different niche than the one
   // selected at upload — the read page offers a one-tap switch (never silent).
   suspected_niche?: string
+  // caption-as-remedy (v1.2): present ONLY when the read implicated the caption.
+  // One voice-matched suggestion; absent = honest absence, render nothing.
+  caption_suggestion?: { text: string; why?: string }
 }
 
 export interface CraftReadMeta {

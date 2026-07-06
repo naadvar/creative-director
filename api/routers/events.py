@@ -16,7 +16,7 @@ from creative_director.storage.telemetry import log_event
 
 router = APIRouter(tags=["events"])
 
-_ALLOWED = {"copy_checklist", "share_tapped", "app_opened", "idea_planned"}
+_ALLOWED = {"copy_checklist", "share_tapped", "app_opened", "idea_planned", "copy_caption"}
 
 
 class EventBody(BaseModel):

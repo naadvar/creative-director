@@ -9,6 +9,8 @@ ideas = [i for i in A["ideas"] if "idea" in i]
 random.seed(42)
 blind_sets, key = [], {}
 for c in A["captions"]:
+    if "our_options" not in c:  # honest suppression — nothing to judge
+        continue
     opts = []
     for j, o in enumerate(c["our_options"] or []):
         if isinstance(o, dict) and o.get("caption"):
@@ -88,7 +90,7 @@ const capJudges = [
 ]
 
 const results = await parallel([
-  ...ideaJudges.map(j => () => agent(
+  ...(JSON.parse(IDEAS).length ? ideaJudges : []).map(j => () => agent(
     'Nine reel IDEAS were generated for three creator profiles by a tool that claims they are grounded in each ' +
     "creator's own reels (their reels are listed per item). YOUR LENS: " + j.brief +
     '\\n\\nIDEAS:\\n' + IDEAS + '\\n\\nReturn one judgment per idea (9 total).',
@@ -103,9 +105,10 @@ const results = await parallel([
     { label: 'cap:' + j.key, phase: 'Judge', schema: CAP_SCHEMA })),
 ])
 
+const nIdeaJudges = JSON.parse(IDEAS).length ? ideaJudges.length : 0
 return {
-  idea_judgments: results.slice(0, 3).filter(Boolean),
-  caption_rankings: results.slice(3).filter(Boolean),
+  idea_judgments: results.slice(0, nIdeaJudges).filter(Boolean),
+  caption_rankings: results.slice(nIdeaJudges).filter(Boolean),
 }
 '''
 

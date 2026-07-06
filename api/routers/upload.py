@@ -16,6 +16,8 @@ from __future__ import annotations
 import threading
 import time
 import uuid
+
+from sqlalchemy import select
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
@@ -415,6 +417,48 @@ def _run_job(job: _Job, mp4: Path) -> None:
                         )
                 except Exception as e:  # noqa: BLE001
                     logger.warning(f"niche check failed for {vid}: {type(e).__name__}: {e}")
+
+            # Caption-as-remedy (v1.2): when the read itself implicates the caption,
+            # attach ONE voice-matched suggestion (their past captions = the voice
+            # reference). Honest absence on any failure. Best-effort.
+            if read is not None and read.get("grounded") is not False:
+                try:
+                    from creative_director.advice.captions import (
+                        caption_implicated,
+                        suggest_caption,
+                    )
+
+                    if caption_implicated(read):
+                        with session_scope() as s:
+                            v = s.get(Video, vid)
+                            owner = v.uploaded_by_user_id if v is not None else None
+                            past = []
+                            if owner:
+                                past = [
+                                    c
+                                    for (c,) in s.execute(
+                                        select(Upload.caption)
+                                        .where(
+                                            Upload.user_id == owner,
+                                            Upload.caption.isnot(None),
+                                            Upload.caption != "",
+                                            Upload.video_id != vid,
+                                        )
+                                        .order_by(Upload.created_at.desc())
+                                        .limit(5)
+                                    ).all()
+                                ]
+                        job.message = "drafting your caption…"
+                        sug = suggest_caption(
+                            read,
+                            transcript=transcript,
+                            current_caption=caption,
+                            past_captions=past,
+                        )
+                        if sug:
+                            read["caption_suggestion"] = sug
+                except Exception as e:  # noqa: BLE001
+                    logger.warning(f"caption suggestion failed for {vid}: {type(e).__name__}")
 
             if read is not None:
                 with session_scope() as s:

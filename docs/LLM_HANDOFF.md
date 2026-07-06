@@ -129,12 +129,15 @@ changes; the GOTCHAS section encodes expensive lessons._
   persistent-cert signing. Owner kicks Codemagic → smoke → ASC "+ Version"
   1.0.2 → What's New (rewritten version in chat/LAUNCH context: lead with
   upload-screen + Something else; camera as "more reliable") → submit.
-- ⚠ UNVERIFIED: portrait-rotation SIGN. Math unit-tested (dims swap, CW
-  mapping); could not fabricate a real display-matrix file locally. Risk
-  bounded (transcode only runs when cv2 can't decode; landscape untouched).
-  VERIFY on first real portrait HEVC upload: pull the stored file, check
-  orientation; if sideways, flip the 90↔270 mapping in _source_rotation/
-  _transcode_h264 (one line).
+- Portrait/camera: VERIFIED on-device 2026-07-04 — owner recorded in-app on the
+  1.0.1 App Store build: upright, with sound, read completed. NOTE the real
+  root cause of "camera doesn't work" was the HEVC upload rejection (backend,
+  fixed for all clients); the missing mic permission (ships in 1.0.2) turned
+  out to be defensive, not the felt bug. Residual low-risk unknown: an in-app
+  recording may be H.264 (no transcode), so the rotation-BAKE path for
+  native-camera HEVC .movs is confirmed by unit tests + this outcome but not
+  isolated on-device; if a portrait .mov ever reads sideways, flip the 90↔270
+  mapping in _transcode_h264 (one line).
 - Ideas feature: BUILT + backend live, UI dark (MyDnaPage SHOW_IDEAS=false).
   Owner wants staged rollout; flip = one word + push (web), next build (iOS).
 - Reel grabber: LIVE + verified e2e. Link = /tools/reel-grab?key=<API_TOOLS_KEY>

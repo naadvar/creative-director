@@ -126,10 +126,12 @@ def users_list(key: str = "") -> Response:
         lines = [f"{'id':>4}  {'signed up':<12} {'last login':<12} {'uploads':>7}  identity"]
         for u in users:
             ident = u.email or f"[{platforms.get(u.id, 'no-email')}] {u.display_name or ''}".strip()
+            # str() the dates first — a raw date in an f-string treats the align
+            # spec as an strftime format and prints garbage.
+            signed = str(u.created_at.date()) if u.created_at else "?"
+            seen = str(u.last_login_at.date()) if u.last_login_at else "?"
             lines.append(
-                f"{u.id:>4}  {u.created_at.date() if u.created_at else '?':<12} "
-                f"{u.last_login_at.date() if u.last_login_at else '?':<12} "
-                f"{upload_counts.get(u.id, 0):>7}  {ident}"
+                f"{u.id:>4}  {signed:<12} {seen:<12} {upload_counts.get(u.id, 0):>7}  {ident}"
             )
         lines.append(f"\ntotal: {len(users)}")
     return Response(content="\n".join(lines), media_type="text/plain; charset=utf-8")

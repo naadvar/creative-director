@@ -103,6 +103,38 @@ def reel_grab_page(key: str = "") -> HTMLResponse:
     return HTMLResponse(_PAGE)
 
 
+@router.get("/users")
+def users_list(key: str = "") -> Response:
+    """Owner-only account list (key-gated like everything in /tools): email or
+    connected platform, signup date, last login, upload count. This is the lead
+    list for launch emails — treat the output as PII."""
+    _gate(key)
+    from sqlalchemy import select
+
+    from creative_director.storage.db import session_scope
+    from creative_director.storage.models import ConnectedAccount, Upload, User
+
+    with session_scope() as s:
+        users = s.execute(select(User).order_by(User.created_at)).scalars().all()
+        upload_counts: dict[int, int] = {}
+        for (uid,) in s.execute(select(Upload.user_id)).all():
+            if uid is not None:
+                upload_counts[uid] = upload_counts.get(uid, 0) + 1
+        platforms: dict[int, str] = {}
+        for conn in s.execute(select(ConnectedAccount)).scalars().all():
+            platforms[conn.user_id] = conn.platform
+        lines = [f"{'id':>4}  {'signed up':<12} {'last login':<12} {'uploads':>7}  identity"]
+        for u in users:
+            ident = u.email or f"[{platforms.get(u.id, 'no-email')}] {u.display_name or ''}".strip()
+            lines.append(
+                f"{u.id:>4}  {u.created_at.date() if u.created_at else '?':<12} "
+                f"{u.last_login_at.date() if u.last_login_at else '?':<12} "
+                f"{upload_counts.get(u.id, 0):>7}  {ident}"
+            )
+        lines.append(f"\ntotal: {len(users)}")
+    return Response(content="\n".join(lines), media_type="text/plain; charset=utf-8")
+
+
 @router.get("/kpis")
 def kpis(key: str = "", format: str = "text") -> Response:
     """Live launch KPIs (WAU, retention cohorts, uploads funnel, suppression rate,

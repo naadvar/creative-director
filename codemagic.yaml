@@ -24,7 +24,7 @@ workflows:
       # certificate is REUSED across builds instead of revoke+recreate every run
       # (which spammed "Your Certificate Has Been Revoked" emails on every build).
       groups:
-        - signing # holds CERTIFICATE_PRIVATE_KEY (secure) — set in the Codemagic UI
+        - signing # holds CERTIFICATE_PRIVATE_KEY_B64 (secure, base64 one-liner) — set in the Codemagic UI
       vars:
         BUNDLE_ID: "com.creativedirector.app"
         APP_NAME: "Creative Director"
@@ -114,19 +114,22 @@ workflows:
         # which is what used to fire an Apple "certificate revoked" email per build.
         script: |
           set -e
-          if [ -z "${CERTIFICATE_PRIVATE_KEY:-}" ]; then
-            echo "ERROR: CERTIFICATE_PRIVATE_KEY is not set."
-            echo "Codemagic UI -> app -> Environment variables -> add CERTIFICATE_PRIVATE_KEY"
-            echo "(paste the PEM from ios_dist_certificate_key.pem, group 'signing', check Secure)."
+          if [ -z "${CERTIFICATE_PRIVATE_KEY_B64:-}" ]; then
+            echo "ERROR: CERTIFICATE_PRIVATE_KEY_B64 is not set."
+            echo "Codemagic UI -> app -> Environment variables -> add CERTIFICATE_PRIVATE_KEY_B64"
+            echo "(paste the ONE-LINE contents of ios_dist_certificate_key_b64.txt, group 'signing', check Secure)."
             exit 1
           fi
+          # The key is stored base64-encoded (single line) because multiline PEM
+          # values get flattened by variable-UI pastes, which breaks key parsing.
+          python3 -c "import base64, os; open('/tmp/cert_key.pem','wb').write(base64.b64decode(os.environ['CERTIFICATE_PRIVATE_KEY_B64']))"
           keychain initialize
           # --delete-stale-profiles: profiles invalidated by capability changes (e.g.
           # enabling Sign In with Apple) or by the historical cert churn get cleaned
           # up so --create regenerates a valid one that includes the entitlements.
           app-store-connect fetch-signing-files "$BUNDLE_ID" \
             --type IOS_APP_STORE \
-            --certificate-key=@env:CERTIFICATE_PRIVATE_KEY \
+            --certificate-key=@file:/tmp/cert_key.pem \
             --create \
             --delete-stale-profiles
           keychain add-certificates

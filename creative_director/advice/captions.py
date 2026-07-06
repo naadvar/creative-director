@@ -90,13 +90,15 @@ def _call(system: str, user: str) -> Optional[dict]:
 
 
 def caption_implicated(read: dict) -> bool:
-    """True when the read's own notes talk about the caption — the only time we
-    offer a suggestion."""
+    """True when the read's own notes talk about the POST caption — the only time
+    we offer a suggestion. "caption overlay"/"caption text" refer to on-screen
+    text (a different remedy), so those phrasings are excluded first."""
     if not isinstance(read, dict):
         return False
     text = " ".join(
         [str(read.get("biggest_opportunity") or "")] + [str(b) for b in (read.get("blind_spots") or [])]
     )
+    text = re.sub(r"\bcaptions?\s+(?:overlays?|text)\b", "", text, flags=re.I)
     return bool(_TRIGGER.search(text))
 
 

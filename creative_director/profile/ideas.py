@@ -175,6 +175,9 @@ HARD RULES:
 - NO NUMBERS: write no statistics, counts, or percentages anywhere; the app attaches real ones itself.
 - PRE-EMPT THE GAP: structure the beat_sheet so the creator's TOP CRAFT GAP cannot recur — plan the fix into the shoot itself (e.g. gap text_illegible: specify where the text sits, how large, how long it holds, before they shoot).
 - NEW, NOT A REMIX: the concept must not restate any reel in the CREATOR DNA list. Build on a strength; don't repeat a video.
+- NOT THEIR USUAL FORMULA: the concept must also differ structurally from the overall pattern of their listed reels — if it reads like a typical post from their feed with a new location or exercise swapped in, it is wrong.
+- THE GAP IS A GUARDRAIL, NEVER THE SUBJECT: never propose a reel about fixing the craft gap itself or about production mechanics (no reels about text legibility, fonts, cue cards, camera setup, or behind-the-scenes of making reels). The gap only shapes HOW the beats are planned.
+- RESPECT THEIR FORMAT: a talking_head creator speaks on camera — the beats must include what they say; a visual_led concept leans on imagery and must not hinge on monologue.
 - SHOOTABLE: phone-camera realistic, one or two sessions, no crew.
 - NICHE-BOUND: if the concept would read as a fine suggestion for any creator in any niche, it is wrong. It must only make sense for THIS creator's niche, format, and strengths.
 Respond with ONLY one JSON object (no markdown fences, no prose) with EXACTLY these keys: "concept" (string, <=10 words), "premise" (string, 1-2 sentences), "format" (one of "talking_head","visual_led","mixed"), "grounded_in" (array of 1-2 objects {"video_id","why"}), "strength_used" (object {"video_id","strength","how"}), "beat_sheet" (array of 3-5 objects {"beat","time","direction"}, times as m:ss ranges), "gap_guardrail" (object {"gap": exactly the gap key given below, "plan": string}), "shoot_notes" (string, one line). Strictly valid JSON."""
@@ -259,8 +262,10 @@ def _call_llm(system: str, user: str) -> Optional[dict]:
 # Creative angles rotated across regenerates: temperature buys phrasing variety,
 # not structural variety — the angle forces "Show me another" to actually explore.
 _ANGLES = [
+    # "process reveal" was removed after the v1.2 judge panel: it degenerated into
+    # "film yourself fixing the tool's gap note" in 3/3 profiles (kill verdicts).
+    # Myth-bust scored 3/3 ship — it leads the rotation deliberately.
     ("myth-bust", "take a common belief in their niche and visually disprove or complicate it"),
-    ("process reveal", "show the unglamorous middle of how something gets made/done — the part viewers never see"),
     ("before/after contrast", "build the reel around a stark A/B contrast shown back to back"),
     ("POV swap", "shoot from an unexpected point of view (the equipment, the food, the location, a bystander)"),
     ("series opener", "design episode 1 of a repeatable series format they could sustain weekly"),
@@ -287,6 +292,14 @@ _POP = r"(?:all\s+)?(?:reels|videos|shorts|creators|viewers|accounts|people|post
 _MODEL_STATS = re.compile(
     rf"\d\s*%\s*of\s+{_POP}\b|\bpercent\s+of\s+{_POP}\b"
     rf"|\b\d+\s+(?:of|in)\s+\d+\s+{_POP}\b|\bmost creators\b|\banalyzed reels\b",
+    re.I,
+)
+# The reel's SUBJECT must never be the craft gap / production mechanics (the v1.2
+# judge panel's systemic failure: "film yourself making text readable"). Checked on
+# concept+premise ONLY — beat directions legitimately spec text sizes/holds.
+_TOOL_SUBJECT = re.compile(
+    r"\b(legib\w*|readab\w*|font size|text size|cue cards?|camera (?:angle|setup) test"
+    r"|behind[- ]the[- ]scenes of (?:filming|making|setting up))\b",
     re.I,
 )
 _FORMATS = {"talking_head", "visual_led", "mixed"}
@@ -329,6 +342,13 @@ def _validate(
         reasons.append(f"cites reels that don't exist: {sorted(fake)}")
     if not cited:
         reasons.append("no video_id citations found")
+    # (b2) the gap/production must not be the reel's subject
+    subject_text = f"{idea.get('concept', '')} {idea.get('premise', '')}"
+    m = _TOOL_SUBJECT.search(subject_text)
+    if m:
+        reasons.append(
+            f"the reel's subject is the craft gap / production itself ('{m.group(0)}') — the gap is a guardrail, not content"
+        )
     text = _idea_text(idea)
     # (c) trend/performance speak
     m = _BANNED.search(text)

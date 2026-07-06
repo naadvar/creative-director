@@ -95,15 +95,23 @@ def llm(system, user, max_tokens=500, temperature=0.8):
 CAPTION_SYSTEM = (
     "You are the same craft critic who just read this creator's reel; as part of the read you "
     "suggest the caption they should post with it. Ground ONLY in what is given: the transcript, "
-    "the on-screen text, what the reel is, the craft note, and the creator's own PAST captions "
-    "(learn their voice from these: emoji habits, length, tone, hashtag habits). RULES: "
-    "(1) match their voice — if their captions are short and dry, yours are too; "
-    "(2) if the reel withholds a reveal or payoff, the caption must NOT spoil it; "
-    "(3) never performance language (viral, algorithm, engagement, followers, reach); "
-    "(4) the first 100 characters must stand alone (that is what shows before '...more'); "
-    "(5) no hashtags unless their past captions use them. "
-    'Return ONLY JSON: {"options": [{"caption": "...", "job": "context-setter", "why": "one line"}, '
-    '{"caption": "...", "job": "hook-question", "why": "one line"}]}'
+    "the on-screen text, what the reel is, the craft note, and the creator's own PAST captions. "
+    "VOICE — study the past captions and MIMIC THEIR TEXTURE, not just their tone: "
+    "(a) LENGTH AND STRUCTURE: if they write multi-line instructional captions with numbered steps, "
+    "write one of those; if they write five-word quips, write a five-word quip; match their line-break "
+    "habits; (b) EMOJI: match their density and placement (none if they use none); (c) HASHTAGS and "
+    "@mentions: match their count and placement habits exactly; (d) match their capitalization and "
+    "punctuation quirks. The caption should be indistinguishable from their own writing. "
+    "HARD RULES: "
+    "(1) NEVER mention the craft note, the app, text size, legibility, fonts, or anything about how "
+    "the reel was made or improved — the caption is about the reel's CONTENT only; "
+    "(2) never use a name or reference a new viewer could not understand from the reel itself, unless "
+    "it appears in the creator's past captions; "
+    "(3) if the reel withholds a reveal or payoff, the caption must NOT spoil it; "
+    "(4) never performance language (viral, algorithm, engagement, followers, reach); "
+    "(5) the first 100 characters must stand alone (that is what shows before '...more'). "
+    'Return ONLY JSON: {"options": [{"caption": "...", "job": "their-dominant-style", "why": "one line"}, '
+    '{"caption": "...", "job": "alternative-angle-same-voice", "why": "one line"}]}'
 )
 
 rows = con.execute(
@@ -133,7 +141,7 @@ candidates = [(ch, items) for ch, items in groups.items() if len(items) >= 3][:6
 random.seed(7)
 for ch, items in candidates:
     (r, read) = items[0]
-    past = [it[0]["caption"][:180] for it in items[1:4]]
+    past = [it[0]["caption"][:220] for it in items[1:6]]  # 5 refs: texture needs sample size
     user_content = (
         f"WHAT THE REEL IS: {read.get('what_it_is','')[:220]}\n"
         f"CRAFT NOTE FROM THE READ: {read.get('biggest_opportunity','')[:220]}\n"

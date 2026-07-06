@@ -99,3 +99,33 @@ virality language even in ASO keywords. Founder-led + honest is the whole play.
 **Realistic goal:** 100–200 signups, 25–50 people who actually upload. If D7
 retention of this cohort is <15%, we stop outbound and fix the first session
 before spending another hour on growth.
+
+
+---
+
+## Video 1 shot list — "I let an AI critique my reel" (the reaction, ~22s)
+
+Pre-shoot: she uploads a REAL recent reel of hers, screen-records the read page
+(slow scroll, pause on the fix), THEN films reactions. Swap the [bracketed]
+lines for what her actual read says. If the read stings or misses: keep it.
+
+- [0:00-0:02] Her face mid-thought + text overlay (big, center, 2s hold):
+  "I let an AI critique my reel. No sugarcoating." No intro.
+- [0:02-0:05] Screen rec: her reel, "Reading your reel...", the read appears.
+  Overlay: "it watches every single frame"
+- [0:05-0:11] Pause on Fix this first (timestamp visible); she reads it aloud.
+- [0:11-0:16] Cut to her genuine unscripted reaction. The money shot.
+- [0:16-0:22] One line to camera: "It doesn't tell you how to go viral. It just
+  tells you the truth. Kinda rude. Kinda love it." HARD CUT on the last word.
+
+Text specs (practice what we preach): bold sans-serif, lower/center third,
+3s+ holds, never over a busy background.
+
+Caption: the app said my caption was unreadable and honestly... it was. it
+watches every frame of your reel and gives you ONE fix. no virality scores, no
+"post at 9am." link in bio if you want your reel roasted honestly.
+Hashtags (4 max, never #viral): #contentcreator #reeltips #videoediting #fitnesscreator
+
+Honesty rules for all UGC: never claim account growth; never fake a reaction;
+if the app gets one wrong, show that too ("you can tell it it's wrong — that's
+the point").

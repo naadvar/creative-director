@@ -103,6 +103,22 @@ def reel_grab_page(key: str = "") -> HTMLResponse:
     return HTMLResponse(_PAGE)
 
 
+@router.get("/kpis")
+def kpis(key: str = "", format: str = "text") -> Response:
+    """Live launch KPIs (WAU, retention cohorts, uploads funnel, suppression rate,
+    helpful%, revision verdicts). Key-gated like the rest of /tools — check it from
+    a phone at /tools/kpis?key=...&format=text."""
+    _gate(key)
+    from creative_director.storage.kpis import compute_kpis, render_text
+
+    k = compute_kpis()
+    if format == "json":
+        import json as _json
+
+        return Response(content=_json.dumps(k, indent=1), media_type="application/json")
+    return Response(content=render_text(k), media_type="text/plain; charset=utf-8")
+
+
 class GrabBody(BaseModel):
     url: str
     key: str = ""

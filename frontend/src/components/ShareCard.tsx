@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react'
 import { toPng } from 'html-to-image'
+import { api } from '../api/client'
 import type { CraftReadData } from '../api/types'
 
 const SHARE_HOST = 'creative-director-psi.vercel.app'
@@ -70,6 +71,7 @@ export default function ShareCard({
 
   async function share() {
     setBusy(true)
+    api.track('share_tapped')
     try {
       const url = await render()
       const nav = navigator as Navigator & {

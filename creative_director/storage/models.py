@@ -370,6 +370,23 @@ class Upload(Base):
     idea_id: Mapped[Optional[str]] = mapped_column(String(64), nullable=True, index=True)
 
 
+class Event(Base):
+    """Product telemetry — one row per user action. Userdata store, so it survives
+    corpus redeploys. Deliberately minimal and first-party: no third parties, no
+    content payloads, just names + timestamps — the raw material for WAU/retention/
+    funnel KPIs (creative_director/storage/kpis.py). Telemetry cannot be backfilled;
+    this table only counts from the moment it shipped (2026-07-04)."""
+
+    __tablename__ = "events"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    name: Mapped[str] = mapped_column(String(48), index=True)
+    user_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True, index=True)
+    video_id: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+    props: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
+
+
 class CreatorIdea(Base):
     """One generated 'Ideas from your DNA' concept — grounded reel ideation built
     from the creator's OWN reads (never trends). Append-only history; userdata store

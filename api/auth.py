@@ -192,6 +192,7 @@ def email_login(request: Request, email: str) -> int:
             .scalars()
             .first()
         )
+        new_user = user is None
         if user is None:
             user = User(
                 created_at=now, last_login_at=now, email=email,
@@ -203,6 +204,9 @@ def email_login(request: Request, email: str) -> int:
             user.last_login_at = now
         uid = user.id
     login_user(request, uid)
+    from creative_director.storage.telemetry import log_event
+
+    log_event("login", user_id=uid, method="email", new_user=new_user)
     return uid
 
 
@@ -230,6 +234,7 @@ def upsert_user_and_connection(
             .first()
         )
         now = datetime.utcnow()
+        new_user = conn is None
         if conn is None:
             user = User(created_at=now, last_login_at=now, display_name=username)
             s.add(user)
@@ -252,4 +257,8 @@ def upsert_user_and_connection(
         conn.token_expires_at = token_expires_at
         conn.scopes = scopes
         s.flush()
-        return conn.user_id
+        uid = conn.user_id
+    from creative_director.storage.telemetry import log_event
+
+    log_event("login", user_id=uid, method=platform, new_user=new_user)
+    return uid

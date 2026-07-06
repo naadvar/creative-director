@@ -251,6 +251,16 @@ export const api = {
     return request<IdeaResponse>(`/me/idea${fresh ? '?fresh=1' : ''}`)
   },
 
+  /** Fire-and-forget tap telemetry (whitelisted server-side). Never throws,
+   * never blocks the interaction it decorates. */
+  track(name: string, videoId?: string): void {
+    void request<{ ok: boolean }>('/events', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, video_id: videoId ?? null }),
+    }).catch(() => {})
+  },
+
   /** One-tap quality signal on a generated idea. */
   ideaFeedback(ideaId: string, rating: 'helpful' | 'not_for_me'): Promise<{ ok: boolean }> {
     return request<{ ok: boolean }>(`/me/idea/${encodeURIComponent(ideaId)}/feedback`, {

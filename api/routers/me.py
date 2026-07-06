@@ -162,6 +162,9 @@ def delete_upload(video_id: str, user: dict = Depends(get_current_user)) -> dict
                 s.delete(f)
             s.delete(v)
     logger.info(f"deleted upload {video_id} for user {user['id']}")
+    from creative_director.storage.telemetry import log_event
+
+    log_event("upload_deleted", user_id=user["id"], video_id=video_id)
     return {"ok": True}
 
 

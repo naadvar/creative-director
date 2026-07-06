@@ -10,6 +10,7 @@ from creative_director.storage.models import (
     Base,
     ConnectedAccount,
     CreatorIdea,
+    Event,
     NoteFeedback,
     Upload,
     User,
@@ -24,7 +25,7 @@ engine = create_engine(settings.database_url, echo=False, future=True)
 userdata_engine = create_engine(settings.userdata_url, echo=False, future=True)
 
 # Models whose rows are user-generated and must survive corpus redeploys.
-USER_MODELS = (User, NoteFeedback, ConnectedAccount, Upload, CreatorIdea)
+USER_MODELS = (User, NoteFeedback, ConnectedAccount, Upload, CreatorIdea, Event)
 
 
 def _wal_pragmas(dbapi_conn) -> None:  # noqa: ANN001

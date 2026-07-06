@@ -175,7 +175,7 @@ def summary(video_id: str) -> schemas.PlainSummary:
 
 
 @router.get("/{video_id}/craft-read")
-def craft_read(video_id: str) -> dict:
+def craft_read(video_id: str, request: Request) -> dict:
     """The Craft X-ray — the grounded craft critic read (advice/craft_xray.py).
     Served from cache (VideoFeatures.craft_read); returns {available: false} when it
     hasn't been generated yet, so the frontend can show the card only when present.
@@ -211,6 +211,21 @@ def craft_read(video_id: str) -> dict:
                     "duration_seconds": v.duration_seconds,
                     "is_upload": bool(v.channel_id and v.channel_id.startswith("upch_")),
                 }
+    # Telemetry: a read page was actually opened (uploads = the retention signal;
+    # corpus views = Examples browsing). Anonymous-safe.
+    try:
+        from creative_director.storage.telemetry import log_event
+
+        _u = get_optional_user(request)
+        log_event(
+            "read_viewed",
+            user_id=_u["id"] if _u else None,
+            video_id=video_id,
+            is_upload=bool(meta and meta.get("is_upload")) or None,
+        )
+    except Exception:  # noqa: BLE001
+        pass
+
     if not read:
         return {"available": False, "meta": meta, "revision_verdict": revision_verdict}
     # The grounding gate stamps grounded=false on a materially-fabricated read.

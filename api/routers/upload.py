@@ -56,6 +56,7 @@ class _Job:
     created: float = field(default_factory=time.time)
     prior_video_id: Optional[str] = None  # set when this upload re-checks a prior reel's fix
     idea_id: Optional[str] = None  # set when this upload shoots a generated DNA idea
+    transcoded: bool = False  # set when _ensure_decodable had to re-encode (HEVC etc.)
 
 
 _JOBS: dict[str, _Job] = {}
@@ -244,6 +245,7 @@ def _ensure_decodable(mp4: Path, job: _Job) -> None:
     except Exception as e:  # noqa: BLE001 — cv2 itself failing -> still try the transcode
         logger.warning(f"cv2 decode check failed for {mp4.name}: {type(e).__name__}")
     job.message = "converting your video…"
+    job.transcoded = True
     logger.info(f"{mp4.name}: not cv2-decodable (likely HEVC .mov) — transcoding to H.264")
     _transcode_h264(mp4)
 
@@ -540,10 +542,38 @@ def _run_job(job: _Job, mp4: Path) -> None:
 
         job.status = "done"
         job.message = "ready"
+
+        # 6. Telemetry — the launch-KPI signal (grounded/suppressed/revision funnel).
+        try:
+            from creative_director.storage.telemetry import log_event
+
+            with session_scope() as s:
+                up = s.get(Upload, vid)
+            read = up.craft_read if (up is not None and isinstance(up.craft_read, dict)) else None
+            log_event(
+                "read_completed",
+                user_id=up.user_id if up is not None else None,
+                video_id=vid,
+                niche=job.niche,
+                grounded=bool(read) and read.get("grounded") is not False,
+                suppressed=bool(read) and read.get("grounded") is False,
+                no_read=read is None,
+                transcoded=job.transcoded or None,
+                revision_state=(revision_verdict or {}).get("state"),
+                idea_linked=bool(job.idea_id) or None,
+            )
+        except Exception:  # noqa: BLE001
+            pass
     except Exception as e:  # noqa: BLE001
         logger.exception("upload job failed")
         job.status = "error"
         job.error = str(e)
+        try:
+            from creative_director.storage.telemetry import log_event
+
+            log_event("read_failed", video_id=job.video_id, error=type(e).__name__)
+        except Exception:  # noqa: BLE001
+            pass
 
 
 @router.post("/upload", response_model=UploadJobStatus)
@@ -647,6 +677,14 @@ async def upload_reel(
     job = _Job(
         id=uuid.uuid4().hex[:12], video_id=video_id, niche=niche,
         prior_video_id=prior, idea_id=idea,
+    )
+
+    from creative_director.storage.telemetry import log_event
+
+    log_event(
+        "upload_started", user_id=uid, video_id=video_id, niche=niche,
+        revision=bool(prior) or None, idea=bool(idea) or None,
+        size_mb=round(size / 1e6, 1),
     )
     _JOBS[job.id] = job
     threading.Thread(target=_run_job, args=(job, mp4), daemon=True).start()

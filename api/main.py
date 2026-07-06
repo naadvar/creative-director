@@ -32,6 +32,7 @@ from api.routers import (
     analyze_handle,
     auth,
     corpus,
+    events,
     health,
     ingest,
     instagram,
@@ -104,6 +105,8 @@ def create_app() -> FastAPI:
     # Private tester utilities (reel grabber). Self-gating: 404 unless API_TOOLS_KEY
     # is set, so including it unconditionally is inert in normal deploys.
     app.include_router(tools.router)
+    # Frontend tap telemetry (whitelisted, anonymous-safe).
+    app.include_router(events.router)
     # Heavy on-demand ingest (/analyze-url) pulls in torch/CLIP/Whisper on first
     # call. Gate it so the light serve-only deploy (corpus + advice from the
     # precomputed DB) can omit it entirely: set ENABLE_INGEST=false on that host.

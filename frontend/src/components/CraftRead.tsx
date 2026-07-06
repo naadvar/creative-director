@@ -174,6 +174,7 @@ export default function CraftRead({
     } catch {
       /* clipboard unavailable — still give the user feedback */
     }
+    api.track('copy_checklist', videoId)
     setCopied(true)
     setTimeout(() => setCopied(false), 1800)
   }

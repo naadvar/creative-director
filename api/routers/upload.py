@@ -604,6 +604,9 @@ def _run_job(job: _Job, mp4: Path) -> None:
                 niche=job.niche,
                 grounded=bool(read) and read.get("grounded") is not False,
                 suppressed=bool(read) and read.get("grounded") is False,
+                # gated=False means perception failed so the fact-check gate never
+                # ran — the silent-degradation mode that hid for 4 days in July.
+                gated=bool(read) and read.get("grounded") is not None,
                 no_read=read is None,
                 transcoded=job.transcoded or None,
                 revision_state=(revision_verdict or {}).get("state"),

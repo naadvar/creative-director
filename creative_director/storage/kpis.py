@@ -71,7 +71,7 @@ def compute_kpis(now: Optional[datetime] = None) -> dict:
     # ---- uploads funnel + read quality ----
     n_up = len(uploads)
     n_up_7d = sum(1 for u in uploads if u[2] and u[2] >= d7)
-    grounded = suppressed = no_read = 0
+    grounded = suppressed = no_read = ungated = 0
     revisions = {"fixed": 0, "still_there": 0, "cant_verify": 0}
     n_rechecks = 0
     for u in uploads:
@@ -82,6 +82,10 @@ def compute_kpis(now: Optional[datetime] = None) -> dict:
             suppressed += 1
         else:
             grounded += 1
+            # grounded=None (vs True) = the fact-check gate never RAN (perception
+            # failure) — the July silent-degradation mode. Must stay near zero.
+            if read.get("grounded") is None:
+                ungated += 1
         if u[4]:  # prior_video_id
             n_rechecks += 1
             state = (u[5] or {}).get("state") if isinstance(u[5], dict) else None
@@ -119,6 +123,7 @@ def compute_kpis(now: Optional[datetime] = None) -> dict:
             "grounded": grounded,
             "suppressed": suppressed,
             "no_read": no_read,
+            "ungated": ungated,  # gate never ran (perception failure) — alarm if > 0
             "suppression_pct": round(100 * suppressed / max(1, grounded + suppressed)),
         },
         "revision_loop": {"rechecks": n_rechecks, **revisions},
@@ -144,6 +149,7 @@ def render_text(k: dict) -> str:
     L.append(
         f"uploads: {up['total']} total ({up['last_7d']} this week) | grounded {up['grounded']} "
         f"| suppressed {up['suppressed']} ({up['suppression_pct']}%)"
+        + (f" | !! UNGATED {up['ungated']} (fact-check gate not running)" if up.get("ungated") else "")
     )
     r = k["revision_loop"]
     L.append(

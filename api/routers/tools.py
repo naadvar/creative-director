@@ -137,6 +137,38 @@ def users_list(key: str = "") -> Response:
     return Response(content="\n".join(lines), media_type="text/plain; charset=utf-8")
 
 
+@router.get("/uploads")
+def uploads_debug(key: str = "", n: int = 15) -> Response:
+    """Owner-only read-generation debug: the last N uploads with what their STORED
+    reads actually contain (grounded, spot count, lever opener, caption block) —
+    for diagnosing 'the read changed' reports. Key-gated; PII."""
+    _gate(key)
+    from sqlalchemy import select
+
+    from creative_director.storage.db import session_scope
+    from creative_director.storage.models import Upload
+
+    with session_scope() as s:
+        ups = (
+            s.execute(select(Upload).order_by(Upload.created_at.desc()).limit(max(1, min(n, 50))))
+            .scalars()
+            .all()
+        )
+        lines = []
+        for u in ups:
+            r = u.craft_read if isinstance(u.craft_read, dict) else {}
+            opp = str(r.get("biggest_opportunity") or "")[:90].replace("\n", " ")
+            lines.append(
+                f"[{u.video_id}] {str(u.created_at)[:16]} user={u.user_id} niche={u.niche}\n"
+                f"    title: {(u.title or '')[:60]}\n"
+                f"    caption_given: {bool((u.caption or '').strip())} | grounded: {r.get('grounded')} "
+                f"| spots: {len(r.get('blind_spots') or [])} | done_well: {len(r.get('done_well') or [])} "
+                f"| cap_suggestion: {'caption_suggestion' in r}\n"
+                f"    lever: {opp or '(silent/none)'}\n"
+            )
+    return Response(content="\n".join(lines) or "no uploads", media_type="text/plain; charset=utf-8")
+
+
 @router.get("/kpis")
 def kpis(key: str = "", format: str = "text") -> Response:
     """Live launch KPIs (WAU, retention cohorts, uploads funnel, suppression rate,

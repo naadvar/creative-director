@@ -83,8 +83,9 @@ def compute_kpis(now: Optional[datetime] = None) -> dict:
         else:
             grounded += 1
             # grounded=None (vs True) = the fact-check gate never RAN (perception
-            # failure) — the July silent-degradation mode. Must stay near zero.
-            if read.get("grounded") is None:
+            # failure) — the July silent-degradation mode. Scoped to the last 7d so
+            # the historical outage doesn't pin the alarm forever; must stay 0.
+            if read.get("grounded") is None and u[2] and u[2] >= d7:
                 ungated += 1
         if u[4]:  # prior_video_id
             n_rechecks += 1

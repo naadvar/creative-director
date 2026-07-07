@@ -216,6 +216,16 @@ export default function UploadPage() {
         priorVideoId,
         ideaId,
       )
+      // A byte-identical re-upload comes back already done (same-file memoization,
+      // pointing at the read the creator already has) — navigate straight there
+      // instead of showing a fake 3s analyzing screen and racing a server restart.
+      if (job.status === 'done') {
+        navigate(`/video/${job.video_id}`)
+        return
+      }
+      if (job.status === 'error') {
+        throw new Error(job.error ?? 'analysis failed')
+      }
       setPhase('analyzing')
       setSlow(false)
       const t0 = Date.now()

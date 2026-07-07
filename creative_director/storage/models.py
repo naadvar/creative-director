@@ -368,6 +368,11 @@ class Upload(Base):
     # so "did the planned guardrail hold?" is answerable later, same explicit-link
     # pattern as prior_video_id (never inferred).
     idea_id: Mapped[Optional[str]] = mapped_column(String(64), nullable=True, index=True)
+    # Same-file memoization: sha256 (hex) of the uploaded bytes. A byte-identical
+    # re-upload with the same inputs is answered with this stored read instead of a
+    # fresh roll of the non-deterministic pipeline — same reel, same answer. NULL
+    # for pre-feature uploads (they never match, which is correct: stale engine).
+    file_hash: Mapped[Optional[str]] = mapped_column(String(64), nullable=True, index=True)
 
 
 class Event(Base):

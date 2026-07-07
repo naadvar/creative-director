@@ -29,6 +29,14 @@ from creative_director.config import settings
 
 SCHEMA_VERSION = 3  # v3 = v2 + drop advice-101 (text-hook/CTA) + cover-aware hook
 
+# Version of the whole READ ENGINE, stamped into every stored upload read
+# (upload.py). Unlike SCHEMA_VERSION (output shape), bump this on ANY change that
+# shapes a read — prompts, model, gate, opportunity synthesis, caption rules. The
+# same-file memoization in api/routers/upload.py only reuses a stored read whose
+# engine_version matches, so bumping retires every cached read at once and
+# byte-identical re-uploads get fresh reads from the improved engine.
+READ_ENGINE_VERSION = 1
+
 
 def _model() -> str:
     return getattr(settings, "craft_read_model", None) or "claude-opus-4-8"

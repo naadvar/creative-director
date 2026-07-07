@@ -41,6 +41,11 @@ ALLOWED_NICHES = {"ig_fitness", "ig_food", "ig_travel", "ig_fashion", "other"}
 MAX_BYTES = 200 * 1024 * 1024  # 200 MB
 MAX_DURATION_S = 180  # 3 minutes — short-form only
 UPLOADS_PER_DAY = 10  # per client IP
+# Deduped re-uploads don't consume the read quota (they cost no LLM call), but the
+# path still streams the file and writes an Event row, so it gets its own generous
+# ceiling against scripted replay of one file at wire speed.
+DEDUPES_PER_DAY = 100  # per client IP
+JOB_TTL_S = 6 * 3600  # _JOBS entries outlive any real poll (client gives up at 9 min)
 # The read pipeline is non-deterministic; a noisy single sample can falsely trip the
 # grounding gate. Regenerate a suppressed read up to this many times, keeping the first
 # grounded one (genuinely un-groundable reels suppress on every attempt).
@@ -59,10 +64,28 @@ class _Job:
     prior_video_id: Optional[str] = None  # set when this upload re-checks a prior reel's fix
     idea_id: Optional[str] = None  # set when this upload shoots a generated DNA idea
     transcoded: bool = False  # set when _ensure_decodable had to re-encode (HEVC etc.)
+    file_hash: Optional[str] = None  # sha256 of the ORIGINAL uploaded bytes (pre-transcode)
 
 
 _JOBS: dict[str, _Job] = {}
 _UPLOADS_BY_IP: dict[str, list[float]] = {}
+_DEDUPES_BY_IP: dict[str, list[float]] = {}
+
+
+def _evict_stale_jobs() -> None:
+    """Drop finished/abandoned job records so the module-global dict can't grow
+    without bound across a long-lived process (pre-existing leak; the cheap
+    dedupe path made it cheaply reachable)."""
+    cutoff = time.time() - JOB_TTL_S
+    for jid in [j for j, job in _JOBS.items() if job.created < cutoff]:
+        _JOBS.pop(jid, None)
+
+
+def _dedupe_limited(ip: str) -> bool:
+    now = time.time()
+    window = [t for t in _DEDUPES_BY_IP.get(ip, []) if now - t < 86_400]
+    _DEDUPES_BY_IP[ip] = window
+    return len(window) >= DEDUPES_PER_DAY
 
 
 class UploadJobStatus(BaseModel):
@@ -250,6 +273,42 @@ def _ensure_decodable(mp4: Path, job: _Job) -> None:
     job.transcoded = True
     logger.info(f"{mp4.name}: not cv2-decodable (likely HEVC .mov) — transcoding to H.264")
     _transcode_h264(mp4)
+
+
+def _find_existing_read(user_id: int, file_hash: str, niche: str, caption: str) -> Optional[str]:
+    """Same-file memoization: the newest of the creator's OWN uploads with the same
+    content hash AND the same read inputs (niche, caption) whose stored read is
+    grounded and was produced by the CURRENT read engine. A byte-identical re-upload
+    is answered with that read — same reel, same answer, instantly — instead of a
+    fresh roll of the non-deterministic pipeline (temp-0 runs on identical frames
+    still differ, so re-uploads were visibly flaky). Only SUCCESS is memoized:
+    suppressed (grounded=False) and ungated (grounded=None) reads never match, so
+    the suppression retry keeps its fresh rolls; deleted uploads have no row and
+    engine upgrades (READ_ENGINE_VERSION bump) retire every cached read at once."""
+    from creative_director.advice.craft_xray import READ_ENGINE_VERSION
+    from creative_director.storage.db import session_scope
+    from creative_director.storage.models import Upload
+
+    with session_scope() as s:
+        rows = s.execute(
+            select(Upload.video_id, Upload.caption, Upload.craft_read)
+            .where(Upload.user_id == user_id, Upload.file_hash == file_hash)
+            .order_by(Upload.created_at.desc())
+            .limit(20)
+        ).all()
+    for vid, prev_caption, read in rows:
+        if not isinstance(read, dict) or read.get("grounded") is not True:
+            continue
+        if read.get("engine_version") != READ_ENGINE_VERSION:
+            continue
+        # niche + caption both shape the read (niche-as-hint prompts, caption notes,
+        # caption-as-remedy) — any changed input deserves a fresh read. The niche is
+        # compared against the read's GENERATION-time stamp, not Upload.niche, which
+        # the mismatch-chip PATCH rewrites in place without regenerating the read.
+        if read.get("engine_niche") != niche or (prev_caption or "").strip() != caption:
+            continue
+        return vid
+    return None
 
 
 def _first_frame_thumbnail(mp4: Path, out_jpg: Path) -> bool:
@@ -464,6 +523,16 @@ def _run_job(job: _Job, mp4: Path) -> None:
                     logger.warning(f"caption suggestion failed for {vid}: {type(e).__name__}")
 
             if read is not None:
+                # Stamp the engine + the niche the read was actually GENERATED under —
+                # the same-file memoization only reuses current-engine reads whose
+                # generation inputs match. engine_niche is deliberately separate from
+                # Upload.niche: the mismatch-chip PATCH rewrites Upload.niche in place
+                # on an existing read, and that switched read must never be served as
+                # a fresh same-inputs hit for the new niche.
+                from creative_director.advice.craft_xray import READ_ENGINE_VERSION
+
+                read["engine_version"] = READ_ENGINE_VERSION
+                read["engine_niche"] = job.niche
                 with session_scope() as s:
                     f = s.get(VideoFeatures, vid)
                     if f is not None:
@@ -566,6 +635,7 @@ def _run_job(job: _Job, mp4: Path) -> None:
                     up.prior_video_id = job.prior_video_id
                     up.revision_verdict = revision_verdict
                     up.idea_id = job.idea_id
+                    up.file_hash = job.file_hash
                     s.add(up)
         except Exception as e:  # noqa: BLE001
             logger.warning(f"durable upload record failed for {vid}: {type(e).__name__}: {e}")
@@ -635,6 +705,7 @@ async def upload_reel(
     followers: Optional[int] = Form(None),
     prior_video_id: Optional[str] = Form(None),  # set when re-checking a prior reel's fix
     idea_id: Optional[str] = Form(None),  # set when shooting a generated DNA idea
+    force_fresh: Optional[str] = Form(None),  # owner-only: skip same-file memoization
     user: dict = Depends(get_current_user),
 ) -> UploadJobStatus:
     """Accept a reel upload and start the analysis job. Requires a session
@@ -649,7 +720,10 @@ async def upload_reel(
         raise HTTPException(422, f"niche must be one of {sorted(ALLOWED_NICHES)}")
 
     ip = _client_ip(request)
-    if _rate_limited(ip):
+    # Fresh reads and deduped replays have separate windows (a dedupe costs no LLM
+    # call so it doesn't consume the read quota), but BOTH gate before the body is
+    # streamed — an over-cap client shouldn't cost 200 MB of write I/O per retry.
+    if _rate_limited(ip) or _dedupe_limited(ip):
         raise HTTPException(429, "Daily upload limit reached — try again tomorrow.")
 
     from creative_director.advice.categories import classify
@@ -663,8 +737,12 @@ async def upload_reel(
     archive.mkdir(parents=True, exist_ok=True)
     mp4 = archive / f"{video_id}.mp4"
 
-    # Stream the upload to disk with a hard size cap.
+    # Stream the upload to disk with a hard size cap, hashing as it flows (the
+    # hash keys the same-file memoization below).
+    import hashlib
+
     size = 0
+    hasher = hashlib.sha256()
     try:
         with mp4.open("wb") as out:
             while True:
@@ -674,6 +752,7 @@ async def upload_reel(
                 size += len(chunk)
                 if size > MAX_BYTES:
                     raise HTTPException(413, "File too large (max 200 MB).")
+                hasher.update(chunk)
                 out.write(chunk)
     except HTTPException:
         mp4.unlink(missing_ok=True)
@@ -681,16 +760,64 @@ async def upload_reel(
     if size == 0:
         mp4.unlink(missing_ok=True)
         raise HTTPException(422, "Empty upload.")
-
-    duration = _probe_duration(mp4)
-    if duration is None:
-        mp4.unlink(missing_ok=True)
-        raise HTTPException(422, "Couldn't read that file as a video — try an mp4 or mov.")
-    if duration > MAX_DURATION_S:
-        mp4.unlink(missing_ok=True)
-        raise HTTPException(422, f"Video is {duration:.0f}s — max {MAX_DURATION_S}s (short-form only).")
+    file_hash = hasher.hexdigest()
 
     caption = (caption or "").strip()
+    # Only honor links that look like our own ids (sanity, not auth — the ownership
+    # check happens in _run_job against the new upload's user). Validated BEFORE the
+    # memoization gate so junk values can't skip it.
+    prior = prior_video_id if (prior_video_id or "").startswith("up_") else None
+    idea = idea_id if (idea_id or "").startswith("cdi_") else None
+
+    # SAME-FILE MEMOIZATION — a byte-identical re-upload with identical inputs gets
+    # the read the creator already has (a coach gives the same answer to the same
+    # video), instead of a fresh non-deterministic roll. Skipped for explicit
+    # re-checks (prior — the revision verifier must run) and idea shoots (idea —
+    # the flywheel link must be recorded). force_fresh is an owner-only escape
+    # hatch for testing, honored only with the tools key. The whole block is
+    # best-effort: any failure inside it degrades to a normal fresh upload.
+    if not prior and not idea:
+        existing = None
+        try:
+            from api.config import api_settings
+
+            forced = bool(force_fresh) and bool(api_settings.tools_key) and (
+                request.headers.get("x-tools-key") == api_settings.tools_key
+            )
+            if not forced:
+                existing = _find_existing_read(user["id"], file_hash, niche, caption)
+        except Exception as e:  # noqa: BLE001 — memoization must never block an upload
+            logger.warning(f"dedupe lookup failed: {type(e).__name__}: {e}")
+            existing = None
+        if existing:
+            mp4.unlink(missing_ok=True)  # keep the original upload's stored copy
+            _DEDUPES_BY_IP.setdefault(ip, []).append(time.time())
+            _evict_stale_jobs()
+            job = _Job(
+                id=uuid.uuid4().hex[:12], video_id=existing, niche=niche,
+                status="done", message="You've already read this reel. Taking you to your read.",
+            )
+            _JOBS[job.id] = job
+            from creative_director.storage.telemetry import log_event
+
+            log_event("read_deduped", user_id=user["id"], video_id=existing, niche=niche)
+            logger.info(f"upload deduped to {existing} (same file+inputs, user {user['id']})")
+            return _status(job)
+
+    try:
+        duration = _probe_duration(mp4)
+        if duration is None:
+            raise HTTPException(422, "Couldn't read that file as a video — try an mp4 or mov.")
+        if duration > MAX_DURATION_S:
+            raise HTTPException(
+                422, f"Video is {duration:.0f}s — max {MAX_DURATION_S}s (short-form only)."
+            )
+    except Exception:
+        # Any pre-job failure (expected or not) must not orphan the streamed mp4
+        # on the persistent volume.
+        mp4.unlink(missing_ok=True)
+        raise
+
     title = caption.splitlines()[0][:120] if caption else (file.filename or "Uploaded reel")
     guess, _ranked = classify(caption, niche)
 
@@ -720,19 +847,16 @@ async def upload_reel(
         )
 
     _UPLOADS_BY_IP.setdefault(ip, []).append(time.time())
-    # Only honor links that look like our own ids (sanity, not auth — the ownership
-    # check happens in _run_job against the new upload's user).
-    prior = prior_video_id if (prior_video_id or "").startswith("up_") else None
-    idea = idea_id if (idea_id or "").startswith("cdi_") else None
+    _evict_stale_jobs()
     job = _Job(
         id=uuid.uuid4().hex[:12], video_id=video_id, niche=niche,
-        prior_video_id=prior, idea_id=idea,
+        prior_video_id=prior, idea_id=idea, file_hash=file_hash,
     )
 
     from creative_director.storage.telemetry import log_event
 
     log_event(
-        "upload_started", user_id=uid, video_id=video_id, niche=niche,
+        "upload_started", user_id=user["id"], video_id=video_id, niche=niche,
         revision=bool(prior) or None, idea=bool(idea) or None,
         size_mb=round(size / 1e6, 1),
     )

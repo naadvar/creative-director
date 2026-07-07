@@ -7,6 +7,7 @@ snake_case; they become the KPI vocabulary (storage/kpis.py):
   login            (method, new_user)      auth
   upload_started   (niche, revision, idea) upload accepted
   read_completed   (grounded, suppressed, transcoded, revision_state) job finished
+  read_deduped     (niche)                 byte-identical re-upload served its stored read
   read_failed      (error)                 job crashed
   read_viewed      (is_upload)             read page fetched
   upload_deleted                           creator removed a reel

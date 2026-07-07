@@ -88,6 +88,7 @@ _USERDATA_RUNTIME_COLUMNS = (
     ("uploads", "prior_video_id", "VARCHAR(64)"),
     ("uploads", "revision_verdict", "JSON"),
     ("uploads", "idea_id", "VARCHAR(64)"),
+    ("uploads", "file_hash", "VARCHAR(64)"),
 )
 
 

@@ -245,10 +245,49 @@ def craft_read(video_id: str, request: Request) -> dict:
         }
     return {
         "available": True,
-        "read": read,
+        "read": _dedupe_promoted_spot(read),
         "meta": meta,
         "revision_verdict": revision_verdict,
     }
+
+
+def _dedupe_promoted_spot(read: dict) -> dict:
+    """The lever (FIX THIS FIRST) is synthesized FROM the read's top blind spot —
+    grounded by construction — but the promoted spot then repeats verbatim-ish in
+    "Worth a second look". Serve the spot list with the promoted one removed:
+    best token-overlap match, with a lower bar when the timestamps agree. Works on
+    a COPY (never mutate the stored read) and drops at most one spot."""
+    if not isinstance(read, dict):
+        return read
+    opp = str(read.get("biggest_opportunity") or "")
+    spots = read.get("blind_spots") or []
+    if not opp or not spots:
+        return read
+    import re as _re
+
+    def toks(s: str) -> set:
+        return {w for w in _re.findall(r"[a-z']+", s.lower()) if len(w) > 3}
+
+    ot = toks(opp)
+    if not ot:
+        return read
+    m = _re.match(r"\s*(?:at\s+)?(\d{1,2}:\d{2})", opp, _re.I)
+    lever_ts = str(read.get("lever_timestamp") or "") or (m.group(1) if m else "")
+    best_i, best_j = None, 0.0
+    for i, s in enumerate(spots):
+        st = toks(str(s))
+        if not st:
+            continue
+        j = len(ot & st) / max(1, len(ot | st))
+        ts_m = _re.match(r"\s*(\d{1,2}:\d{2})", str(s))
+        same_ts = bool(lever_ts and ts_m and ts_m.group(1) == lever_ts)
+        if ((same_ts and j >= 0.25) or j >= 0.5) and j > best_j:
+            best_i, best_j = i, j
+    if best_i is None:
+        return read
+    out = dict(read)
+    out["blind_spots"] = [s for i, s in enumerate(spots) if i != best_i]
+    return out
 
 
 class NoteFeedbackBody(BaseModel):

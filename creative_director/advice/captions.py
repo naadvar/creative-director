@@ -54,10 +54,14 @@ _SYSTEM = (
     "(3) if the reel withholds a reveal or payoff, the caption must NOT spoil it; "
     "(4) never performance language (viral, algorithm, engagement, followers, reach); "
     "(5) the first 100 characters must stand alone (that is what shows before '...more'); "
-    "(6) TRANSCRIPT SPELLINGS ARE UNRELIABLE for names: transcripts are auto-generated audio, so "
-    "never copy a brand, product, or person name from the transcript's spelling — only name a "
-    "brand/person if that spelling appears in the creator's TYPED text (their captions). When "
-    "unsure, leave the name out; a caption with no brand name beats one with a wrong brand name. "
+    "(6) NEVER ENUMERATE PRODUCTS OR BRANDS unless you can copy their exact spelling from the "
+    "creator's TYPED text (their past captions) — transcript spellings are auto-generated audio "
+    "and unreliable for names. If you cannot verify the spellings, write the caption WITHOUT "
+    "naming items at all (skip item-list templates entirely rather than guess); a caption with no "
+    "brand names beats one with wrong brand names; "
+    "(7) NEVER INVENT AN EVENT, OCCASION, OR PREMISE: the caption may only describe what the "
+    "WHAT-THE-REEL-IS line and transcript actually say — if you are unsure what the reel is about, "
+    "keep the caption general rather than specific. "
     'Return ONLY JSON: {"caption": "...", "why": "one line on why this fits their voice"}'
 )
 

@@ -2,7 +2,7 @@
 import json, sys, html
 sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
-p = r"C:/Users/naadv/AppData/Local/Temp/claude/C--Users-naadv/f9b00ced-2493-4376-8b2a-1ee4e493508d/tasks/ww8ek5dkp.output"
+p = r"C:/Users/naadv/AppData/Local/Temp/claude/C--Users-naadv/f9b00ced-2493-4376-8b2a-1ee4e493508d/tasks/w5y32qvk5.output"
 o = json.load(open(p, encoding="utf-8"))
 d = o.get("result", o); d = json.loads(d) if isinstance(d, str) else d
 key = json.load(open("scripts/tmp/pt_caption_key.json", encoding="utf-8"))

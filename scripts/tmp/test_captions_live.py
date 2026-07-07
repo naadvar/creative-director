@@ -20,7 +20,10 @@ rows = con.execute(
          AND c.niche IN ('ig_fitness','ig_food','ig_travel','ig_fashion')
        LIMIT 3000""").fetchall()
 
-# keep only reels whose READ implicates the caption — the product trigger
+# MODE: "implicated" (default) = reels whose READ mentions the caption;
+#        "absent" = the NEW trigger — read does NOT mention captions, we simulate
+#        the creator posting no caption (their real caption stays the blind answer key).
+MODE = os.environ.get("CAP_MODE", "implicated")
 picked = []
 for r in rows:
     try:
@@ -29,16 +32,20 @@ for r in rows:
         continue
     if not isinstance(read, dict) or read.get("grounded") is False:
         continue
-    if caption_implicated(read):
+    hit = caption_implicated(read)
+    if (MODE == "implicated" and hit) or (MODE == "absent" and not hit):
         picked.append((r, read))
-print(f"caption-implicated corpus reels found: {len(picked)}")
+print(f"mode={MODE}: candidate reels found: {len(picked)}")
 
-# one per channel, up to 6
-seen, chosen = set(), []
+# up to 6, max 2 channels per niche prefix for variety
+seen, per_niche, chosen = set(), {}, []
 for r, read in picked:
-    if r["channel_id"] in seen:
+    ch = r["channel_id"]
+    niche = ch.split("_")[1][:4] if "_" in ch else ch
+    if ch in seen or per_niche.get(niche, 0) >= 2:
         continue
-    seen.add(r["channel_id"]); chosen.append((r, read))
+    seen.add(ch); per_niche[niche] = per_niche.get(niche, 0) + 1
+    chosen.append((r, read))
     if len(chosen) == 6:
         break
 
@@ -58,8 +65,12 @@ for r, read in chosen:
     past = [row["description"][:220] for row in con.execute(
         "SELECT description FROM videos WHERE channel_id=? AND id!=? AND description IS NOT NULL AND length(description)>10 LIMIT 5",
         (r["channel_id"], r["id"])).fetchall()]
-    sug = suggest_caption(read, transcript=r["transcript"], current_caption=r["caption"],
-                          past_captions=past)
+    sug = suggest_caption(
+        read,
+        transcript=r["transcript"],
+        current_caption=(None if MODE == "absent" else r["caption"]),
+        past_captions=past,
+    )
     if not sug:
         print(f"  {r['channel_id']}: SUPPRESSED (honest absence)")
         OUT["captions"].append({"video_id": r["id"], "niche_channel": r["channel_id"],

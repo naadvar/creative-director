@@ -34,10 +34,10 @@ _PERF = re.compile(
 )
 
 _SYSTEM = (
-    "You are the same craft critic who just read this creator's reel; the read found a problem "
-    "involving the caption, so you suggest the caption they should post instead. Ground ONLY in "
-    "what is given: the transcript, the on-screen text, what the reel is, the craft note, and the "
-    "creator's own PAST captions. "
+    "You are the same craft critic who just read this creator's reel; either the read found a "
+    "problem involving the caption, or the creator hasn't written one yet — suggest the caption "
+    "they should post. Ground ONLY in what is given: the transcript, the on-screen text, what the "
+    "reel is, the context note, and the creator's own PAST captions. "
     "VOICE — study the past captions and MIMIC THEIR TEXTURE, not just their tone: "
     "(a) LENGTH AND STRUCTURE: if they write multi-line instructional captions with numbered steps, "
     "write one of those; if they write five-word quips, write a five-word quip; match their "
@@ -132,18 +132,31 @@ def suggest_caption(
     current_caption: Optional[str],
     past_captions: list[str],
 ) -> Optional[dict]:
-    """One voice-matched caption for a caption-implicated read, or None (honest
-    absence). Caller decides persistence."""
-    if not caption_implicated(read):
-        return None
+    """One voice-matched caption, offered in exactly two remedy cases: the read
+    implicated the caption, OR the creator provided none (the purest deficiency).
+    A fine caption is never rewritten. Returns None for honest absence."""
+    has_caption = bool((current_caption or "").strip())
+    implicated = caption_implicated(read)
+    if has_caption and not implicated:
+        return None  # their caption is fine — nothing to remedy
     voice = (
         "THE CREATOR'S PAST CAPTIONS (voice reference):\n- " + "\n- ".join(c[:220] for c in past_captions[:5])
         if len(past_captions) >= 1
         else _NO_HISTORY
     )
+    if implicated:
+        context_note = (
+            f"THE CRAFT NOTE THAT INVOLVES THE CAPTION: {str(read.get('biggest_opportunity') or '')[:240]}"
+        )
+    else:
+        context_note = (
+            "THE CREATOR POSTED NO CAPTION — write the one they should post. The craft note below is "
+            "about the FOOTAGE, not the caption; never mention or allude to it in the caption: "
+            f"{str(read.get('biggest_opportunity') or '')[:200]}"
+        )
     user = (
         f"WHAT THE REEL IS: {str(read.get('what_it_is') or '')[:220]}\n"
-        f"THE CRAFT NOTE THAT INVOLVES THE CAPTION: {str(read.get('biggest_opportunity') or '')[:240]}\n"
+        f"{context_note}\n"
         f"ON-SCREEN TEXT: {[t for t in (read.get('on_screen_text_found') or [])[:6]]}\n"
         f"TRANSCRIPT (excerpt): {(transcript or '')[:600]}\n"
         f"THE CAPTION THEY CURRENTLY HAVE: {(current_caption or '(none)')[:240]}\n"

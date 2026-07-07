@@ -428,7 +428,10 @@ def _run_job(job: _Job, mp4: Path) -> None:
                         suggest_caption,
                     )
 
-                    if caption_implicated(read):
+                    # Two remedy cases: the read flagged the caption, or none was
+                    # provided at all (the purest deficiency). A fine caption is
+                    # never rewritten (suggest_caption re-checks this too).
+                    if caption_implicated(read) or not (caption or "").strip():
                         with session_scope() as s:
                             v = s.get(Video, vid)
                             owner = v.uploaded_by_user_id if v is not None else None

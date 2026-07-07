@@ -66,15 +66,27 @@ cap._call = boom
 out = cap.suggest_caption(READ, transcript=None, current_caption=None, past_captions=[])
 check("provider failure -> None (no crash)", out is None)
 
-# non-implicated read never calls the LLM
+print("D. trigger matrix (fine caption never rewritten; absent caption always offered):")
 calls["n"] = 0
 def counter(system, user):
     calls["n"] += 1
-    return {"caption": "x"}
+    return {"caption": "a solid grounded caption"}
 cap._call = counter
-out = cap.suggest_caption({"biggest_opportunity": "tighten the hook", "blind_spots": []},
-                          transcript=None, current_caption=None, past_captions=[])
-check("not implicated -> None, zero LLM calls", out is None and calls["n"] == 0)
+NON_IMPLICATED = {"biggest_opportunity": "0:04 - tighten the hook", "blind_spots": [], "what_it_is": "a gym demo"}
+# fine caption + non-implicating read -> nothing (zero LLM calls)
+out = cap.suggest_caption(NON_IMPLICATED, transcript=None, current_caption="leg day, no ego", past_captions=[])
+check("fine caption -> None, zero LLM calls", out is None and calls["n"] == 0)
+# NO caption -> suggestion even though read never mentions captions
+out = cap.suggest_caption(NON_IMPLICATED, transcript="t", current_caption=None, past_captions=["past cap"])
+check("absent caption -> suggestion offered", out is not None and calls["n"] == 1, out)
+# empty-string caption counts as absent
+calls["n"] = 0
+out = cap.suggest_caption(NON_IMPLICATED, transcript="t", current_caption="   ", past_captions=[])
+check("whitespace caption counts as absent", out is not None and calls["n"] == 1)
+# implicated + caption present still fires (the original case)
+calls["n"] = 0
+out = cap.suggest_caption(READ, transcript="t", current_caption="PR DAY!!", past_captions=[])
+check("implicated caption still fires", out is not None and calls["n"] == 1)
 
 print("\n" + ("ALL CAPTION TESTS PASSED" if ok else "SOME TESTS FAILED"))
 sys.exit(0 if ok else 1)

@@ -37,6 +37,17 @@ out = dd(B)
 check("variant B: promoted spot removed", len(out["blind_spots"]) == 1)
 check("variant B: 0:11 kept", "wide shot" in out["blind_spots"][0])
 
+# Screenshot variant D (the miss that shipped): timestamp buried MID-sentence in
+# the lever, no lever_timestamp field, phrasing overlap ~0.44
+D = {
+    "biggest_opportunity": "Increase the font size of the on-screen workout instructions — at 0:02, the text is too small to read clearly on mobile, which undermines the core value of the Reel: delivering a usable workout structure.",
+    "blind_spots": [
+        "0:02 - The text detailing the workout structure is small and may be hard to read on mobile. Fix: Increase the font size of the on-screen text for the workout instructions to ensure legibility on smaller screens.",
+    ],
+}
+out = dd(D)
+check("variant D (mid-sentence timestamp, no field): duplicate removed", len(out["blind_spots"]) == 0, out["blind_spots"])
+
 # A lever at a timestamp with a DIFFERENT topic at the same second must survive
 C = {
     "biggest_opportunity": "At 0:05, hold the opening shot a beat longer so the hook lands before the first cut.",

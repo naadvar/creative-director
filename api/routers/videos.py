@@ -271,7 +271,9 @@ def _dedupe_promoted_spot(read: dict) -> dict:
     ot = toks(opp)
     if not ot:
         return read
-    m = _re.match(r"\s*(?:at\s+)?(\d{1,2}:\d{2})", opp, _re.I)
+    # search, not match: levers often bury the timestamp mid-sentence
+    # ("Increase the font size ... — at 0:02, the text is too small").
+    m = _re.search(r"(\d{1,2}:\d{2})", opp)
     lever_ts = str(read.get("lever_timestamp") or "") or (m.group(1) if m else "")
     best_i, best_j = None, 0.0
     for i, s in enumerate(spots):
@@ -281,7 +283,7 @@ def _dedupe_promoted_spot(read: dict) -> dict:
         j = len(ot & st) / max(1, len(ot | st))
         ts_m = _re.match(r"\s*(\d{1,2}:\d{2})", str(s))
         same_ts = bool(lever_ts and ts_m and ts_m.group(1) == lever_ts)
-        if ((same_ts and j >= 0.25) or j >= 0.5) and j > best_j:
+        if ((same_ts and j >= 0.25) or j >= 0.45) and j > best_j:
             best_i, best_j = i, j
     if best_i is None:
         return read

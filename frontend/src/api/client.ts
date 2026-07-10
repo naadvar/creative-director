@@ -209,6 +209,12 @@ export const api = {
     return request<{ ok: boolean }>('/auth/logout', { method: 'POST' })
   },
 
+  /** Permanently delete the creator's account + everything owned by it (uploads,
+   * reads, feedback). Irreversible — the caller must confirm before calling. */
+  deleteAccount(): Promise<{ ok: boolean }> {
+    return request<{ ok: boolean }>('/me/account', { method: 'DELETE' })
+  },
+
   /** The creator's own uploaded reels + their reads — the "My reads" history. */
   myUploads(): Promise<MyUploads> {
     return request<MyUploads>('/me/uploads')

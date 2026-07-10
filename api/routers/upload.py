@@ -13,9 +13,9 @@ extraction stack, so serve-only deploys without torch should disable it.
 """
 from __future__ import annotations
 
-import threading
 import time
 import uuid
+from concurrent.futures import ThreadPoolExecutor
 
 from sqlalchemy import select
 from dataclasses import dataclass, field
@@ -70,6 +70,11 @@ class _Job:
 _JOBS: dict[str, _Job] = {}
 _UPLOADS_BY_IP: dict[str, list[float]] = {}
 _DEDUPES_BY_IP: dict[str, list[float]] = {}
+
+# Bounded worker pool: excess jobs QUEUE here instead of each spawning its own
+# thread, so a burst can't run N heavy CLIP/Whisper extractions at once. 2 workers
+# is sized for the $10 Railway host; the per-IP daily limit bounds queue depth.
+_JOB_POOL = ThreadPoolExecutor(max_workers=2, thread_name_prefix="upload-job")
 
 
 def _evict_stale_jobs() -> None:
@@ -851,6 +856,7 @@ async def upload_reel(
     job = _Job(
         id=uuid.uuid4().hex[:12], video_id=video_id, niche=niche,
         prior_video_id=prior, idea_id=idea, file_hash=file_hash,
+        message="queued — waiting for a free analysis slot…",
     )
 
     from creative_director.storage.telemetry import log_event
@@ -861,8 +867,8 @@ async def upload_reel(
         size_mb=round(size / 1e6, 1),
     )
     _JOBS[job.id] = job
-    threading.Thread(target=_run_job, args=(job, mp4), daemon=True).start()
-    logger.info(f"upload job {job.id} started ({video_id}, niche={niche}, {size/1e6:.1f}MB, {duration:.0f}s)")
+    _JOB_POOL.submit(_run_job, job, mp4)
+    logger.info(f"upload job {job.id} queued ({video_id}, niche={niche}, {size/1e6:.1f}MB, {duration:.0f}s)")
     return _status(job)
 
 

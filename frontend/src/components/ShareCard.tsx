@@ -1,5 +1,8 @@
 import { useRef, useState } from 'react'
 import { toPng } from 'html-to-image'
+import { Capacitor } from '@capacitor/core'
+import { Directory, Filesystem } from '@capacitor/filesystem'
+import { Share } from '@capacitor/share'
 import { api } from '../api/client'
 import type { CraftReadData } from '../api/types'
 
@@ -74,6 +77,23 @@ export default function ShareCard({
     api.track('share_tapped')
     try {
       const url = await render()
+      // Native (Capacitor): the Web Share API can't share a File from the webview,
+      // so write the PNG to the cache dir and hand the file URI to the native sheet.
+      // Any failure falls through to the web chain below.
+      if (url && Capacitor.isNativePlatform()) {
+        try {
+          const base64 = url.split(',')[1] // strip the "data:image/png;base64," prefix
+          const { uri } = await Filesystem.writeFile({
+            path: 'craft-read.png',
+            data: base64,
+            directory: Directory.Cache,
+          })
+          await Share.share({ files: [uri], title: 'My craft read' })
+          return
+        } catch {
+          /* native share unavailable/cancelled — fall through to the web path */
+        }
+      }
       const nav = navigator as Navigator & {
         canShare?: (d: ShareData) => boolean
       }

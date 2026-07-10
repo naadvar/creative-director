@@ -1,5 +1,14 @@
-import type { ReactNode } from 'react'
-import { Link, NavLink, Navigate, Route, Routes, useLocation, useParams } from 'react-router-dom'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
+import {
+  Link,
+  NavLink,
+  Navigate,
+  Route,
+  Routes,
+  useLocation,
+  useNavigate,
+  useParams,
+} from 'react-router-dom'
 import BrowsePage from './pages/BrowsePage'
 import VideoPage from './pages/VideoPage'
 import UploadPage from './pages/UploadPage'
@@ -10,7 +19,7 @@ import PrivacyPage from './pages/PrivacyPage'
 import Disclaimer from './components/Disclaimer'
 import Spinner from './components/Spinner'
 import EmailGate from './components/EmailGate'
-import { isNativeApp } from './api/client'
+import { api, isNativeApp } from './api/client'
 import { AuthProvider, useAuth } from './hooks/useAuth'
 
 function Logo() {
@@ -25,6 +34,125 @@ function Logo() {
 
 function navClass({ isActive }: { isActive: boolean }) {
   return `text-sm transition-colors ${isActive ? 'text-text' : 'text-muted hover:text-text'}`
+}
+
+/** Account menu: Sign out + a two-step Delete account (Apple 5.1.1(v)). The delete
+ * is deliberately NOT one accidental tap — the first tap arms a red confirm row that
+ * auto-disarms after ~5s; only the second tap deletes. On success it runs the same
+ * logout flow useAuth uses (clears token + local user) and returns home. */
+function AccountMenu({ logout }: { logout: () => Promise<void> }) {
+  const navigate = useNavigate()
+  const [open, setOpen] = useState(false)
+  const [confirming, setConfirming] = useState(false)
+  const [busy, setBusy] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+  const armTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // Close on outside click / Escape so the sheet doesn't linger over the app.
+  useEffect(() => {
+    if (!open) return
+    const onDown = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+    }
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpen(false)
+    }
+    document.addEventListener('mousedown', onDown)
+    document.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('mousedown', onDown)
+      document.removeEventListener('keydown', onKey)
+    }
+  }, [open])
+
+  // Reset the armed state whenever the menu closes (so reopening starts safe).
+  useEffect(() => {
+    if (!open) {
+      setConfirming(false)
+      if (armTimer.current) clearTimeout(armTimer.current)
+    }
+  }, [open])
+
+  useEffect(
+    () => () => {
+      if (armTimer.current) clearTimeout(armTimer.current)
+    },
+    [],
+  )
+
+  const arm = () => {
+    setConfirming(true)
+    if (armTimer.current) clearTimeout(armTimer.current)
+    armTimer.current = setTimeout(() => setConfirming(false), 5000)
+  }
+
+  const doDelete = async () => {
+    setBusy(true)
+    try {
+      await api.deleteAccount()
+      await logout()
+      setOpen(false)
+      navigate('/')
+    } catch {
+      // Deletion failed server-side — keep the session and let them retry.
+      setBusy(false)
+      setConfirming(false)
+    }
+  }
+
+  return (
+    <div ref={ref} className="relative shrink-0">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        className="text-muted transition-colors hover:text-text"
+      >
+        Account
+      </button>
+      {open ? (
+        <div
+          role="menu"
+          className="absolute right-0 top-full z-30 mt-2 w-64 rounded-xl border border-border bg-ink p-1.5 shadow-xl"
+        >
+          <button
+            type="button"
+            role="menuitem"
+            onClick={() => {
+              setOpen(false)
+              void logout()
+            }}
+            className="block w-full rounded-lg px-3 py-2 text-left text-sm text-text transition-colors hover:bg-surface"
+          >
+            Sign out
+          </button>
+          {confirming ? (
+            <button
+              type="button"
+              role="menuitem"
+              onClick={() => void doDelete()}
+              disabled={busy}
+              className="mt-0.5 block w-full rounded-lg bg-bad/15 px-3 py-2 text-left text-sm leading-snug text-bad transition-colors hover:bg-bad/25 disabled:opacity-60"
+            >
+              {busy
+                ? 'Deleting…'
+                : 'Really delete everything? This removes your reads, uploads and account permanently.'}
+            </button>
+          ) : (
+            <button
+              type="button"
+              role="menuitem"
+              onClick={arm}
+              className="mt-0.5 block w-full rounded-lg px-3 py-2 text-left text-sm text-muted transition-colors hover:bg-surface hover:text-bad"
+            >
+              Delete account
+            </button>
+          )}
+        </div>
+      ) : null}
+    </div>
+  )
 }
 
 function Header() {
@@ -61,9 +189,9 @@ function Header() {
           </NavLink>
         </nav>
         {/* min-w-0 (NOT shrink-0): this group must be able to shrink, or at 640-740px
-            (landscape phones / enlarged system text) "Sign out" gets pushed off-screen.
-            The email is the flexible part (truncates, and only shows >= md); the
-            Sign in/out control itself never shrinks and never leaves the viewport. */}
+            (landscape phones / enlarged system text) the account control gets pushed
+            off-screen. The email is the flexible part (truncates, and only shows >= md);
+            the account control itself never shrinks and never leaves the viewport. */}
         <div className="ml-auto flex min-w-0 items-center gap-3 text-sm">
           {user ? (
             <>
@@ -72,13 +200,10 @@ function Header() {
                   {user.email}
                 </span>
               ) : null}
-              <button
-                type="button"
-                onClick={() => void logout()}
-                className="shrink-0 text-muted transition-colors hover:text-text"
-              >
-                Sign out
-              </button>
+              {/* Sign out + Delete account live together in a small menu so the header
+                  stays single-line on narrow screens (adding a second sibling button
+                  regressed the 640-740px overflow this group already guards against). */}
+              <AccountMenu logout={logout} />
             </>
           ) : (
             <NavLink

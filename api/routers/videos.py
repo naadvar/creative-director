@@ -174,6 +174,37 @@ def summary(video_id: str) -> schemas.PlainSummary:
     return resp
 
 
+def _my_note_feedback(video_id: str, user_id: int, read: dict) -> dict:
+    """The signed-in creator's own feedback on THIS read: which notes they dismissed
+    ('not useful' / 'not in my reel') and whether they rated the headline lever. Lets
+    the UI restore those dismissals across reloads/devices instead of losing them the
+    moment the optimistic local state is gone. Notes are stored verbatim (truncated at
+    2000 chars), so an exact-text match reidentifies the dismissed spot on the client."""
+    lever = read.get("biggest_opportunity") if isinstance(read, dict) else None
+    with session_scope() as s:
+        rows = [
+            (r.note, r.reason)
+            for r in (
+                s.query(NoteFeedback)
+                .filter(
+                    (NoteFeedback.video_id == video_id)
+                    & (NoteFeedback.user_id == user_id)
+                )
+                .order_by(NoteFeedback.created_at.asc())
+                .all()
+            )
+        ]
+    dismissed = [note for note, reason in rows if reason in ("not_useful", "not_in_reel")]
+    lever_fb = None
+    if lever:
+        # Most-recent feedback row whose note is the headline lever (rows are asc,
+        # so the last match wins) → the 👍/👎 on "Fix this first".
+        for note, reason in rows:
+            if note == lever and reason in ("helpful", "not_useful"):
+                lever_fb = reason
+    return {"dismissed": dismissed, "lever": lever_fb}
+
+
 @router.get("/{video_id}/craft-read")
 def craft_read(video_id: str, request: Request) -> dict:
     """The Craft X-ray — the grounded craft critic read (advice/craft_xray.py).
@@ -211,15 +242,15 @@ def craft_read(video_id: str, request: Request) -> dict:
                     "duration_seconds": v.duration_seconds,
                     "is_upload": bool(v.channel_id and v.channel_id.startswith("upch_")),
                 }
+    user = get_optional_user(request)
     # Telemetry: a read page was actually opened (uploads = the retention signal;
     # corpus views = Examples browsing). Anonymous-safe.
     try:
         from creative_director.storage.telemetry import log_event
 
-        _u = get_optional_user(request)
         log_event(
             "read_viewed",
-            user_id=_u["id"] if _u else None,
+            user_id=user["id"] if user else None,
             video_id=video_id,
             is_upload=bool(meta and meta.get("is_upload")) or None,
         )
@@ -243,12 +274,17 @@ def craft_read(video_id: str, request: Request) -> dict:
             "meta": meta,
             "revision_verdict": revision_verdict,
         }
-    return {
+    out = {
         "available": True,
         "read": _dedupe_promoted_spot(read),
         "meta": meta,
         "revision_verdict": revision_verdict,
     }
+    # Signed-in only: the creator's own dismissals/lever rating, so the UI restores
+    # them across reloads. Cheap (one indexed query); omitted for anonymous viewers.
+    if user is not None and isinstance(read, dict):
+        out["my_feedback"] = _my_note_feedback(video_id, user["id"], read)
+    return out
 
 
 def _dedupe_promoted_spot(read: dict) -> dict:

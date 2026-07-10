@@ -1,7 +1,7 @@
 import { useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { api } from '../api/client'
-import type { CraftReadData } from '../api/types'
+import type { CraftReadData, MyReadFeedback } from '../api/types'
 
 function Check() {
   return (
@@ -131,6 +131,7 @@ export default function CraftRead({
   onSeek,
   videoId,
   isUpload: isUploadProp,
+  myFeedback,
 }: {
   data: CraftReadData
   onSeek?: (second: number) => void
@@ -138,12 +139,30 @@ export default function CraftRead({
   // The backend's authoritative "this is the creator's own upload" flag. Prefer it
   // over the id-prefix heuristic, which would misfire on any corpus id starting "up".
   isUpload?: boolean
+  // The creator's own persisted feedback on this read (dismissals + lever rating).
+  // Undefined for anonymous viewers / older cached responses — treat as none.
+  myFeedback?: MyReadFeedback
 }) {
   const rawSpots = data.blind_spots ?? []
   const spots = rawSpots.map(parseSpot)
   const doneWell = data.done_well ?? []
-  const [dismissed, setDismissed] = useState<Set<number>>(new Set())
-  const [leverFb, setLeverFb] = useState<'helpful' | 'not_useful' | null>(null)
+  // Seed the dismissed set from persisted feedback: exact-text-match each raw spot
+  // against my_feedback.dismissed (notes are stored verbatim, so === is correct), so
+  // dismissals survive a reload. useState initializer runs once; later optimistic
+  // taps add on top. Empty/undefined feedback yields an empty set — same as before.
+  const [dismissed, setDismissed] = useState<Set<number>>(() => {
+    const seed = new Set<number>()
+    const priorDismissed = myFeedback?.dismissed
+    if (priorDismissed && priorDismissed.length) {
+      rawSpots.forEach((spot, i) => {
+        if (priorDismissed.includes(spot)) seed.add(i)
+      })
+    }
+    return seed
+  })
+  const [leverFb, setLeverFb] = useState<'helpful' | 'not_useful' | null>(
+    myFeedback?.lever ?? null,
+  )
   const [copied, setCopied] = useState(false)
   const [capCopied, setCapCopied] = useState(false)
   const copyCaption = () => {

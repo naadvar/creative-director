@@ -19,8 +19,8 @@ services:
         value: "false"
       - key: API_LABEL_SCHEME         # the validated views-per-sub model target
         value: views_per_sub_aged_v1
-      - key: API_ALLOW_DEV_LOGIN      # public demo sign-in; set false once real auth lands
-        value: "true"
+      - key: API_ALLOW_DEV_LOGIN      # dev-only sign-in; unset is safe, real auth ships in prod
+        value: "false"
       - key: API_SESSION_SECRET
         generateValue: true
       - key: R2_BUCKET

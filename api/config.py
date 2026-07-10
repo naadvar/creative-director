@@ -59,8 +59,9 @@ class ApiSettings(BaseSettings):
     frontend_base_url: str = "http://localhost:5173"
     # Dev-only: enables /auth/dev-login, which signs in a demo creator (no
     # OAuth) whose "Your Reels" is populated from the existing corpus so you
-    # can preview the authed app. MUST be False in production.
-    allow_dev_login: bool = True
+    # can preview the authed app. Default False so an unset prod deploy is safe;
+    # enable locally with API_ALLOW_DEV_LOGIN=true.
+    allow_dev_login: bool = False
 
     # --- Instagram Login / Meta Graph OAuth -------------------------------
     # Create a Meta app (type "Business") with the Instagram product; paste the

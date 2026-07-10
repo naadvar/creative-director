@@ -13,7 +13,7 @@ from pydantic import BaseModel
 from loguru import logger
 from sqlalchemy import select
 
-from api.auth import get_current_user
+from api.auth import get_current_user, logout_user
 from api.config import api_settings
 from creative_director.config import settings
 from creative_director.ingestion.pipeline import (
@@ -165,6 +165,73 @@ def delete_upload(video_id: str, user: dict = Depends(get_current_user)) -> dict
     from creative_director.storage.telemetry import log_event
 
     log_event("upload_deleted", user_id=user["id"], video_id=video_id)
+    return {"ok": True}
+
+
+@router.delete("/account")
+def delete_account(
+    request: Request, user: dict = Depends(get_current_user)
+) -> dict:
+    """Permanently delete the creator's account and everything owned by it —
+    Apple 5.1.1(v) requires an in-app path to full account deletion. Purges every
+    Upload (files + the ephemeral corpus rows, same pattern as delete_upload), then
+    all user-scoped userdata rows, then the User row itself. The Bearer token / cookie
+    outlives the row on the client, but get_optional_user re-checks the User exists, so
+    a token for a deleted account no longer resolves — the account is truly gone."""
+    from creative_director.storage.models import (
+        Channel,
+        ConnectedAccount,
+        CreatorIdea,
+        Event,
+        NoteFeedback,
+        Upload,
+        Video,
+        VideoFeatures,
+        VideoTimeline,
+    )
+
+    uid = user["id"]
+    with session_scope() as s:
+        uploads = (
+            s.execute(select(Upload).where(Upload.user_id == uid)).scalars().all()
+        )
+        for up in uploads:
+            vid = up.video_id
+            # Best-effort: remove the stored files from the volume.
+            for p in (up.video_file_path, up.thumbnail_path):
+                try:
+                    if p:
+                        Path(p).unlink(missing_ok=True)
+                except OSError as e:  # noqa: PERF203
+                    logger.warning(f"could not delete file {p} for {vid}: {e}")
+            s.delete(up)
+            # Best-effort: drop the (ephemeral) corpus rows only if this upload is theirs.
+            v = s.get(Video, vid)
+            if v is not None and v.uploaded_by_user_id == uid:
+                s.query(VideoTimeline).filter(VideoTimeline.video_id == vid).delete()
+                f = s.get(VideoFeatures, vid)
+                if f is not None:
+                    s.delete(f)
+                ch = s.get(Channel, v.channel_id) if v.channel_id else None
+                if ch is not None and (v.channel_id or "").startswith("upch_"):
+                    s.delete(ch)
+                s.delete(v)
+        # Purge the user's other userdata rows, then the User row itself.
+        s.query(NoteFeedback).filter(NoteFeedback.user_id == uid).delete()
+        s.query(CreatorIdea).filter(CreatorIdea.user_id == uid).delete()
+        s.query(ConnectedAccount).filter(ConnectedAccount.user_id == uid).delete()
+        s.query(Event).filter(Event.user_id == uid).delete()
+        from creative_director.storage.models import User
+
+        u = s.get(User, uid)
+        if u is not None:
+            s.delete(u)
+    logout_user(request)  # clear any cookie session so the web app signs out too
+    logger.info(f"deleted account for user {uid}")
+    from creative_director.storage.telemetry import log_event
+
+    # No user_id: the row is gone, so a linked event would be a phantom reference.
+    log_event("account_deleted")
     return {"ok": True}
 
 

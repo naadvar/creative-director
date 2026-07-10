@@ -127,6 +127,16 @@ export interface RevisionVerdict {
   checked_at?: string
 }
 
+// The signed-in creator's own feedback on this read — lets the UI restore
+// dismissals + the lever rating across reloads/devices. Absent for anonymous
+// viewers and older cached responses (treat as "no prior feedback").
+export interface MyReadFeedback {
+  // Exact note texts the creator dismissed ('not useful' / 'not in reel').
+  dismissed: string[]
+  // Their rating on the headline lever ("Fix this first"), or null if unrated.
+  lever: 'helpful' | 'not_useful' | null
+}
+
 export interface CraftReadResponse {
   available: boolean
   suppressed?: boolean
@@ -136,6 +146,7 @@ export interface CraftReadResponse {
   read?: CraftReadData
   meta?: CraftReadMeta | null
   revision_verdict?: RevisionVerdict | null
+  my_feedback?: MyReadFeedback
 }
 
 export interface PlainSummary {

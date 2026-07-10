@@ -11,7 +11,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Optional
 
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, HTTPException, Query, Request
 from fastapi.responses import FileResponse, RedirectResponse, Response
 from pydantic import BaseModel
 
@@ -394,6 +394,75 @@ def video_file(video_id: str) -> Response:
     raise HTTPException(
         status_code=404,
         detail=f"no mp4 archived for {video_id} (run feature extraction or ingest)",
+    )
+
+
+def _resolve_local_mp4(video_id: str) -> Optional[Path]:
+    """The on-disk mp4 for a video, or None. Same resolution as /file (archive-dir
+    convention first, then the upload's stored path), but LOCAL ONLY — never the R2
+    redirect, since frame extraction needs bytes in hand (cv2 can't seek a redirect)."""
+    with session_scope() as s:
+        video = s.get(Video, video_id)
+        up = s.get(Upload, video_id) if video is None else None
+        if video is None and up is None:
+            return None
+        up_path = up.video_file_path if up is not None else None
+    archive = settings.video_archive_dir or Path("data/videos")
+    path = archive / f"{video_id}.mp4"
+    if not path.exists() and up_path:
+        cand = Path(up_path)
+        if cand.exists():
+            path = cand
+    return path if path.exists() else None
+
+
+@router.get("/{video_id}/frame-at")
+def frame_at(video_id: str, t: float = Query(0.0, ge=0.0)) -> Response:
+    """A single downscaled JPEG frame at ``t`` seconds — the "frame receipt" that
+    lets a craft note show the exact moment it's about. Local mp4 only (uploads +
+    corpus copies on the volume); cv2 seeks by msec, so no whole-file decode. 404
+    when the file or that frame isn't available, so a corpus read with no local copy
+    degrades gracefully (the client hides the thumbnail). Cached a day at the edge."""
+    path = _resolve_local_mp4(video_id)
+    if path is None:
+        raise HTTPException(status_code=404, detail=f"no mp4 archived for {video_id}")
+
+    import cv2  # host-provided; kept local so the import cost is per-request, not per-boot
+
+    cap = cv2.VideoCapture(str(path))
+    try:
+        if not cap.isOpened():
+            raise HTTPException(status_code=404, detail="could not open video")
+        fps = cap.get(cv2.CAP_PROP_FPS) or 0.0
+        n_frames = cap.get(cv2.CAP_PROP_FRAME_COUNT) or 0.0
+        # Clamp t into [0, duration]; a note past the end lands on the last frame
+        # instead of failing. Fall back to a fixed cap when metadata is missing.
+        duration = (n_frames / fps) if fps > 0 and n_frames > 0 else None
+        ts = max(0.0, float(t))
+        if duration is not None:
+            ts = min(ts, max(0.0, duration - 0.05))
+        cap.set(cv2.CAP_PROP_POS_MSEC, ts * 1000.0)
+        read_ok, frame = cap.read()
+        if not read_ok or frame is None:
+            raise HTTPException(status_code=404, detail="no frame at that time")
+        # Downscale to <=480px on the long side (receipts are small thumbnails).
+        h, w = frame.shape[:2]
+        long_side = max(h, w)
+        if long_side > 480:
+            scale = 480.0 / long_side
+            frame = cv2.resize(
+                frame, (max(1, int(w * scale)), max(1, int(h * scale))),
+                interpolation=cv2.INTER_AREA,
+            )
+        enc_ok, buf = cv2.imencode(".jpg", frame, [cv2.IMWRITE_JPEG_QUALITY, 80])
+        if not enc_ok:
+            raise HTTPException(status_code=404, detail="could not encode frame")
+    finally:
+        cap.release()
+    return Response(
+        content=buf.tobytes(),
+        media_type="image/jpeg",
+        headers={"Cache-Control": "public, max-age=86400"},
     )
 
 

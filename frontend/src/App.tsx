@@ -11,6 +11,7 @@ import {
 } from 'react-router-dom'
 import BrowsePage from './pages/BrowsePage'
 import VideoPage from './pages/VideoPage'
+import ExamplePage from './pages/ExamplePage'
 import UploadPage from './pages/UploadPage'
 import LandingPage from './pages/LandingPage'
 import MyUploadsPage from './pages/MyUploadsPage'
@@ -310,6 +311,7 @@ function RequireAuth({ children }: { children: ReactNode }) {
           heading="Sign in"
           sub="Enter your email — no password. We’ll pull up your reads."
           cta="Sign in"
+          exampleLink
         />
       </div>
     )
@@ -340,6 +342,7 @@ function Home() {
           sub="Enter your email — no password. We’ll save your reads."
           cta="Sign in"
           redirectTo="/analyze"
+          exampleLink
         />
       </div>
     )
@@ -368,6 +371,7 @@ function AnalyzeRoute() {
           sub="Enter your email — no password. We’ll save your reads."
           cta="Sign in"
           redirectTo="/analyze"
+          exampleLink
         />
       </div>
     )
@@ -398,6 +402,10 @@ function AnimatedRoutes() {
           element={isNativeApp() ? <Navigate to="/" replace /> : <BrowsePage />}
         />
         <Route path="/video/:videoId" element={isNativeApp() ? <NativeVideoGate /> : <VideoPage />} />
+        {/* The "See an example read first" escape hatch from the sign-in wall — a
+            curated corpus read shown read-only. Public (never auth-gated), on web
+            AND native, so a logged-out visitor can see the value before signing up. */}
+        <Route path="/example" element={<ExamplePage />} />
         <Route path="/privacy" element={<PrivacyPage />} />
         <Route
           path="/my-reads"

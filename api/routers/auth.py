@@ -56,10 +56,16 @@ def email_gate(body: EmailLoginBody, request: Request) -> dict:
     email = normalize_email(body.email)
     if email is None:
         raise HTTPException(status_code=422, detail="Enter a valid email address")
-    uid = email_login(request, email)
+    uid, new_user = email_login(request, email)
     # token: for native (Capacitor) clients that can't carry the session cookie.
     # The web app ignores it and keeps using the cookie.
-    return {"user": get_optional_user(request), "token": make_token(uid)}
+    # new_user: lets the client catch a typo'd address (orphan account) before it
+    # confirms — there's no email verification, so this is the only safety net.
+    return {
+        "user": get_optional_user(request),
+        "token": make_token(uid),
+        "new_user": new_user,
+    }
 
 
 @router.post("/apple")

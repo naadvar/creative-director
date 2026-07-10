@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
-import { api } from '../api/client'
+import { api, frameAtUrl } from '../api/client'
 import type { CraftReadData, MyReadFeedback } from '../api/types'
 
 function Check() {
@@ -75,6 +75,46 @@ function TimeChip({ ts, onSeek }: { ts: string; onSeek?: (s: number) => void }) 
       className="rounded bg-accent/10 px-1.5 py-0.5 font-medium tabular-nums text-accent underline-offset-2 hover:bg-accent/20 hover:underline active:bg-accent/30"
     >
       {ts}
+    </button>
+  )
+}
+
+/** The actual frame a note refers to — a small rounded thumbnail pulled from the
+ * backend at ``seconds``. Tapping it scrubs the player there (same as the timestamp
+ * chip), so the creator sees the exact moment being critiqued. Lazy-loaded; if the
+ * frame isn't available (a corpus read with no local mp4) the <img> hides itself,
+ * so the card degrades to plain text. */
+function FrameReceipt({
+  videoId,
+  seconds,
+  onSeek,
+}: {
+  videoId: string
+  seconds: number
+  onSeek?: (s: number) => void
+}) {
+  const [hidden, setHidden] = useState(false)
+  if (hidden) return null
+  const img = (
+    <img
+      src={frameAtUrl(videoId, seconds)}
+      alt=""
+      loading="lazy"
+      onError={() => setHidden(true)}
+      className="h-full w-full object-cover"
+    />
+  )
+  const box =
+    'aspect-[9/16] w-11 shrink-0 overflow-hidden rounded-md border border-border bg-surface-2 sm:w-12'
+  if (!onSeek) return <div className={box}>{img}</div>
+  return (
+    <button
+      type="button"
+      onClick={() => onSeek(seconds)}
+      title="Jump to this moment"
+      className={`${box} transition-opacity hover:opacity-80`}
+    >
+      {img}
     </button>
   )
 }
@@ -280,17 +320,25 @@ export default function CraftRead({
               ) : null}
             </div>
           </div>
-          <p className="mt-2 text-[15px] leading-relaxed">{linkify(opp, onSeek)}</p>
-          {jumpSec != null && onSeek ? (
-            <button
-              type="button"
-              onClick={() => onSeek(jumpSec)}
-              className="mt-2.5 inline-flex items-center gap-1.5 text-xs font-medium text-accent transition-opacity hover:opacity-80"
-            >
-              <PlayMini />
-              Jump to {data.lever_timestamp}
-            </button>
-          ) : null}
+          <div className="mt-2 flex gap-3">
+            {/* Frame receipt: the exact moment the fix points at, so it isn't abstract. */}
+            {jumpSec != null && videoId ? (
+              <FrameReceipt videoId={videoId} seconds={jumpSec} onSeek={onSeek} />
+            ) : null}
+            <div className="min-w-0 flex-1">
+              <p className="text-[15px] leading-relaxed">{linkify(opp, onSeek)}</p>
+              {jumpSec != null && onSeek ? (
+                <button
+                  type="button"
+                  onClick={() => onSeek(jumpSec)}
+                  className="mt-2.5 inline-flex items-center gap-1.5 text-xs font-medium text-accent transition-opacity hover:opacity-80"
+                >
+                  <PlayMini />
+                  Jump to {data.lever_timestamp}
+                </button>
+              ) : null}
+            </div>
+          </div>
           {isUpload ? (
             <Link
               to={`/analyze?prior=${videoId}`}
@@ -357,8 +405,16 @@ export default function CraftRead({
         <div className="mt-5">
           <h4 className="text-sm font-semibold">Worth a second look</h4>
           <ul className="mt-2.5 space-y-2.5">
-            {visibleSpots.map(({ s, i }) => (
-              <li key={i} className="rounded-lg border border-border bg-surface-2 p-3">
+            {visibleSpots.map(({ s, i }) => {
+              const spotSec = s.where ? tsToSeconds(s.where) : null
+              return (
+              <li key={i} className="flex gap-3 rounded-lg border border-border bg-surface-2 p-3">
+                {/* Frame receipt: the actual frame this note is about (hides itself if
+                    there's no local mp4, e.g. a corpus read). */}
+                {spotSec != null && videoId ? (
+                  <FrameReceipt videoId={videoId} seconds={spotSec} onSeek={onSeek} />
+                ) : null}
+                <div className="min-w-0 flex-1">
                 <div className="flex items-baseline gap-2">
                   {s.where ? (
                     <span className="shrink-0 text-[11px]">{linkify(s.where, onSeek)}</span>
@@ -390,8 +446,10 @@ export default function CraftRead({
                     not useful
                   </button>
                 </div>
+                </div>
               </li>
-            ))}
+              )
+            })}
           </ul>
         </div>
       ) : null}

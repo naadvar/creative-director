@@ -40,24 +40,28 @@ function ShareIcon() {
   )
 }
 
-/** Shown when the read was suppressed (the gate couldn't confidently ground a
- * critique across retries). Honest about the uncertainty, but never a dead end —
- * surfaces the positive observations rather than a blank "no read". */
+/** Shown when the read was suppressed: the fact-checker couldn't verify enough
+ * specific claims about this footage to publish critiques, so rather than guess it
+ * shows only what it could verify. Framed as the honesty feature working — not an
+ * error — and never a dead end (surfaces the verified positives + a next step). */
 function SuppressedRead({ strengths }: { strengths: string[] }) {
   return (
     <div className="space-y-4 rounded-2xl border border-border bg-surface p-5">
       <div>
-        <p className="text-[15px] font-semibold">I couldn’t land a confident fix for this one.</p>
+        <p className="text-[15px] font-semibold">Held back the critiques on this one.</p>
         <p className="mt-1 text-sm leading-relaxed text-muted">
-          I went over it a couple of times but couldn’t pin a single craft change I’m confident
-          enough to stand behind — so I won’t invent one. Often that just means it’s already
-          working; sometimes a clearer clip (one strong subject, readable text) reads better.
+          The fact-checker couldn’t verify enough specific claims about this footage to
+          publish critiques, so rather than guess, it’s showing only what it could verify.
+        </p>
+        <p className="mt-1.5 text-[13px] leading-relaxed text-muted/80">
+          This happens on some reels — fast cuts, low light, or heavy overlays make the
+          frames harder to read confidently.
         </p>
       </div>
       {strengths.length > 0 ? (
         <div>
           <h3 className="text-xs font-semibold uppercase tracking-widest text-muted">
-            What looked good
+            What it could verify
           </h3>
           <ul className="mt-2 space-y-1.5">
             {strengths.map((s, i) => (
@@ -69,6 +73,14 @@ function SuppressedRead({ strengths }: { strengths: string[] }) {
           </ul>
         </div>
       ) : null}
+      <div className="flex flex-wrap gap-2.5 pt-0.5">
+        <Link
+          to="/analyze"
+          className="rounded-xl bg-grad px-4 py-2.5 text-sm font-bold text-white transition-all hover:brightness-110"
+        >
+          Try another reel
+        </Link>
+      </div>
     </div>
   )
 }
@@ -83,9 +95,17 @@ const NICHE_LABEL: Record<string, string> = {
   other: 'Something else',
 }
 
-export default function VideoPage() {
+export default function VideoPage({
+  example = false,
+  exampleId,
+}: {
+  // Read-only "example mode": a curated corpus reel shown before the sign-in wall,
+  // with a banner + a pinned "get your own" CTA. Off for the normal read page.
+  example?: boolean
+  exampleId?: string
+} = {}) {
   const { videoId } = useParams<{ videoId: string }>()
-  const id = videoId ?? ''
+  const id = example ? exampleId ?? '' : videoId ?? ''
   // Bumped after a niche switch so the read (and its meta) refetch.
   const [reload, setReload] = useState(0)
   const [nicheBusy, setNicheBusy] = useState(false)
@@ -109,8 +129,16 @@ export default function VideoPage() {
   const duration = meta?.duration_seconds ?? null
 
   return (
-    <div className="space-y-5">
-      {craft.loading ? <Spinner label="Loading your read…" /> : null}
+    <div className={`space-y-5 ${example ? 'pb-24' : ''}`}>
+      {/* Example mode: a slim honesty banner so it's never mistaken for the visitor's
+          own read. The real value is on THEIR footage. */}
+      {example ? (
+        <div className="rounded-xl border border-accent/30 bg-accent/[0.07] px-4 py-3 text-sm">
+          <span className="font-semibold">Example read of a real reel.</span>{' '}
+          <span className="text-muted">Yours will be about YOUR footage.</span>
+        </div>
+      ) : null}
+      {craft.loading ? <Spinner label={example ? 'Loading the example…' : 'Loading your read…'} /> : null}
       {craft.error ? (
         <p className="rounded-xl border border-bad/40 bg-bad/10 px-4 py-3 text-sm text-bad">
           {craft.error}
@@ -223,7 +251,9 @@ export default function VideoPage() {
             </p>
           )}
 
-          {/* Next step — never a dead end. */}
+          {/* Next step — never a dead end. In example mode the pinned CTA below is
+              the only next step (this whole row is hidden). */}
+          {!example ? (
           <div className="flex flex-wrap items-center gap-2.5 pt-1">
             {read ? (
               <button
@@ -265,6 +295,7 @@ export default function VideoPage() {
               </Link>
             )}
           </div>
+          ) : null}
 
           {showShare && read && meta ? (
             <ShareCard
@@ -275,6 +306,32 @@ export default function VideoPage() {
             />
           ) : null}
         </>
+      ) : null}
+
+      {/* Example mode: a pinned CTA that turns the example into a sign-up. */}
+      {example ? (
+        <div
+          className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-ink/95 px-4 py-3 backdrop-blur-md sm:hidden"
+          style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 0.75rem)' }}
+        >
+          <Link
+            to="/analyze"
+            className="block w-full rounded-xl bg-grad px-5 py-3 text-center text-[15px] font-bold text-white transition-all hover:brightness-110"
+          >
+            Get your reel read
+          </Link>
+        </div>
+      ) : null}
+      {/* Desktop: an in-flow CTA (no fixed bar), since desktop keeps the top nav. */}
+      {example ? (
+        <div className="hidden pt-1 sm:block">
+          <Link
+            to="/analyze"
+            className="inline-block rounded-xl bg-grad px-6 py-3 text-center text-[15px] font-bold text-white transition-all hover:brightness-110"
+          >
+            Get your reel read
+          </Link>
+        </div>
       ) : null}
     </div>
   )

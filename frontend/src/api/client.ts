@@ -90,6 +90,13 @@ export function videoFileUrl(id: string): string {
   return `${BASE}/videos/${encodeURIComponent(id)}/file`
 }
 
+/** A single downscaled JPEG frame at ``t`` seconds — the "frame receipt" a craft
+ * note shows so the creator sees the exact moment. Goes straight into an <img>;
+ * 404s (and the <img> hides) when there's no local mp4. */
+export function frameAtUrl(id: string, t: number): string {
+  return `${BASE}/videos/${encodeURIComponent(id)}/frame-at?t=${encodeURIComponent(t)}`
+}
+
 /** Resolve a backend-relative media path (e.g. "/api/videos/{id}/thumbnail") to a
  * loadable URL. These go straight into <img>/<video> src and bypass request(), so
  * in the native app — where there's no Vercel "/api" proxy — the "/api" prefix must
@@ -171,9 +178,11 @@ export const api = {
   },
 
   /** Passwordless email gate — find-or-create the user, start a session. Stores the
-   * bearer token (used by the native app; harmless on web). */
-  emailLogin(email: string): Promise<{ user: AuthUser | null }> {
-    return request<{ user: AuthUser | null; token?: string }>('/auth/email', {
+   * bearer token (used by the native app; harmless on web). `new_user` is true when
+   * this login just created the account — the caller uses it to confirm a typo'd
+   * address before an orphan account sticks. */
+  emailLogin(email: string): Promise<{ user: AuthUser | null; new_user?: boolean }> {
+    return request<{ user: AuthUser | null; token?: string; new_user?: boolean }>('/auth/email', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email }),

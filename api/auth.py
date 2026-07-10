@@ -181,10 +181,12 @@ def get_current_user(request: Request) -> dict:
     return user
 
 
-def email_login(request: Request, email: str) -> int:
+def email_login(request: Request, email: str) -> tuple[int, bool]:
     """Passwordless gate: find-or-create the User for this email, log them in,
-    and return the user_id. The email is the lead-capture signal; there's no
-    password, so this is a low-friction demo gate, not hardened account security."""
+    and return ``(user_id, new_user)``. ``new_user`` lets the client confirm a
+    freshly-typed address before an orphan account is created on a typo. The email
+    is the lead-capture signal; there's no password, so this is a low-friction demo
+    gate, not hardened account security."""
     now = datetime.utcnow()
     with session_scope() as s:
         user = (
@@ -207,7 +209,7 @@ def email_login(request: Request, email: str) -> int:
     from creative_director.storage.telemetry import log_event
 
     log_event("login", user_id=uid, method="email", new_user=new_user)
-    return uid
+    return uid, new_user
 
 
 def upsert_user_and_connection(

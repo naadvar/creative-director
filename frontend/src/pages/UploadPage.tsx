@@ -18,6 +18,15 @@ const NICHES = [
 
 const MAX_BYTES = 200 * 1024 * 1024
 
+// Accept anything that plausibly is a video: a known extension, OR a video/* MIME,
+// OR no type at all. Phone/CapCut exports on Windows frequently report an empty or
+// application/octet-stream type, so a strict MIME check silently rejected real reels
+// (the server still validates by probing the container, so this is just a UX filter).
+const VIDEO_EXT_RE = /\.(mp4|mov|m4v)$/i
+function looksLikeVideo(f: File): boolean {
+  return VIDEO_EXT_RE.test(f.name) || f.type.startsWith('video/') || f.type === ''
+}
+
 function fmtSize(bytes: number): string {
   return bytes < 1024 * 1024
     ? `${Math.round(bytes / 1024)} KB`
@@ -184,6 +193,11 @@ export default function UploadPage() {
   const pick = (f: File | undefined | null) => {
     setError(null)
     if (!f) return
+    if (!looksLikeVideo(f)) {
+      // Don't swallow the pick — tell them why, so a bad file isn't a silent no-op.
+      setError("That file type didn't look like a video. Export as MP4 or MOV and try again.")
+      return
+    }
     if (f.size > MAX_BYTES) {
       setError('That file is over 200 MB — export a smaller cut (short-form only).')
       return
@@ -371,7 +385,7 @@ export default function UploadPage() {
           <input
             ref={inputRef}
             type="file"
-            accept="video/mp4,video/quicktime"
+            accept="video/mp4,video/quicktime,video/*,.mp4,.mov,.m4v"
             aria-label="Choose a reel video file"
             className="sr-only"
             onChange={(e) => pick(e.target.files?.[0])}
